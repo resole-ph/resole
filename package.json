@@ -1,0 +1,31 @@
+{
+  "name": "resole",
+  "version": "1.0.0",
+  "description": "This repository follows a feature-driven architecture with container/presentational boundaries.",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "dev:web": "npm run dev --prefix apps/web",
+    "build:web": "npm run build --prefix apps/web",
+    "start:web": "npm run start --prefix apps/web",
+    "lint:web": "npm run lint --prefix apps/web",
+    "dev:mobile": "npm run start --prefix apps/mobile",
+    "android:mobile": "npm run android --prefix apps/mobile",
+    "ios:mobile": "npm run ios --prefix apps/mobile",
+    "web:mobile": "npm run web --prefix apps/mobile",
+    "dev": "npm run dev:web",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rdgonzaga/resole.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rdgonzaga/resole/issues"
+  },
+  "homepage": "https://github.com/rdgonzaga/resole#readme"
+}
