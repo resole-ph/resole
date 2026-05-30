@@ -32,18 +32,13 @@ export default function AuthScreen() {
     router.replace('/');
   };
 
-  const handleSkip = () => {
-    completeOnboarding();
-    router.replace('/');
-  };
-
   return (
     <ScrollView
       className="flex-1 bg-surface"
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       keyboardShouldPersistTaps="handled"
     >
-      <OnboardingHeader showBack onBack={() => router.back()} onSkip={handleSkip} title="Resole" />
+      <OnboardingHeader showBack onBack={() => router.back()} title="Resole" />
 
       <View className="px-8 gap-8 mt-2">
         {/* Welcome section */}

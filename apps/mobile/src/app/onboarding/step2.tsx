@@ -1,40 +1,16 @@
-import { useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import OnboardingProgress from '@/components/molecules/OnboardingProgress';
-import { useOnboardingStore } from '@/store/onboarding';
 
 export default function Step2Screen() {
   const router = useRouter();
-  const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
   const { bottom } = useSafeAreaInsets();
-  const scanY = useSharedValue(0);
-
-  useEffect(() => {
-    scanY.value = withRepeat(
-      withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
-  }, []);
-
-  const scanStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: scanY.value * 96 - 48 }],
-  }));
 
   const handleSkip = () => {
-    completeOnboarding();
-    router.replace('/');
+    router.push('/onboarding/auth');
   };
 
   return (
@@ -43,7 +19,7 @@ export default function Step2Screen() {
         className="bg-surface-container-high items-center justify-center"
         style={{ flex: 1 }}
       >
-        {/* Dotted grid background approximation */}
+        {/* Dotted grid background */}
         <View className="absolute inset-0 opacity-40">
           {Array.from({ length: 12 }, (_, row) => (
             <View key={row} className="flex-row" style={{ flex: 1 }}>
@@ -61,49 +37,12 @@ export default function Step2Screen() {
           ))}
         </View>
 
-        <View style={{ paddingTop: 64, alignItems: 'center' }}>
-          {/* Shoe outline with scanning line */}
-          <View
-            style={{
-              width: 192,
-              height: 128,
-              borderWidth: 2,
-              borderStyle: 'dashed',
-              borderColor: 'rgba(0,84,211,0.4)',
-              borderRadius: 32,
-              overflow: 'hidden',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Animated.View
-              style={[
-                {
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  backgroundColor: '#0054d3',
-                  shadowColor: '#0054d3',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.6,
-                  shadowRadius: 8,
-                  elevation: 4,
-                },
-                scanStyle,
-              ]}
-            />
-            <MaterialIcons
-              name="auto-fix-high"
-              size={28}
-              color="#0054d3"
-              style={{ position: 'absolute', top: -14, right: -14 }}
-            />
-          </View>
+        <View style={{ alignItems: 'center', gap: 24 }}>
+          <Text style={{ fontSize: 80 }}>🤖</Text>
 
           {/* Valuation Complete chip */}
           <View
-            className="flex-row items-center gap-2 rounded-full px-4 py-2 mt-6 bg-surface"
+            className="flex-row items-center gap-2 rounded-full px-4 py-2 bg-surface"
             style={{
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 4 },

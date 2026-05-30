@@ -30,11 +30,15 @@ export default function OnboardingHeader({ showBack, onBack, onSkip, title }: Pr
         <View />
       )}
 
-      <TouchableOpacity onPress={onSkip}>
-        <Text className="font-label-md text-label-md text-primary uppercase tracking-widest">
-          Skip
-        </Text>
-      </TouchableOpacity>
+      {onSkip ? (
+        <TouchableOpacity onPress={onSkip}>
+          <Text className="font-label-md text-label-md text-primary uppercase tracking-widest">
+            Skip
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <View />
+      )}
     </View>
   );
 }

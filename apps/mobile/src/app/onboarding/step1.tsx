@@ -4,19 +4,16 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import OnboardingProgress from '@/components/molecules/OnboardingProgress';
-import { useOnboardingStore } from '@/store/onboarding';
 
 const ILLUSTRATION_URI =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuC93IDQCKgr4SZoyZZG1OT7oSsh15DUUdwcQgXnwcUYb6dVQHySoMHMp1etH6Ufo4RyBpfuyMzGa1goZzdNMBSb9fUACihUn0VJwGPdGqiSqZaHP30-wkhUlKJKbixuEDR_7ptwtGQxvAOeMGdJwcGNbFtFD0yfreHBWv3Fpg_SrGoF_DyimmW4mGvRr-8n617hL8sdRFY6BcqHXPjAZG4UHsPLm3iBEECUdbF8IAauXwDjAErFboIUtEwxC0_7A8_Mb19Vplq0Lgc';
 
 export default function Step1Screen() {
   const router = useRouter();
-  const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
   const { bottom } = useSafeAreaInsets();
 
   const handleSkip = () => {
-    completeOnboarding();
-    router.replace('/');
+    router.push('/onboarding/auth');
   };
 
   return (
