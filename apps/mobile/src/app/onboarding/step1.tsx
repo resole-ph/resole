@@ -1,0 +1,82 @@
+import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
+import OnboardingHeader from '@/components/molecules/OnboardingHeader';
+import OnboardingProgress from '@/components/molecules/OnboardingProgress';
+import { useOnboardingStore } from '@/store/onboarding';
+
+const ILLUSTRATION_URI =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuC93IDQCKgr4SZoyZZG1OT7oSsh15DUUdwcQgXnwcUYb6dVQHySoMHMp1etH6Ufo4RyBpfuyMzGa1goZzdNMBSb9fUACihUn0VJwGPdGqiSqZaHP30-wkhUlKJKbixuEDR_7ptwtGQxvAOeMGdJwcGNbFtFD0yfreHBWv3Fpg_SrGoF_DyimmW4mGvRr-8n617hL8sdRFY6BcqHXPjAZG4UHsPLm3iBEECUdbF8IAauXwDjAErFboIUtEwxC0_7A8_Mb19Vplq0Lgc';
+
+export default function Step1Screen() {
+  const router = useRouter();
+  const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
+
+  const handleSkip = () => {
+    completeOnboarding();
+    router.replace('/');
+  };
+
+  return (
+    <View className="flex-1 bg-surface">
+      <View style={{ flex: 0.55 }}>
+        <Image
+          source={{ uri: ILLUSTRATION_URI }}
+          className="w-full h-full"
+          resizeMode="cover"
+        />
+        <View className="absolute inset-0">
+          <OnboardingHeader showBack={false} onSkip={handleSkip} />
+        </View>
+      </View>
+
+      <View
+        className="bg-surface px-5 pt-6 pb-10 items-center"
+        style={{
+          flex: 0.45,
+          borderTopLeftRadius: 40,
+          borderTopRightRadius: 40,
+          marginTop: -32,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.04,
+          shadowRadius: 12,
+          elevation: 4,
+        }}
+      >
+        <View className="bg-secondary-container rounded-full px-3 py-1 mb-4">
+          <Text className="font-label-md text-label-md text-on-secondary-container uppercase tracking-widest">
+            Step 1
+          </Text>
+        </View>
+
+        <OnboardingProgress total={4} current={1} />
+
+        <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center mt-4 mb-3">
+          Clear out the closet.
+        </Text>
+        <Text className="font-body-lg text-body-lg text-on-surface-variant text-center mb-6">
+          Got shoes you don't wear? Turn your pre-loved pairs into Pesos or swap
+          them for your next look.
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => router.push('/onboarding/step2')}
+          className="w-full bg-primary rounded-full py-4 flex-row items-center justify-center gap-2"
+          style={{
+            shadowColor: '#0054d3',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.2,
+            shadowRadius: 16,
+            elevation: 6,
+          }}
+        >
+          <Text className="font-label-md text-label-md text-on-primary uppercase tracking-wide">
+            Next
+          </Text>
+          <MaterialIcons name="arrow-forward" size={16} color="#ffffff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
