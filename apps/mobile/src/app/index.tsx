@@ -1,9 +1,12 @@
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import BottomNav from '@/components/organisms/BottomNav';
 
 export default function HomeScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-semibold text-gray-800">resole</Text>
+    <View className="flex-1 bg-gray-50">
+      {/* Content area — remaining components will go here */}
+      <View className="flex-1" />
+      <BottomNav activeTab="home" />
     </View>
   );
 }
