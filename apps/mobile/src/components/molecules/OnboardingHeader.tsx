@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
   showBack: boolean;
@@ -9,8 +10,9 @@ interface Props {
 }
 
 export default function OnboardingHeader({ showBack, onBack, onSkip, title }: Props) {
+  const { top } = useSafeAreaInsets();
   return (
-    <View className="flex-row justify-between items-center w-full px-5 py-4">
+    <View className="flex-row justify-between items-center w-full px-5 py-4" style={{ paddingTop: top + 16 }}>
       <TouchableOpacity
         onPress={onBack}
         className="w-10 h-10 items-center justify-center rounded-full bg-surface/50"
