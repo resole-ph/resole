@@ -8,9 +8,11 @@ interface OnboardingState {
   hasSeenOnboarding: boolean;
   intent: Intent;
   location: string;
+  phoneNumber: string;
   completeOnboarding: () => void;
   setIntent: (intent: Intent) => void;
   setLocation: (location: string) => void;
+  setPhoneNumber: (phoneNumber: string) => void;
 }
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -19,9 +21,11 @@ export const useOnboardingStore = create<OnboardingState>()(
       hasSeenOnboarding: false,
       intent: 'buy',
       location: '',
+      phoneNumber: '',
       completeOnboarding: () => set({ hasSeenOnboarding: true }),
       setIntent: (intent) => set({ intent }),
       setLocation: (location) => set({ location }),
+      setPhoneNumber: (phoneNumber) => set({ phoneNumber }),
     }),
     {
       name: 'onboarding',
