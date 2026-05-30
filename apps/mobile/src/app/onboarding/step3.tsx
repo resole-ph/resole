@@ -1,6 +1,7 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import OnboardingProgress from '@/components/molecules/OnboardingProgress';
 import { useOnboardingStore } from '@/store/onboarding';
@@ -11,6 +12,7 @@ const ILLUSTRATION_URI =
 export default function Step3Screen() {
   const router = useRouter();
   const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
+  const { bottom } = useSafeAreaInsets();
 
   const handleSkip = () => {
     completeOnboarding();
@@ -19,7 +21,7 @@ export default function Step3Screen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View style={{ flex: 0.55, position: 'relative' }}>
+      <View style={{ flex: 1, position: 'relative' }}>
         <Image
           source={{ uri: ILLUSTRATION_URI }}
           className="w-full h-full"
@@ -67,39 +69,44 @@ export default function Step3Screen() {
           </View>
         </View>
 
-        <View className="absolute inset-x-0 top-0">
+        <View className="absolute inset-0">
           <OnboardingHeader showBack onBack={() => router.back()} onSkip={handleSkip} />
         </View>
       </View>
 
       <View
-        className="bg-surface px-5 pt-6 pb-10 items-center"
+        className="bg-surface px-5 pt-6 items-center"
         style={{
-          flex: 0.45,
+          paddingBottom: 40 + bottom,
           borderTopLeftRadius: 40,
           borderTopRightRadius: 40,
-          marginTop: -40,
-          zIndex: 10,
+          marginTop: -32,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.02,
+          shadowOpacity: 0.04,
           shadowRadius: 12,
           elevation: 4,
         }}
       >
+        <View className="bg-secondary-container rounded-full px-3 py-1 mb-4">
+          <Text className="font-label-md text-label-md text-on-secondary-container uppercase tracking-widest">
+            Step 3
+          </Text>
+        </View>
+
         <OnboardingProgress total={4} current={3} />
 
-        <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center mt-6 mb-3">
+        <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center mt-4 mb-3">
           The 30-Day Freshness Guarantee.
         </Text>
-        <Text className="font-body-lg text-body-lg text-on-surface-variant text-center mb-8 max-w-xs">
+        <Text className="font-body-lg text-body-lg text-on-surface-variant text-center mb-6">
           Every listing gets 30 days to sell or swap. If it doesn't, easily
           choose to relist or donate it to our recycling partners.
         </Text>
 
         <TouchableOpacity
           onPress={() => router.push('/onboarding/auth')}
-          className="w-full bg-primary rounded-xl py-4 flex-row items-center justify-center gap-2"
+          className="w-full bg-primary rounded-full py-4 flex-row items-center justify-center gap-2"
           style={{
             shadowColor: '#0054d3',
             shadowOffset: { width: 0, height: 8 },

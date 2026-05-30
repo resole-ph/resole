@@ -1,6 +1,7 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import OnboardingProgress from '@/components/molecules/OnboardingProgress';
 import { useOnboardingStore } from '@/store/onboarding';
@@ -11,6 +12,7 @@ const ILLUSTRATION_URI =
 export default function Step1Screen() {
   const router = useRouter();
   const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
+  const { bottom } = useSafeAreaInsets();
 
   const handleSkip = () => {
     completeOnboarding();
@@ -19,7 +21,7 @@ export default function Step1Screen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View style={{ flex: 0.55 }}>
+      <View style={{ flex: 1 }}>
         <Image
           source={{ uri: ILLUSTRATION_URI }}
           className="w-full h-full"
@@ -31,9 +33,9 @@ export default function Step1Screen() {
       </View>
 
       <View
-        className="bg-surface px-5 pt-6 pb-10 items-center"
+        className="bg-surface px-5 pt-6 items-center"
         style={{
-          flex: 0.45,
+          paddingBottom: 40 + bottom,
           borderTopLeftRadius: 40,
           borderTopRightRadius: 40,
           marginTop: -32,
