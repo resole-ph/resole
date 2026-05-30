@@ -30,7 +30,7 @@ export default function Header({
       {/* Greeting */}
       <View className="flex-1 mr-4">
         <Text className="text-2xl font-bold text-gray-900" numberOfLines={1}>
-          {getGreeting()}, {name} 👋
+          {getGreeting()}, {name}
         </Text>
         <Text className="text-sm text-gray-400 mt-0.5">
           Find your next pair today
