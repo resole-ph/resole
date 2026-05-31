@@ -1,15 +1,18 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const resoleLogo = require('../../../assets/ReSoleLogo.png');
 
 interface Props {
   showBack: boolean;
   onBack?: () => void;
   onSkip?: () => void;
   title?: string;
+  logo?: boolean;
 }
 
-export default function OnboardingHeader({ showBack, onBack, onSkip, title }: Props) {
+export default function OnboardingHeader({ showBack, onBack, onSkip, title, logo }: Props) {
   const { top } = useSafeAreaInsets();
   return (
     <View className="flex-row justify-between items-center w-full px-5 py-4" style={{ paddingTop: top + 16 }}>
@@ -22,7 +25,9 @@ export default function OnboardingHeader({ showBack, onBack, onSkip, title }: Pr
         <MaterialIcons name="arrow-back" size={24} color="#424655" />
       </TouchableOpacity>
 
-      {title ? (
+      {logo ? (
+        <Image source={resoleLogo} style={{ height: 44, width: 188, marginTop: 8 }} resizeMode="contain" />
+      ) : title ? (
         <Text className="font-headline-lg-mobile text-headline-lg-mobile text-primary">
           {title}
         </Text>
@@ -37,7 +42,7 @@ export default function OnboardingHeader({ showBack, onBack, onSkip, title }: Pr
           </Text>
         </TouchableOpacity>
       ) : (
-        <View />
+        <View className="w-10" />
       )}
     </View>
   );

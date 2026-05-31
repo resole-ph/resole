@@ -36,7 +36,7 @@ export default function AuthScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        <OnboardingHeader showBack onBack={() => router.back()} title="Resole" />
+        <OnboardingHeader showBack onBack={() => router.back()} logo />
 
         <View className="px-8 gap-8 mt-2">
           {/* Welcome section */}
@@ -200,6 +200,14 @@ export default function AuthScreen() {
                   />
                 </TouchableOpacity>
               </View>
+            )}
+
+            {mode === 'login' && (
+              <TouchableOpacity className="self-end">
+                <Text className="font-body-sm text-body-sm text-primary">
+                  Forgot password?
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
 

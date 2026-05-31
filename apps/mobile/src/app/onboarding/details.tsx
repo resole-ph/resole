@@ -53,7 +53,7 @@ export default function DetailsScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        <OnboardingHeader showBack onBack={() => router.back()} title="Resole" />
+        <OnboardingHeader showBack onBack={() => router.back()} logo />
 
         <View className="px-8 gap-8 mt-2">
           {/* Header */}
