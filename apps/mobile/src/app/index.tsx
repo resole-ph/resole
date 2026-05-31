@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import BottomNav from '@/components/organisms/BottomNav';
 import Header from '@/components/organisms/Header';
 import SearchBar from '@/components/organisms/SearchBar';
@@ -14,7 +14,8 @@ export default function HomeScreen() {
       <SearchBar />
       <HeroBanner />
       <StatsRow />
-      {/* Content area — remaining components will go here */}
+      <CategoriesRow />
+      <BrowseFeed />
       <View className="flex-1" />
       <BottomNav activeTab="home" />
     </View>
