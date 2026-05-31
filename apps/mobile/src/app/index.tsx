@@ -11,12 +11,18 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <Header name="Miguel" hasNotifications />
-      <SearchBar />
-      <HeroBanner />
-      <StatsRow />
-      <CategoriesRow />
-      <BrowseFeed />
-      <View className="flex-1" />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 16 }}
+      >
+        <SearchBar />
+        <HeroBanner />
+        <StatsRow />
+        <CategoriesRow />
+        <BrowseFeed />
+      </ScrollView>
+
       <BottomNav activeTab="home" />
     </View>
   );
