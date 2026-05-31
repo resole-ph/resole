@@ -88,7 +88,7 @@ CREATE TABLE "shoe" (
 --> statement-breakpoint
 CREATE TABLE "shoe_listing" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"user_id" integer NOT NULL,
+	"user_id" text NOT NULL,
 	"shoe_id" integer NOT NULL,
 	"value" numeric NOT NULL,
 	"description" text,
@@ -126,13 +126,13 @@ CREATE TABLE "task" (
 --> statement-breakpoint
 CREATE TABLE "user_task" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"user_id" integer NOT NULL,
+	"user_id" text NOT NULL,
 	"task_id" integer NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"completed_at" timestamp,
 	CONSTRAINT "expires_at_check" CHECK ("user_task"."expires_at" > "user_task"."created_at"),
-	CONSTRAINT "completed_at_check" CHECK ("user_task"."expires_at" BETWEEN "user_task"."created_at" AND "user_task"."expires_at")
+	CONSTRAINT "completed_at_check" CHECK ("user_task"."completed_at" BETWEEN "user_task"."created_at" AND "user_task"."expires_at")
 );
 --> statement-breakpoint
 CREATE TABLE "donation" (
@@ -143,8 +143,8 @@ CREATE TABLE "donation" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	"pickup_date" timestamp,
 	"shipped_date" timestamp,
-	CONSTRAINT "pickup_date" CHECK ("donation"."pickup_date" > "donation"."created_at"),
-	CONSTRAINT "shipped_date" CHECK ("donation"."shipped_date" > "donation"."pickup_date")
+	CONSTRAINT "pickup_date_check" CHECK ("donation"."pickup_date" > "donation"."created_at"),
+	CONSTRAINT "shipped_date_check" CHECK ("donation"."shipped_date" > "donation"."pickup_date")
 );
 --> statement-breakpoint
 CREATE TABLE "redemption" (
@@ -179,7 +179,7 @@ CREATE TABLE "swap_item" (
 CREATE TABLE "transaction" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"listing_id" integer NOT NULL,
-	"recipient_id" integer,
+	"recipient_id" text,
 	"type" "transaction_enum" NOT NULL,
 	"is_completed" boolean DEFAULT false NOT NULL,
 	"coins_earned" integer NOT NULL,
@@ -189,9 +189,9 @@ CREATE TABLE "transaction" (
 );
 --> statement-breakpoint
 CREATE TABLE "rating" (
-	"referals" serial PRIMARY KEY NOT NULL,
-	"rater_id" integer NOT NULL,
-	"ratee_id" integer NOT NULL,
+	"id" serial PRIMARY KEY NOT NULL,
+	"rater_id" text NOT NULL,
+	"ratee_id" text NOT NULL,
 	"rating" integer NOT NULL,
 	"comment" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -202,9 +202,9 @@ CREATE TABLE "rating" (
 );
 --> statement-breakpoint
 CREATE TABLE "referal" (
-	"referals" serial PRIMARY KEY NOT NULL,
-	"refered_by_id" integer NOT NULL,
-	"refered_to_id" integer NOT NULL,
+	"id" serial PRIMARY KEY NOT NULL,
+	"refered_by_id" text NOT NULL,
+	"refered_to_id" text NOT NULL,
 	"method" "referal_enum" DEFAULT 'other' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "referal_id_check" CHECK ("referal"."refered_by_id" != "referal"."refered_to_id")
@@ -213,7 +213,7 @@ CREATE TABLE "referal" (
 CREATE TABLE "save" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"listing_id" integer NOT NULL,
-	"user_id" integer NOT NULL,
+	"user_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"removed_at" timestamp
 );

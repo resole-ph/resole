@@ -25,7 +25,7 @@ export const transaction = pgTable('transaction', {
   listingId: integer('listing_id')
     .notNull()
     .references(() => shoeListing.id),
-  recipientId: integer('recipient_id')
+  recipientId: text('recipient_id')
     .references(() => user.id),
   type: transactionEnum('type').notNull(),
   isCompleted: boolean('is_completed').default(false).notNull(),
@@ -96,6 +96,6 @@ export const donation = pgTable('donation', {
   pickupDate: timestamp('pickup_date'),
   shippedDate: timestamp('shipped_date')
 }, (table) => [
-  check('pickup_date', sql`${table.pickupDate} > ${table.createdAt}`),
-  check('shipped_date', sql`${table.shippedDate} > ${table.pickupDate}`)
+  check('pickup_date_check', sql`${table.pickupDate} > ${table.createdAt}`),
+  check('shipped_date_check', sql`${table.shippedDate} > ${table.pickupDate}`)
 ]);

@@ -21,11 +21,11 @@ export const referalEnum = pgEnum('referal_enum', [
 ]);
 
 export const referal = pgTable('referal', {
-  id: serial('referals').primaryKey(),
-  referedById: integer('refered_by_id')
+  id: serial('id').primaryKey(),
+  referedById: text('refered_by_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  referedToId: integer('refered_to_id')
+  referedToId: text('refered_to_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   method: referalEnum('method').default('other').notNull(),
@@ -35,11 +35,11 @@ export const referal = pgTable('referal', {
 ]);
 
 export const rating = pgTable('rating', {
-  id: serial('referals').primaryKey(),
-  raterId: integer('rater_id')
+  id: serial('id').primaryKey(),
+  raterId: text('rater_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  rateeId: integer('ratee_id')
+  rateeId: text('ratee_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   rating: integer('rating').notNull(),
@@ -60,7 +60,7 @@ export const save = pgTable('save', {
   listingId: integer('listing_id')
     .notNull()
     .references(() => shoeListing.id, { onDelete: 'cascade' }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),

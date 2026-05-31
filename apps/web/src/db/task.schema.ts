@@ -32,7 +32,7 @@ export const task = pgTable('task', {
 
 export const userTask = pgTable('user_task', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   taskId: integer('task_id')
@@ -43,5 +43,5 @@ export const userTask = pgTable('user_task', {
   completedAt: timestamp('completed_at')
 }, (table) => [
   check('expires_at_check', sql`${table.expiresAt} > ${table.createdAt}`),
-  check('completed_at_check', sql`${table.expiresAt} BETWEEN ${table.createdAt} AND ${table.expiresAt}`)
+  check('completed_at_check', sql`${table.completedAt} BETWEEN ${table.createdAt} AND ${table.expiresAt}`)
 ]);

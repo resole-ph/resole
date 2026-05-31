@@ -51,7 +51,7 @@ export const shoePrice = pgTable('shoe_price', {
 
 export const shoeListing = pgTable('shoe_listing', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   shoeId: integer('shoe_id')

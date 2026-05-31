@@ -1,5 +1,5 @@
 {
-  "id": "dcbf0b8f-aa07-4ed5-bbc2-44aac84dd565",
+  "id": "345725b3-8750-4cdc-8df9-ab206213a142",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -547,7 +547,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -802,7 +802,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -871,7 +871,7 @@
         },
         "completed_at_check": {
           "name": "completed_at_check",
-          "value": "\"user_task\".\"expires_at\" BETWEEN \"user_task\".\"created_at\" AND \"user_task\".\"expires_at\""
+          "value": "\"user_task\".\"completed_at\" BETWEEN \"user_task\".\"created_at\" AND \"user_task\".\"expires_at\""
         }
       },
       "isRLSEnabled": false
@@ -958,12 +958,12 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "pickup_date": {
-          "name": "pickup_date",
+        "pickup_date_check": {
+          "name": "pickup_date_check",
           "value": "\"donation\".\"pickup_date\" > \"donation\".\"created_at\""
         },
-        "shipped_date": {
-          "name": "shipped_date",
+        "shipped_date_check": {
+          "name": "shipped_date_check",
           "value": "\"donation\".\"shipped_date\" > \"donation\".\"pickup_date\""
         }
       },
@@ -1212,7 +1212,7 @@
         },
         "recipient_id": {
           "name": "recipient_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1295,21 +1295,21 @@
       "name": "rating",
       "schema": "",
       "columns": {
-        "referals": {
-          "name": "referals",
+        "id": {
+          "name": "id",
           "type": "serial",
           "primaryKey": true,
           "notNull": true
         },
         "rater_id": {
           "name": "rater_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "ratee_id": {
           "name": "ratee_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -1394,21 +1394,21 @@
       "name": "referal",
       "schema": "",
       "columns": {
-        "referals": {
-          "name": "referals",
+        "id": {
+          "name": "id",
           "type": "serial",
           "primaryKey": true,
           "notNull": true
         },
         "refered_by_id": {
           "name": "refered_by_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "refered_to_id": {
           "name": "refered_to_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -1486,7 +1486,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
