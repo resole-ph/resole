@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -19,26 +20,28 @@ function CardHeader({
   onPress?: () => void;
 }) {
   return (
-    <View className="flex-row items-center mb-3">
+    <TouchableOpacity className="flex-row items-center mb-3" activeOpacity={0.6} onPress={onPress}>
       <View className="w-9 h-9 rounded-xl bg-blue-50 items-center justify-center mr-3">
         <Ionicons name={icon} size={18} color="#2563EB" />
       </View>
       <Text className="flex-1 text-gray-900 font-semibold text-sm">{title}</Text>
-      <TouchableOpacity onPress={onPress} activeOpacity={0.6}>
-        <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-      </TouchableOpacity>
-    </View>
+      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+    </TouchableOpacity>
   );
 }
 
 /* ── My Listings ── */
-function MyListingsCard() {
+function MyListingsCard({ onPress }: { onPress: () => void }) {
   const previews = ['#DBEAFE', '#EDE9FE', '#FCE7F3'];
   return (
-    <View className="bg-white rounded-2xl mx-5 mb-3 p-4" style={CARD_SHADOW}>
-      <CardHeader icon="cube-outline" title="My listings" />
+    <TouchableOpacity
+      className="bg-white rounded-2xl mx-5 mb-3 p-4"
+      style={CARD_SHADOW}
+      activeOpacity={0.85}
+      onPress={onPress}
+    >
+      <CardHeader icon="cube-outline" title="My listings" onPress={onPress} />
 
-      {/* Thumbnail previews */}
       <View className="flex-row gap-2 mb-3">
         {previews.map((bg, i) => (
           <View
@@ -49,29 +52,34 @@ function MyListingsCard() {
             <Ionicons name="image-outline" size={20} color="#9CA3AF" />
           </View>
         ))}
-        {/* Overflow badge */}
         <View className="w-16 h-20 rounded-xl bg-gray-100 items-center justify-center">
           <Text className="text-gray-500 font-bold text-sm">+11</Text>
         </View>
       </View>
 
-      {/* Footer stats */}
       <View className="flex-row items-center">
         <View className="w-2 h-2 rounded-full bg-green-400 mr-1.5" />
         <Text className="text-gray-500 text-xs">14 active</Text>
         <Text className="text-gray-300 mx-2">·</Text>
         <Text className="text-amber-500 text-xs">2 pending review</Text>
+        <Text className="text-gray-300 mx-2">·</Text>
+        <Text className="text-gray-400 text-xs">3 expired</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 /* ── Saved Items ── */
-function SavedItemsCard() {
+function SavedItemsCard({ onPress }: { onPress: () => void }) {
   const colors = ['#FEF3C7', '#D1FAE5', '#DBEAFE', '#FCE7F3'];
   return (
-    <View className="bg-white rounded-2xl mx-5 mb-3 p-4" style={CARD_SHADOW}>
-      <CardHeader icon="heart-outline" title="Saved items" />
+    <TouchableOpacity
+      className="bg-white rounded-2xl mx-5 mb-3 p-4"
+      style={CARD_SHADOW}
+      activeOpacity={0.85}
+      onPress={onPress}
+    >
+      <CardHeader icon="heart-outline" title="Favourites" onPress={onPress} />
 
       <View className="flex-row gap-2 mb-3">
         {colors.map((bg, i) => (
@@ -88,6 +96,77 @@ function SavedItemsCard() {
       <Text className="text-gray-400 text-xs">
         <Text className="text-gray-700 font-semibold">23 sneakers</Text> saved across all brands
       </Text>
+    </TouchableOpacity>
+  );
+}
+
+/* ── Quick Links ── */
+function QuickLink({
+  icon,
+  label,
+  sub,
+  badge,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  sub: string;
+  badge?: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      className="flex-row items-center py-3.5 border-b border-gray-50"
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      <View className="w-9 h-9 rounded-xl bg-blue-50 items-center justify-center mr-3">
+        <Ionicons name={icon} size={18} color="#2563EB" />
+      </View>
+      <View className="flex-1">
+        <Text className="text-gray-900 font-semibold text-sm">{label}</Text>
+        <Text className="text-gray-400 text-xs mt-0.5">{sub}</Text>
+      </View>
+      {badge && (
+        <View className="bg-blue-600 rounded-full px-2 py-0.5 mr-2">
+          <Text className="text-white text-xs font-bold">{badge}</Text>
+        </View>
+      )}
+      <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+    </TouchableOpacity>
+  );
+}
+
+function QuickLinksCard({
+  onTransactions,
+  onTracking,
+  onWallet,
+}: {
+  onTransactions: () => void;
+  onTracking: () => void;
+  onWallet: () => void;
+}) {
+  return (
+    <View className="bg-white rounded-2xl mx-5 mb-3 px-4" style={CARD_SHADOW}>
+      <QuickLink
+        icon="receipt-outline"
+        label="Transactions"
+        sub="Sales, swaps, donations"
+        onPress={onTransactions}
+      />
+      <QuickLink
+        icon="navigate-outline"
+        label="Order tracking"
+        sub="2 shipments in progress"
+        badge="2"
+        onPress={onTracking}
+      />
+      <QuickLink
+        icon="leaf-outline"
+        label="Recycle Coins"
+        sub="1,240 coins available"
+        onPress={onWallet}
+      />
     </View>
   );
 }
@@ -133,7 +212,7 @@ function SellerAnalyticsCard() {
 }
 
 /* ── Recycle & Donate ── */
-function RecycleDonateCard() {
+function RecycleDonateCard({ onTracking }: { onTracking: () => void }) {
   return (
     <View className="bg-white rounded-2xl mx-5 mb-3 p-4" style={CARD_SHADOW}>
       <CardHeader icon="sync-outline" title="Recycle & donate" />
@@ -147,6 +226,7 @@ function RecycleDonateCard() {
         <TouchableOpacity
           className="flex-1 bg-blue-600 rounded-xl py-2.5 items-center"
           activeOpacity={0.8}
+          onPress={onTracking}
         >
           <Text className="text-white font-semibold text-sm">Schedule pickup</Text>
         </TouchableOpacity>
@@ -163,12 +243,19 @@ function RecycleDonateCard() {
 
 /* ── Composed list ── */
 export default function ProfileMenuList() {
+  const router = useRouter();
+
   return (
     <View>
-      <MyListingsCard />
-      <SavedItemsCard />
+      <MyListingsCard onPress={() => router.push('/profile/listings')} />
+      <SavedItemsCard onPress={() => router.push('/profile/favourites')} />
+      <QuickLinksCard
+        onTransactions={() => router.push('/profile/transactions')}
+        onTracking={() => router.push('/profile/tracking')}
+        onWallet={() => router.push('/profile/wallet')}
+      />
       <SellerAnalyticsCard />
-      <RecycleDonateCard />
+      <RecycleDonateCard onTracking={() => router.push('/profile/tracking')} />
     </View>
   );
 }
