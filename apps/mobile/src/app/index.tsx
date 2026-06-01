@@ -34,6 +34,25 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
+      <View className="flex-1" />
+      {__DEV__ && (
+        <TouchableOpacity
+          onPress={handleResetOnboarding}
+          style={{
+            position: 'absolute',
+            top: 60,
+            right: 16,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 8,
+            zIndex: 999,
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 12 }}>Reset Onboarding</Text>
+        </TouchableOpacity>
+      )}
+      <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
     </View>
   );
 }

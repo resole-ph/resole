@@ -20,6 +20,12 @@ const TABS: TabConfig[] = [
   { id: 'profile', label: 'Profile', route: '/profile',  icon: 'person-outline',      activeIcon: 'person' },
 ];
 
+interface BottomNavProps {
+  activeTab?: TabId;
+  onTabPress?: (tabId: TabId) => void;
+  onFabPress?: () => void;
+}
+
 function pathnameToTab(pathname: string): TabId {
   if (pathname.startsWith('/market'))  return 'market';
   if (pathname.startsWith('/rewards')) return 'rewards';
@@ -58,11 +64,22 @@ function NavTab({
   );
 }
 
-export default function BottomNav() {
+export default function BottomNav({ activeTab: customActiveTab, onTabPress, onFabPress }: BottomNavProps) {
   const router   = useRouter();
   const pathname = usePathname();
   const insets   = useSafeAreaInsets();
-  const activeTab = pathnameToTab(pathname);
+  
+  // Use explicit prop if provided, otherwise default to tracking the URL path
+  const activeTab = customActiveTab || pathnameToTab(pathname);
+
+  // Execute custom press hook or fall back to standard router navigation
+  const handleTabPress = (tab: TabConfig) => {
+    if (onTabPress) {
+      onTabPress(tab.id);
+    } else {
+      router.replace(tab.route as any);
+    }
+  };
 
   return (
     <View
@@ -79,17 +96,18 @@ export default function BottomNav() {
       <NavTab
         tab={TABS[0]}
         isActive={activeTab === 'home'}
-        onPress={() => router.replace('/')}
+        onPress={() => handleTabPress(TABS[0])}
       />
       <NavTab
         tab={TABS[1]}
         isActive={activeTab === 'market'}
-        onPress={() => router.replace('/market')}
+        onPress={() => handleTabPress(TABS[1])}
       />
 
       {/* Centre FAB */}
       <View className="flex-1 items-center justify-center" style={{ marginTop: -26 }}>
         <TouchableOpacity
+          onPress={onFabPress}
           className="w-14 h-14 rounded-full bg-blue-600 items-center justify-center"
           activeOpacity={0.85}
           style={{
@@ -107,12 +125,12 @@ export default function BottomNav() {
       <NavTab
         tab={TABS[2]}
         isActive={activeTab === 'rewards'}
-        onPress={() => router.replace('/rewards')}
+        onPress={() => handleTabPress(TABS[2])}
       />
       <NavTab
         tab={TABS[3]}
         isActive={activeTab === 'profile'}
-        onPress={() => router.replace('/profile')}
+        onPress={() => handleTabPress(TABS[3])}
       />
     </View>
   );
