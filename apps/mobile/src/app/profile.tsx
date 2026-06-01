@@ -19,7 +19,7 @@ export default function ProfileScreen() {
         <UserInfoCard />
         <ProfileMenuList />
       </ScrollView>
-      <BottomNav />
+      <BottomNav activeTab="profile" onFabPress={() => router.push('/sell' as any)} />
     </View>
   );
 }

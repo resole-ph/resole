@@ -1,8 +1,10 @@
 import { View, Text } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomNav from '@/components/organisms/BottomNav';
 
 export default function RewardsScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   return (
     <View className="flex-1 bg-gray-50">
@@ -12,7 +14,7 @@ export default function RewardsScreen() {
       <View className="flex-1 items-center justify-center">
         <Text className="text-gray-400">Coming soon</Text>
       </View>
-      <BottomNav />
+      <BottomNav activeTab="rewards" onFabPress={() => router.push('/sell' as any)} />
     </View>
   );
 }
