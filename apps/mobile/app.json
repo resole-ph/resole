@@ -27,6 +27,7 @@
       "expo-font",
       ["expo-image-picker", { "cameraPermission": "Allow Resole to take photos of your shoes." }],
       "./plugins/withCropUIColors"
+
     ],
     "experiments": {
       "typedRoutes": true

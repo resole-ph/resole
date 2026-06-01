@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import BottomNav from '@/components/organisms/BottomNav';
+import Header from '@/components/organisms/Header';
+import SearchBar from '@/components/organisms/SearchBar';
+import HeroBanner from '@/components/organisms/HeroBanner';
+import StatsRow from '@/components/organisms/StatsRow';
 import { useOnboardingStore } from '@/store/onboarding';
 
 export default function HomeScreen() {
