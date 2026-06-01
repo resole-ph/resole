@@ -48,7 +48,7 @@ export default function HomeScreen() {
           <Text style={{ color: '#fff', fontSize: 12 }}>Reset Onboarding</Text>
         </TouchableOpacity>
       )}
-      <BottomNav activeTab="home" />
+      <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
     </View>
   );
 }

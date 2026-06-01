@@ -21,6 +21,7 @@ const TABS: TabConfig[] = [
 interface BottomNavProps {
   activeTab?: TabId;
   onTabPress?: (tabId: TabId) => void;
+  onFabPress?: () => void;
 }
 
 function NavTab({
@@ -54,7 +55,7 @@ function NavTab({
   );
 }
 
-export default function BottomNav({ activeTab = 'home', onTabPress }: BottomNavProps) {
+export default function BottomNav({ activeTab = 'home', onTabPress, onFabPress }: BottomNavProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -75,6 +76,7 @@ export default function BottomNav({ activeTab = 'home', onTabPress }: BottomNavP
       {/* Centre FAB — floats above the bar */}
       <View className="flex-1 items-center justify-center" style={{ marginTop: -26 }}>
         <TouchableOpacity
+          onPress={onFabPress}
           className="w-14 h-14 rounded-full bg-blue-600 items-center justify-center"
           activeOpacity={0.85}
           style={{
