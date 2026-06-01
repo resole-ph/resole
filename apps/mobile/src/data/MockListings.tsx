@@ -14,11 +14,16 @@ export const MOCK_LISTINGS: Listing[] = [
     badgeType: 'Swap',
     size: 'US 10',
     description: 'Worn only twice, still in excellent condition. No creases, soles are clean. Comes with original box and extra laces. Selling because I bought the wrong size.',
-    seller: { name: 'juandelacruz', rating: 4.8, totalSales: 128, verified: true, avatarColor: '#2563EB' },
+    seller: { 
+        name: 'JanGPT', 
+        rating: 4.8, 
+        totalSales: 128, 
+        verified: true, 
+        avatarColor: '#2563EB' },
   },
   {
     id: '2',
-    name: 'Koma Speed M4',
+    name: 'Adidas M4',
     brand: 'Adidas',
     price: 3200,
     condition: 'Good',
@@ -27,7 +32,12 @@ export const MOCK_LISTINGS: Listing[] = [
     badgeType: 'Swap',
     size: 'US 9',
     description: 'Used regularly for running. Some minor scuffs on the sole but upper is clean. Great shoe, just upgrading.',
-    seller: { name: 'kicks.mnl', rating: 4.5, totalSales: 245, verified: true, avatarColor: '#10B981' },
+    seller: { 
+        name: 'EjayzSneakerz', 
+        rating: 4.5, 
+        totalSales: 245, 
+        verified: true, 
+        avatarColor: '#10B981' },
   },
   {
     id: '3',
@@ -41,7 +51,12 @@ export const MOCK_LISTINGS: Listing[] = [
     badgeType: 'Sale',
     size: 'US 11',
     description: 'Brand new, never worn. Still in original packaging with tags. Got as a gift but not my style.',
-    seller: { name: 'sneakerph', rating: 4.9, totalSales: 89, verified: false, avatarColor: '#F59E0B' },
+    seller: { 
+        name: 'RichmondSoles', 
+        rating: 4.9, 
+        totalSales: 89, 
+        verified: false, 
+        avatarColor: '#F59E0B' },
   },
   {
     id: '4',
@@ -54,6 +69,11 @@ export const MOCK_LISTINGS: Listing[] = [
     badgeType: 'Hot',
     size: 'US 8',
     description: 'Visible wear on sole and toe box. Still functional, good for casual use. Price reflects condition.',
-    seller: { name: 'reseller.ph', rating: 4.2, totalSales: 312, verified: true, avatarColor: '#EF4444' },
+    seller: { 
+        name: 'Nates', 
+        rating: 4.2, 
+        totalSales: 312, 
+        verified: true, 
+        avatarColor: '#EF4444' },
   },
 ];
