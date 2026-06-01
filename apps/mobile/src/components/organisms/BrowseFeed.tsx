@@ -1,54 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import ListingCard, { Listing } from '@/components/molecules/ListingCard';
-
-// Mock data 
-//can include original price field
-const MOCK_LISTINGS: Listing[] = [
-  {
-    id: '1',
-    name: 'Air Globe Runner',
-    brand: 'Nike',
-    price: 4800,
-    condition: 'Like New',
-    imageUrl: 'https://tse4.mm.bing.net/th/id/OIP.-dBgPxjSbhIMZPx2aJjIlgHaEK?r=0&rs=1&pid=ImgDetMain&o=7&rm=3',
-    aiScore: 94,
-    badgeType: 'Swap',
-    seller: { name: 'juandelacruz', rating: 4.8 },
-  },
-  {
-    id: '2',
-    name: 'Adidas M4',
-    brand: 'Adidas',
-    price: 3200,
-    condition: 'Good',
-    imageUrl: 'https://i.ytimg.com/vi/gixjbuochvE/maxresdefault.jpg',
-    aiScore: 87,
-    badgeType: 'Swap',
-    seller: { name: 'Richmondz', rating: 4.5 },
-  },
-  {
-    id: '3',
-    name: 'Hoops Classic Hi',
-    brand: 'Nike',
-    price: 2900,
-    condition: 'New',
-    imageUrl: 'https://i.ytimg.com/vi/gixjbuochvE/maxresdefault.jpg',
-    aiScore: 91,
-    badgeType: 'Sale',
-    seller: { name: 'EjaySneakrz', rating: 4.9 },
-  },
-  {
-    id: '4',
-    name: 'Pisco Run Lite',
-    brand: 'Puma',
-    price: 1800,
-    condition: 'Fair',
-    imageUrl: 'https://i.ytimg.com/vi/gixjbuochvE/maxresdefault.jpg',
-    aiScore: 78,
-    badgeType: 'Sale',
-    seller: { name: 'JanGPT', rating: 4.2 },
-  },
-];
+import { MOCK_LISTINGS } from '@/data/MockListings';
 
 interface BrowseFeedProps {
   onListingPress?: (listing: Listing) => void;
@@ -84,7 +36,6 @@ export default function BrowseFeed({
           <ListingCard
             key={listing.id}
             listing={listing}
-            onPress={onListingPress}
             onSave={onSaveListing}
           />
         ))}

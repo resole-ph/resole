@@ -1,5 +1,6 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router'; 
 
 export interface Listing {
   id: string;
@@ -7,25 +8,29 @@ export interface Listing {
   brand: string;
   price: number;
   originalPrice?: number;
-  condition: 'New' | 'Like New' | 'Good' | 'Fair'; //tentative
+  condition: 'New' | 'Like New' | 'Good' | 'Fair'; 
   imageUrl: string;
   aiScore: number;
-  badgeType?: 'Swap' | 'Sale' ;
+  badgeType?: 'Swap' | 'Sale' | 'Hot'; 
+  description?: string;            
+  size?: string;                      
   seller: {
     name: string;
     rating: number;
     avatarUrl?: string;
+    totalSales?: number;               
+    verified?: boolean;                
+    avatarColor?: string;              
   };
 }
 
 interface ListingCardProps {
   listing: Listing;
-  onPress?: (listing: Listing) => void;
   onSave?: (listing: Listing) => void;
 }
 
 const BADGE_STYLES: Record<
-  NonNullable<Listing['badgeType']>,
+  NonNullable<Exclude<Listing['badgeType'], 'Hot'>>, 
   { bg: string; text: string; icon: keyof typeof Ionicons.glyphMap }
 > = {
   Swap: { bg: '#2563EB', text: '#fff', icon: 'swap-horizontal' },
@@ -39,9 +44,17 @@ const CONDITION_COLORS: Record<Listing['condition'], string> = {
   'Fair':     '#9CA3AF',
 };
 
-export default function ListingCard({ listing, onPress, onSave }: ListingCardProps) {
-  const badge = listing.badgeType ? BADGE_STYLES[listing.badgeType] : null;
+export default function ListingCard({ listing, onSave }: ListingCardProps) {
+  // Only handle Swap and Sale on the browse card, fallback gracefully if Hot is passed
+  const badge = listing.badgeType && listing.badgeType !== 'Hot' ? BADGE_STYLES[listing.badgeType] : null;
   const conditionColor = CONDITION_COLORS[listing.condition];
+
+  const handlePress = () => {
+    router.push({
+      pathname: '/listing/[id]',
+      params: { id: listing.id },
+    });
+  };
 
   return (
     <TouchableOpacity
@@ -55,7 +68,7 @@ export default function ListingCard({ listing, onPress, onSave }: ListingCardPro
         elevation: 4,
       }}
       activeOpacity={0.92}
-      onPress={() => onPress?.(listing)}
+      onPress={handlePress}
     >
       {/* Image area */}
       <View className="relative">
@@ -66,7 +79,7 @@ export default function ListingCard({ listing, onPress, onSave }: ListingCardPro
           resizeMode="cover"
         />
 
-        {/* AI Score badge — top left */}
+        {/* AI Score badge */}
         <View
           className="absolute top-2 left-2 flex-row items-center rounded-full px-2 py-1"
           style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
@@ -77,7 +90,7 @@ export default function ListingCard({ listing, onPress, onSave }: ListingCardPro
           </Text>
         </View>
 
-        {/* Type badge — top right */}
+        {/* Type badge */}
         {badge && (
           <View
             className="absolute top-2 right-2 flex-row items-center rounded-full px-2 py-1"
