@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -7,20 +8,23 @@ type TabId = 'home' | 'market' | 'rewards' | 'profile';
 interface TabConfig {
   id: TabId;
   label: string;
+  route: string;
   icon: keyof typeof Ionicons.glyphMap;
   activeIcon: keyof typeof Ionicons.glyphMap;
 }
 
 const TABS: TabConfig[] = [
-  { id: 'home',    label: 'Home',    icon: 'home-outline',        activeIcon: 'home' },
-  { id: 'market',  label: 'Market',  icon: 'stats-chart-outline', activeIcon: 'stats-chart' },
-  { id: 'rewards', label: 'Rewards', icon: 'gift-outline',        activeIcon: 'gift' },
-  { id: 'profile', label: 'Profile', icon: 'person-outline',      activeIcon: 'person' },
+  { id: 'home',    label: 'Home',    route: '/',         icon: 'home-outline',        activeIcon: 'home' },
+  { id: 'market',  label: 'Market',  route: '/market',   icon: 'stats-chart-outline', activeIcon: 'stats-chart' },
+  { id: 'rewards', label: 'Rewards', route: '/rewards',  icon: 'gift-outline',        activeIcon: 'gift' },
+  { id: 'profile', label: 'Profile', route: '/profile',  icon: 'person-outline',      activeIcon: 'person' },
 ];
 
-interface BottomNavProps {
-  activeTab?: TabId;
-  onTabPress?: (tabId: TabId) => void;
+function pathnameToTab(pathname: string): TabId {
+  if (pathname.startsWith('/market'))  return 'market';
+  if (pathname.startsWith('/rewards')) return 'rewards';
+  if (pathname.startsWith('/profile')) return 'profile';
+  return 'home';
 }
 
 function NavTab({
@@ -30,12 +34,12 @@ function NavTab({
 }: {
   tab: TabConfig;
   isActive: boolean;
-  onPress?: (id: TabId) => void;
+  onPress: () => void;
 }) {
   return (
     <TouchableOpacity
       className="flex-1 items-center justify-center py-3"
-      onPress={() => onPress?.(tab.id)}
+      onPress={onPress}
       activeOpacity={0.7}
     >
       <Ionicons
@@ -54,8 +58,11 @@ function NavTab({
   );
 }
 
-export default function BottomNav({ activeTab = 'home', onTabPress }: BottomNavProps) {
-  const insets = useSafeAreaInsets();
+export default function BottomNav() {
+  const router   = useRouter();
+  const pathname = usePathname();
+  const insets   = useSafeAreaInsets();
+  const activeTab = pathnameToTab(pathname);
 
   return (
     <View
@@ -69,10 +76,18 @@ export default function BottomNav({ activeTab = 'home', onTabPress }: BottomNavP
         elevation: 10,
       }}
     >
-      <NavTab tab={TABS[0]} isActive={activeTab === 'home'}    onPress={onTabPress} />
-      <NavTab tab={TABS[1]} isActive={activeTab === 'market'}  onPress={onTabPress} />
+      <NavTab
+        tab={TABS[0]}
+        isActive={activeTab === 'home'}
+        onPress={() => router.replace('/')}
+      />
+      <NavTab
+        tab={TABS[1]}
+        isActive={activeTab === 'market'}
+        onPress={() => router.replace('/market')}
+      />
 
-      {/* Centre FAB — floats above the bar */}
+      {/* Centre FAB */}
       <View className="flex-1 items-center justify-center" style={{ marginTop: -26 }}>
         <TouchableOpacity
           className="w-14 h-14 rounded-full bg-blue-600 items-center justify-center"
@@ -89,8 +104,16 @@ export default function BottomNav({ activeTab = 'home', onTabPress }: BottomNavP
         </TouchableOpacity>
       </View>
 
-      <NavTab tab={TABS[2]} isActive={activeTab === 'rewards'} onPress={onTabPress} />
-      <NavTab tab={TABS[3]} isActive={activeTab === 'profile'} onPress={onTabPress} />
+      <NavTab
+        tab={TABS[2]}
+        isActive={activeTab === 'rewards'}
+        onPress={() => router.replace('/rewards')}
+      />
+      <NavTab
+        tab={TABS[3]}
+        isActive={activeTab === 'profile'}
+        onPress={() => router.replace('/profile')}
+      />
     </View>
   );
 }
