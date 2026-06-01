@@ -1,0 +1,262 @@
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import SellStepHeader from '../components/SellStepHeader';
+import PhotoGrid from '../components/PhotoGrid';
+import { useSellFlow } from '../hooks/useSellFlow';
+import type { PhotoAngle } from '../types/sell.types';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+const ANGLE_LABELS: Record<PhotoAngle, string> = {
+  top: 'Top View',
+  side: 'Side View',
+  soles: 'Soles',
+  insoles: 'Insoles',
+};
+
+export default function PhotoUploadContainer() {
+  const router = useRouter();
+  const { photos, setPhoto, allPhotosUploaded, setStep } = useSellFlow();
+  const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle } | null>(null);
+
+  function handlePhotoPress(angle: PhotoAngle) {
+    setPendingAngle(angle);
+  }
+
+  async function handleCameraPress() {
+    const angle = pendingAngle;
+    if (!angle) return;
+    setPendingAngle(null);
+
+    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    if (!granted) return;
+
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
+
+    if (!result.canceled && result.assets[0]) {
+      setPreviewPhoto({ uri: result.assets[0].uri, angle });
+    }
+  }
+
+  async function handleLibraryPress() {
+    const angle = pendingAngle;
+    if (!angle) return;
+    setPendingAngle(null);
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setPreviewPhoto({ uri: result.assets[0].uri, angle });
+    }
+  }
+
+  function handleConfirmPhoto() {
+    if (!previewPhoto) return;
+    setPhoto(previewPhoto.angle, { angle: previewPhoto.angle, uri: previewPhoto.uri, uploaded: false });
+    setPreviewPhoto(null);
+  }
+
+  function handleRetakePhoto() {
+    setPreviewPhoto(null);
+  }
+
+  const uploadedCount = Object.values(photos).filter(Boolean).length;
+  const previewSize = SCREEN_WIDTH - 48;
+
+  return (
+    <View className="flex-1 bg-surface">
+      <SellStepHeader
+        title="Upload Photos"
+        stepLabel="Step 1 of 4"
+        onClose={() => router.back()}
+      />
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="mb-5">
+          <Text className="font-title-md text-title-md text-on-surface mb-1">
+            4 angles required
+          </Text>
+          <Text className="font-body-md text-body-md text-on-surface-variant">
+            Clear, well-lit photos get better AI valuations.
+          </Text>
+        </View>
+
+        <PhotoGrid photos={photos} onPhotoPress={handlePhotoPress} />
+
+        <View className="flex-row items-center gap-2 mt-4">
+          {[0, 1, 2, 3].map((i) => (
+            <View
+              key={i}
+              className="flex-1 h-1 rounded-full"
+              style={{ backgroundColor: i < uploadedCount ? '#0054d3' : '#c2c6d8' }}
+            />
+          ))}
+        </View>
+        <Text className="font-label-md text-label-md text-on-surface-variant mt-1 text-center">
+          {uploadedCount} of 4 uploaded
+        </Text>
+      </ScrollView>
+
+      <View className="px-4 pb-8 pt-2">
+        <TouchableOpacity
+          onPress={() => setStep('aiResults')}
+          disabled={!allPhotosUploaded}
+          className="rounded-full py-4 items-center"
+          style={{
+            backgroundColor: allPhotosUploaded ? '#0054d3' : '#c2c6d8',
+            shadowColor: allPhotosUploaded ? '#0054d3' : 'transparent',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.3,
+            shadowRadius: 16,
+            elevation: allPhotosUploaded ? 6 : 0,
+          }}
+        >
+          <Text
+            className="font-body-md text-body-md"
+            style={{ color: allPhotosUploaded ? '#ffffff' : '#727687' }}
+          >
+            Analyze with AI
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Photo source picker */}
+      <Modal
+        visible={pendingAngle !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPendingAngle(null)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
+          onPress={() => setPendingAngle(null)}
+        />
+        <View
+          style={{
+            backgroundColor: '#ffffff',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingBottom: 36,
+            paddingTop: 8,
+          }}
+        >
+          <View
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: '#c2c6d8',
+              alignSelf: 'center',
+              marginBottom: 16,
+            }}
+          />
+
+          <TouchableOpacity
+            onPress={handleCameraPress}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, gap: 12 }}
+          >
+            <Text style={{ fontSize: 22 }}>📷</Text>
+            <Text style={{ fontSize: 16, color: '#1a1c23', fontWeight: '500' }}>Take Photo</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleLibraryPress}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, gap: 12 }}
+          >
+            <Text style={{ fontSize: 22 }}>🖼️</Text>
+            <Text style={{ fontSize: 16, color: '#1a1c23', fontWeight: '500' }}>Choose from Library</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 1, backgroundColor: '#e8eaf0', marginHorizontal: 24, marginVertical: 4 }} />
+
+          <TouchableOpacity
+            onPress={() => setPendingAngle(null)}
+            style={{ paddingVertical: 16, paddingHorizontal: 24, alignItems: 'center' }}
+          >
+            <Text style={{ fontSize: 16, color: '#727687' }}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Photo preview / confirm */}
+      <Modal
+        visible={previewPhoto !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={handleRetakePhoto}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          {previewPhoto && (
+            <>
+              <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '600', marginBottom: 4 }}>
+                {ANGLE_LABELS[previewPhoto.angle]}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 20 }}>
+                Does this look good?
+              </Text>
+
+              <View
+                style={{
+                  width: previewSize,
+                  height: previewSize,
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  marginBottom: 32,
+                }}
+              >
+                <Image
+                  source={{ uri: previewPhoto.uri }}
+                  style={{ width: previewSize, height: previewSize }}
+                  resizeMode="cover"
+                />
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                <TouchableOpacity
+                  onPress={handleRetakePhoto}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 16,
+                    borderRadius: 50,
+                    backgroundColor: 'rgba(255,255,255,0.12)',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '500' }}>Retake</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleConfirmPhoto}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 16,
+                    borderRadius: 50,
+                    backgroundColor: '#0054d3',
+                    alignItems: 'center',
+                    shadowColor: '#0054d3',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 16,
+                    elevation: 6,
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>Use Photo</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+      </Modal>
+    </View>
+  );
+}
