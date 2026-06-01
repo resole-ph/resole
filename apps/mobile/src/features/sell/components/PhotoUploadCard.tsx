@@ -32,13 +32,10 @@ export default function PhotoUploadCard({ angle, photo, onPress }: PhotoUploadCa
       style={{ width: CARD_SIZE, height: CARD_SIZE }}
     >
       {photo ? (
-        <View
-          className="rounded-2xl overflow-hidden"
-          style={{ width: CARD_SIZE, height: CARD_SIZE }}
-        >
+        <View style={{ width: CARD_SIZE, height: CARD_SIZE }}>
           <Image
             source={{ uri: photo.uri }}
-            style={{ width: CARD_SIZE, height: CARD_SIZE }}
+            style={{ width: CARD_SIZE, height: CARD_SIZE, borderRadius: 16 }}
             resizeMode="cover"
           />
           {/* Edit badge */}
