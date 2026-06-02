@@ -36,7 +36,7 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <Header />
+      <Header onInboxPress={() => router.push('/inbox' as any)} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SearchBar />
         <HeroBanner />
