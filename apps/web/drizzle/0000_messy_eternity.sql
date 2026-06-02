@@ -82,8 +82,9 @@ CREATE TABLE "shoe" (
 	"co2_footprint" numeric NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"embedding" vector(1536) NOT NULL,
 	CONSTRAINT "shoe_model_brand_unique" UNIQUE("model","brand"),
-	CONSTRAINT "co2_footprint_check" CHECK ("shoe"."co2_footprint" >= 0)
+	CONSTRAINT "co2_footprint_check" CHECK (("shoe"."co2_footprint" >= 0))
 );
 --> statement-breakpoint
 CREATE TABLE "shoe_listing" (
@@ -240,4 +241,5 @@ ALTER TABLE "rating" ADD CONSTRAINT "rating_ratee_id_user_id_fk" FOREIGN KEY ("r
 ALTER TABLE "referal" ADD CONSTRAINT "referal_refered_by_id_user_id_fk" FOREIGN KEY ("refered_by_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "referal" ADD CONSTRAINT "referal_refered_to_id_user_id_fk" FOREIGN KEY ("refered_to_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "save" ADD CONSTRAINT "save_listing_id_shoe_listing_id_fk" FOREIGN KEY ("listing_id") REFERENCES "public"."shoe_listing"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "save" ADD CONSTRAINT "save_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "save" ADD CONSTRAINT "save_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "embeddingIndex" ON "shoe" USING hnsw ("embedding" vector_cosine_ops);
