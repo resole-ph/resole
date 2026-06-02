@@ -140,11 +140,9 @@ function QuickLink({
 function QuickLinksCard({
   onTransactions,
   onTracking,
-  onWallet,
 }: {
   onTransactions: () => void;
   onTracking: () => void;
-  onWallet: () => void;
 }) {
   return (
     <View className="bg-white rounded-2xl mx-5 mb-3 px-4" style={CARD_SHADOW}>
@@ -160,12 +158,6 @@ function QuickLinksCard({
         sub="2 shipments in progress"
         badge="2"
         onPress={onTracking}
-      />
-      <QuickLink
-        icon="leaf-outline"
-        label="Recycle Coins"
-        sub="1,240 coins available"
-        onPress={onWallet}
       />
     </View>
   );
@@ -252,7 +244,6 @@ export default function ProfileMenuList() {
       <QuickLinksCard
         onTransactions={() => router.push('/profile/transactions')}
         onTracking={() => router.push('/profile/tracking')}
-        onWallet={() => router.push('/profile/wallet')}
       />
       <SellerAnalyticsCard />
       <RecycleDonateCard onTracking={() => router.push('/profile/tracking')} />
