@@ -1,6 +1,5 @@
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, TouchableOpacity, Text } from 'react-native';
 import { useEffect, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import BottomNav from '@/components/organisms/BottomNav';
 import Header from '@/components/organisms/Header';
