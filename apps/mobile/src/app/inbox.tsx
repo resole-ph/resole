@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 
 const CARD_SHADOW = {
@@ -137,12 +138,13 @@ function Avatar({ color, initial, icon, isSystem }: {
   );
 }
 
-function MessageRow({ msg }: { msg: Message }) {
+function MessageRow({ msg, onPress }: { msg: Message; onPress: () => void }) {
   const isUnread = msg.unread > 0;
   return (
     <TouchableOpacity
       className="flex-row items-center px-5 py-3.5 border-b border-gray-50"
       activeOpacity={0.7}
+      onPress={onPress}
     >
       <Avatar
         color={msg.avatarColor}
@@ -180,6 +182,7 @@ function MessageRow({ msg }: { msg: Message }) {
 }
 
 export default function InboxScreen() {
+  const router = useRouter();
   const [tab, setTab] = useState<MsgTab>('all');
 
   const TAB_LABELS: { id: MsgTab; label: string }[] = [
@@ -228,7 +231,13 @@ export default function InboxScreen() {
             <Text className="text-gray-400 text-sm mt-3">No messages here</Text>
           </View>
         ) : (
-          filtered.map((msg) => <MessageRow key={msg.id} msg={msg} />)
+          filtered.map((msg) => (
+            <MessageRow
+              key={msg.id}
+              msg={msg}
+              onPress={() => router.push(`/inbox/${msg.id}` as any)}
+            />
+          ))
         )}
       </ScrollView>
     </View>
