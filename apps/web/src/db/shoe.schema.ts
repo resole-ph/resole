@@ -8,7 +8,9 @@ import {
   numeric,
   serial,
   check,
-  unique
+  unique,
+  vector,
+  index
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
@@ -28,10 +30,12 @@ export const shoe = pgTable('shoe', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull()
+    .notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }).notNull()
 }, (table) => [
-  check('co2_footprint_check', sql`${table.co2Footprint} >= 0`),
-  unique('shoe_model_brand_unique').on(table.model, table.brand)
+  check('co2_footprint_check', sql`(${table.co2Footprint} >= 0)`),
+  unique('shoe_model_brand_unique').on(table.model, table.brand),
+  index('embeddingIndex').using('hnsw', table.embedding.op('vector_cosine_ops'))
 ]);
 
 export const shoePrice = pgTable('shoe_price', {
@@ -65,6 +69,10 @@ export const shoeListing = pgTable('shoe_listing', {
   defects: text('defects').array(),
   isRefurbished: boolean('is_refurbished').default(false).notNull(),
   listingMode: listingEnum('listing_mode').default('both').notNull(),
+  imageUrlTop: text('image_url_top').notNull(),
+  imageUrlSide: text('image_url_side').notNull(),
+  imageUrlSole: text('image_url_sole').notNull(),
+  imageUrlInsole: text('image_url_insole').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()

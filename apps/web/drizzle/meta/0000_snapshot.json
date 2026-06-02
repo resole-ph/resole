@@ -1,5 +1,5 @@
 {
-  "id": "345725b3-8750-4cdc-8df9-ab206213a142",
+  "id": "39b699a5-bdd9-439d-a0ce-a08505a2c5bd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -511,9 +511,32 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "embedding": {
+          "name": "embedding",
+          "type": "vector(1536)",
+          "primaryKey": false,
+          "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "embeddingIndex": {
+          "name": "embeddingIndex",
+          "columns": [
+            {
+              "expression": "embedding",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "vector_cosine_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "hnsw",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
@@ -530,7 +553,7 @@
       "checkConstraints": {
         "co2_footprint_check": {
           "name": "co2_footprint_check",
-          "value": "\"shoe\".\"co2_footprint\" >= 0"
+          "value": "(\"shoe\".\"co2_footprint\" >= 0)"
         }
       },
       "isRLSEnabled": false
