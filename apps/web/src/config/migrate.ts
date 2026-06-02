@@ -1,5 +1,8 @@
-import { sql, db } from './db'
+import { sql, db } from './db';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
+const runMigration = async () => {
+  const start = Date.now();
   try {
     // Point this to wherever your generated .sql files live
     await migrate(db, { migrationsFolder: './drizzle' });
