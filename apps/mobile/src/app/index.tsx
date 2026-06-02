@@ -36,6 +36,14 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
+      <Header />
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <SearchBar />
+        <HeroBanner />
+        <StatsRow />
+        <CategoriesRow />
+        <BrowseFeed />
+      </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
     </View>
   );
