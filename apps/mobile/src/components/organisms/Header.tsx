@@ -9,16 +9,28 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
+const ICON_BTN_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.07,
+  shadowRadius: 6,
+  elevation: 3,
+};
+
 interface HeaderProps {
   name?: string;
   hasNotifications?: boolean;
+  hasMessages?: boolean;
   onNotificationPress?: () => void;
+  onInboxPress?: () => void;
 }
 
 export default function Header({
   name = 'Miguel',
   hasNotifications = true,
+  hasMessages = true,
   onNotificationPress,
+  onInboxPress,
 }: HeaderProps) {
   const insets = useSafeAreaInsets();
 
@@ -37,18 +49,25 @@ export default function Header({
         </Text>
       </View>
 
+      {/* Inbox */}
+      <TouchableOpacity
+        className="w-11 h-11 rounded-full bg-white items-center justify-center mr-2"
+        activeOpacity={0.7}
+        onPress={onInboxPress}
+        style={ICON_BTN_SHADOW}
+      >
+        <Ionicons name="mail-outline" size={22} color="#111827" />
+        {hasMessages && (
+          <View className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 border border-white" />
+        )}
+      </TouchableOpacity>
+
       {/* Notification bell */}
       <TouchableOpacity
         className="w-11 h-11 rounded-full bg-white items-center justify-center"
         activeOpacity={0.7}
         onPress={onNotificationPress}
-        style={{
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.07,
-          shadowRadius: 6,
-          elevation: 3,
-        }}
+        style={ICON_BTN_SHADOW}
       >
         <Ionicons name="notifications-outline" size={22} color="#111827" />
         {hasNotifications && (
