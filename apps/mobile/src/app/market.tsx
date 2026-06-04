@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '@/components/organisms/BottomNav';
 
-const ORANGE = '#EE4D2D';
+const BLUE = '#2563EB';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -60,7 +60,7 @@ function ProductCard({ product }: { product: Product }) {
           <View style={{ position: 'absolute', top: 8, left: 8 }}>
             <View
               className="flex-row items-center rounded-full px-2 py-0.5"
-              style={{ backgroundColor: product.badge === 'Flash Deal' ? ORANGE : '#111827' }}
+              style={{ backgroundColor: product.badge === 'Flash Deal' ? BLUE : '#111827' }}
             >
               {product.badge === 'Flash Deal' && (
                 <Ionicons name="flash" size={9} color="#fff" style={{ marginRight: 2 }} />
@@ -101,7 +101,7 @@ function ProductCard({ product }: { product: Product }) {
             {product.name}
           </Text>
 
-          <Text style={{ color: ORANGE, fontWeight: '800', fontSize: 15.5, marginTop: 8 }}>
+          <Text style={{ color: BLUE, fontWeight: '800', fontSize: 15.5, marginTop: 8 }}>
             ₱{product.price.toLocaleString()}
           </Text>
           <Text style={{ color: '#D1D5DB', fontSize: 10, textDecorationLine: 'line-through', marginTop: 1 }}>
@@ -149,14 +149,9 @@ export default function MarketScreen() {
         {/* Title row */}
         <View className="flex-row items-center px-4 pt-3 pb-2.5">
           <View className="flex-row items-center flex-1">
-            <Text style={{ color: ORANGE, fontWeight: '800', fontSize: 19, letterSpacing: -0.5 }}>
+            <Text style={{ color: BLUE, fontWeight: '800', fontSize: 19, letterSpacing: -0.5 }}>
               Resole
             </Text>
-            <View
-              style={{ backgroundColor: ORANGE, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 6 }}
-            >
-              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 }}>MALL</Text>
-            </View>
           </View>
 
           {/* Notification icon */}
@@ -165,7 +160,7 @@ export default function MarketScreen() {
             <View
               style={{
                 position: 'absolute', top: -3, right: -4,
-                backgroundColor: ORANGE, borderRadius: 8,
+                backgroundColor: BLUE, borderRadius: 8,
                 width: 14, height: 14, alignItems: 'center', justifyContent: 'center',
               }}
             >
@@ -179,7 +174,7 @@ export default function MarketScreen() {
             <View
               style={{
                 position: 'absolute', top: -3, right: -5,
-                backgroundColor: ORANGE, borderRadius: 8,
+                backgroundColor: BLUE, borderRadius: 8,
                 width: 14, height: 14, alignItems: 'center', justifyContent: 'center',
               }}
             >
@@ -202,7 +197,7 @@ export default function MarketScreen() {
               editable={false}
             />
             <View style={{ width: 1, height: 14, backgroundColor: '#E5E7EB' }} />
-            <Text style={{ color: ORANGE, fontSize: 12, fontWeight: '700', marginLeft: 10 }}>Search</Text>
+            <Text style={{ color: BLUE, fontSize: 12, fontWeight: '700', marginLeft: 10 }}>Search</Text>
           </View>
         </View>
 
@@ -219,7 +214,7 @@ export default function MarketScreen() {
                 key={cat}
                 onPress={() => setActiveCategory(cat)}
                 style={{
-                  backgroundColor: isActive ? ORANGE : '#F3F4F6',
+                  backgroundColor: isActive ? BLUE : '#F3F4F6',
                   borderRadius: 99,
                   paddingHorizontal: 16,
                   paddingVertical: 6,
@@ -253,8 +248,8 @@ export default function MarketScreen() {
             style={{ backgroundColor: '#fff', ...CARD_SHADOW, marginRight: 8 }}
             activeOpacity={0.8}
           >
-            <Ionicons name="options-outline" size={13} color={ORANGE} />
-            <Text style={{ color: ORANGE, fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Filter</Text>
+            <Ionicons name="options-outline" size={13} color={BLUE} />
+            <Text style={{ color: BLUE, fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Filter</Text>
           </TouchableOpacity>
           <TouchableOpacity
             className="flex-row items-center rounded-xl px-3 py-1.5"
@@ -269,18 +264,18 @@ export default function MarketScreen() {
         {/* Flash Sale header with countdown */}
         <View className="flex-row items-center px-4 mb-3">
           <View className="flex-row items-center flex-1">
-            <Ionicons name="flash" size={15} color={ORANGE} />
-            <Text style={{ color: ORANGE, fontWeight: '800', fontSize: 14.5, marginLeft: 4 }}>Flash Sale</Text>
+            <Ionicons name="flash" size={15} color={BLUE} />
+            <Text style={{ color: BLUE, fontWeight: '800', fontSize: 14.5, marginLeft: 4 }}>Flash Sale</Text>
 
             {/* Countdown pills */}
             <View className="flex-row items-center ml-3">
               {[pad(countdown.h), pad(countdown.m), pad(countdown.s)].map((unit, i) => (
                 <View key={i} className="flex-row items-center">
-                  <View style={{ backgroundColor: ORANGE, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 }}>
+                  <View style={{ backgroundColor: BLUE, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 }}>
                     <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{unit}</Text>
                   </View>
                   {i < 2 && (
-                    <Text style={{ color: ORANGE, fontWeight: '800', fontSize: 11, marginHorizontal: 3 }}>:</Text>
+                    <Text style={{ color: BLUE, fontWeight: '800', fontSize: 11, marginHorizontal: 3 }}>:</Text>
                   )}
                 </View>
               ))}
@@ -316,9 +311,9 @@ export default function MarketScreen() {
             marginTop: 8,
             marginBottom: 8,
             borderRadius: 24,
-            backgroundColor: ORANGE,
+            backgroundColor: BLUE,
             overflow: 'hidden',
-            shadowColor: ORANGE,
+            shadowColor: '#2563EB',
             shadowOffset: { width: 0, height: 6 },
             shadowOpacity: 0.38,
             shadowRadius: 14,
