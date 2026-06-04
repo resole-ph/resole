@@ -16,6 +16,7 @@ export interface Listing {
   size?: string;
   sold?: string;
   freeShipping?: boolean;
+  swapFor?: string;
   seller: {
     name: string;
     rating: number;
@@ -147,41 +148,63 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
           {listing.name}
         </Text>
 
-        {/* Price */}
-        <View className="flex-row items-center mb-2">
-          <Text className="text-blue-600 font-bold text-base">
-            ₱{listing.price.toLocaleString()}
-          </Text>
-          {listing.originalPrice && (
-            <Text className="text-gray-400 text-xs line-through ml-2">
-              ₱{listing.originalPrice.toLocaleString()}
+        {listing.badgeType === 'Swap' ? (
+          /* ── Swap footer ── */
+          <View className="pt-2 border-t border-gray-100">
+            <Text className="text-gray-400 text-xs mb-1">Looking to swap for</Text>
+            <Text className="text-gray-800 font-semibold text-xs mb-3" numberOfLines={2}>
+              {listing.swapFor ?? 'Open to offers'}
             </Text>
-          )}
-        </View>
-
-        {/* Seller snippet */}
-        <View className="flex-row items-center pt-2 border-t border-gray-100">
-          <View className="w-5 h-5 rounded-full bg-blue-100 items-center justify-center mr-1.5">
-            <Text className="text-blue-600 text-xs font-bold">
-              {listing.seller.name[0].toUpperCase()}
-            </Text>
+            <TouchableOpacity
+              className="flex-row items-center justify-center rounded-xl py-2"
+              style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
+              activeOpacity={0.75}
+              onPress={(e) => { e.stopPropagation(); }}
+            >
+              <Ionicons name="swap-horizontal" size={13} color="#2563EB" />
+              <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
+                Propose Swap
+              </Text>
+            </TouchableOpacity>
           </View>
-          <Text className="text-gray-500 text-xs flex-1" numberOfLines={1}>
-            {listing.seller.name}
-          </Text>
-          <View className="flex-row items-center">
-            {listing.sold ? (
-              <Text className="text-gray-400 text-xs">Sold {listing.sold}</Text>
-            ) : (
-              <>
-                <Ionicons name="star" size={10} color="#F59E0B" />
-                <Text className="text-gray-500 text-xs ml-0.5">
-                  {listing.seller.rating.toFixed(1)}
+        ) : (
+          /* ── Sale/Flash footer ── */
+          <>
+            <View className="flex-row items-center mb-2">
+              <Text className="text-blue-600 font-bold text-base">
+                ₱{listing.price.toLocaleString()}
+              </Text>
+              {listing.originalPrice && (
+                <Text className="text-gray-400 text-xs line-through ml-2">
+                  ₱{listing.originalPrice.toLocaleString()}
                 </Text>
-              </>
-            )}
-          </View>
-        </View>
+              )}
+            </View>
+
+            <View className="flex-row items-center pt-2 border-t border-gray-100">
+              <View className="w-5 h-5 rounded-full bg-blue-100 items-center justify-center mr-1.5">
+                <Text className="text-blue-600 text-xs font-bold">
+                  {listing.seller.name[0].toUpperCase()}
+                </Text>
+              </View>
+              <Text className="text-gray-500 text-xs flex-1" numberOfLines={1}>
+                {listing.seller.name}
+              </Text>
+              <View className="flex-row items-center">
+                {listing.sold ? (
+                  <Text className="text-gray-400 text-xs">Sold {listing.sold}</Text>
+                ) : (
+                  <>
+                    <Ionicons name="star" size={10} color="#F59E0B" />
+                    <Text className="text-gray-500 text-xs ml-0.5">
+                      {listing.seller.rating.toFixed(1)}
+                    </Text>
+                  </>
+                )}
+              </View>
+            </View>
+          </>
+        )}
       </View>
     </TouchableOpacity>
   );

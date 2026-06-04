@@ -6,7 +6,7 @@ import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import HeroBanner from '@/components/organisms/HeroBanner';
 import BottomNav from '@/components/organisms/BottomNav';
-import { MARKET_LISTINGS } from '@/data/MockListings';
+import { MARKET_LISTINGS, SWAP_LISTINGS } from '@/data/MockListings';
 
 export default function MarketScreen() {
   const router = useRouter();
@@ -30,6 +30,11 @@ export default function MarketScreen() {
           showFlashSale
           showFilters
           totalCount={126}
+        />
+        <BrowseFeed
+          title="Swap Board"
+          subtitle="Trade kicks with the community"
+          listings={SWAP_LISTINGS}
         />
         <HeroBanner
           tag="LIMITED OFFER"
