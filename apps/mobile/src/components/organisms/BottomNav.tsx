@@ -3,7 +3,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-const ORANGE = '#EE4D2D';
+const BLUE = '#2563EB';
 
 type TabId = 'home' | 'market' | 'rewards' | 'profile';
 
@@ -17,8 +17,8 @@ interface TabConfig {
 
 const TABS: TabConfig[] = [
   { id: 'home',    label: 'Home',          route: '/',        icon: 'home-outline',          activeIcon: 'home' },
-  { id: 'market',  label: 'Mall',          route: '/market',  icon: 'storefront-outline',    activeIcon: 'storefront' },
-  { id: 'rewards', label: 'Notifications', route: '/rewards', icon: 'notifications-outline', activeIcon: 'notifications' },
+  { id: 'market',  label: 'Market',  route: '/market',  icon: 'storefront-outline', activeIcon: 'storefront' },
+  { id: 'rewards', label: 'Rewards', route: '/rewards', icon: 'gift-outline',        activeIcon: 'gift' },
   { id: 'profile', label: 'Profile',       route: '/profile', icon: 'person-outline',        activeIcon: 'person' },
 ];
 
@@ -53,11 +53,11 @@ function NavTab({
       <Ionicons
         name={isActive ? tab.activeIcon : tab.icon}
         size={22}
-        color={isActive ? ORANGE : '#9CA3AF'}
+        color={isActive ? BLUE : '#9CA3AF'}
       />
       <Text
         className="text-xs mt-1"
-        style={{ color: isActive ? ORANGE : '#9CA3AF', fontWeight: isActive ? '700' : '400' }}
+        style={{ color: isActive ? BLUE : '#9CA3AF', fontWeight: isActive ? '700' : '400' }}
         numberOfLines={1}
       >
         {tab.label}
@@ -105,9 +105,9 @@ export default function BottomNav({ activeTab: customActiveTab, onTabPress, onFa
             onPress={onFabPress}
             style={{
               width: 56, height: 56, borderRadius: 28,
-              backgroundColor: ORANGE,
+              backgroundColor: BLUE,
               alignItems: 'center', justifyContent: 'center',
-              shadowColor: ORANGE,
+              shadowColor: BLUE,
               shadowOffset: { width: 0, height: 5 },
               shadowOpacity: 0.5,
               shadowRadius: 10,
