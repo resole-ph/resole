@@ -3,6 +3,8 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+const BLUE = '#2563EB';
+
 type TabId = 'home' | 'market' | 'rewards' | 'profile';
 
 interface TabConfig {
@@ -14,10 +16,10 @@ interface TabConfig {
 }
 
 const TABS: TabConfig[] = [
-  { id: 'home',    label: 'Home',    route: '/',         icon: 'home-outline',        activeIcon: 'home' },
-  { id: 'market',  label: 'Market',  route: '/market',   icon: 'stats-chart-outline', activeIcon: 'stats-chart' },
-  { id: 'rewards', label: 'Rewards', route: '/rewards',  icon: 'gift-outline',        activeIcon: 'gift' },
-  { id: 'profile', label: 'Profile', route: '/profile',  icon: 'person-outline',      activeIcon: 'person' },
+  { id: 'home',    label: 'Home',          route: '/',        icon: 'home-outline',          activeIcon: 'home' },
+  { id: 'market',  label: 'Market',  route: '/market',  icon: 'storefront-outline', activeIcon: 'storefront' },
+  { id: 'rewards', label: 'Rewards', route: '/rewards', icon: 'gift-outline',        activeIcon: 'gift' },
+  { id: 'profile', label: 'Profile',       route: '/profile', icon: 'person-outline',        activeIcon: 'person' },
 ];
 
 interface BottomNavProps {
@@ -44,19 +46,19 @@ function NavTab({
 }) {
   return (
     <TouchableOpacity
-      className="flex-1 items-center justify-center py-3"
+      className="flex-1 items-center justify-center py-2.5"
       onPress={onPress}
       activeOpacity={0.7}
     >
       <Ionicons
         name={isActive ? tab.activeIcon : tab.icon}
-        size={24}
-        color={isActive ? '#2563EB' : '#9CA3AF'}
+        size={22}
+        color={isActive ? BLUE : '#9CA3AF'}
       />
       <Text
-        className={`text-xs mt-1 ${
-          isActive ? 'text-blue-600 font-semibold' : 'text-gray-400'
-        }`}
+        className="text-xs mt-1"
+        style={{ color: isActive ? BLUE : '#9CA3AF', fontWeight: isActive ? '700' : '400' }}
+        numberOfLines={1}
       >
         {tab.label}
       </Text>
@@ -68,11 +70,9 @@ export default function BottomNav({ activeTab: customActiveTab, onTabPress, onFa
   const router   = useRouter();
   const pathname = usePathname();
   const insets   = useSafeAreaInsets();
-  
-  // Use explicit prop if provided, otherwise default to tracking the URL path
+
   const activeTab = customActiveTab || pathnameToTab(pathname);
 
-  // Execute custom press hook or fall back to standard router navigation
   const handleTabPress = (tab: TabConfig) => {
     if (onTabPress) {
       onTabPress(tab.id);
@@ -83,55 +83,45 @@ export default function BottomNav({ activeTab: customActiveTab, onTabPress, onFa
 
   return (
     <View
-      className="flex-row bg-white border-t border-gray-100"
       style={{
         paddingBottom: Math.max(insets.bottom, 8),
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0, 0, 0, 0.04)',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.06,
-        shadowRadius: 8,
-        elevation: 10,
+        shadowRadius: 10,
+        elevation: 12,
       }}
     >
-      <NavTab
-        tab={TABS[0]}
-        isActive={activeTab === 'home'}
-        onPress={() => handleTabPress(TABS[0])}
-      />
-      <NavTab
-        tab={TABS[1]}
-        isActive={activeTab === 'market'}
-        onPress={() => handleTabPress(TABS[1])}
-      />
+      <View className="flex-row">
+        <NavTab tab={TABS[0]} isActive={activeTab === 'home'}    onPress={() => handleTabPress(TABS[0])} />
+        <NavTab tab={TABS[1]} isActive={activeTab === 'market'}  onPress={() => handleTabPress(TABS[1])} />
 
-      {/* Centre FAB */}
-      <View className="flex-1 items-center justify-center" style={{ marginTop: -26 }}>
-        <TouchableOpacity
-          onPress={onFabPress}
-          className="w-14 h-14 rounded-full bg-blue-600 items-center justify-center"
-          activeOpacity={0.85}
-          style={{
-            shadowColor: '#2563EB',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.45,
-            shadowRadius: 8,
-            elevation: 8,
-          }}
-        >
-          <Ionicons name="add" size={30} color="#fff" />
-        </TouchableOpacity>
+        {/* Centre FAB */}
+        <View className="flex-1 items-center justify-center" style={{ marginTop: -26 }}>
+          <TouchableOpacity
+            onPress={onFabPress}
+            style={{
+              width: 56, height: 56, borderRadius: 28,
+              backgroundColor: BLUE,
+              alignItems: 'center', justifyContent: 'center',
+              shadowColor: BLUE,
+              shadowOffset: { width: 0, height: 5 },
+              shadowOpacity: 0.5,
+              shadowRadius: 10,
+              elevation: 10,
+            }}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        <NavTab tab={TABS[2]} isActive={activeTab === 'rewards'} onPress={() => handleTabPress(TABS[2])} />
+        <NavTab tab={TABS[3]} isActive={activeTab === 'profile'} onPress={() => handleTabPress(TABS[3])} />
       </View>
-
-      <NavTab
-        tab={TABS[2]}
-        isActive={activeTab === 'rewards'}
-        onPress={() => handleTabPress(TABS[2])}
-      />
-      <NavTab
-        tab={TABS[3]}
-        isActive={activeTab === 'profile'}
-        onPress={() => handleTabPress(TABS[3])}
-      />
     </View>
   );
 }

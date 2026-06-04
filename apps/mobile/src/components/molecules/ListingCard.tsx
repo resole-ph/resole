@@ -11,9 +11,12 @@ export interface Listing {
   condition: 'New' | 'Like New' | 'Good' | 'Fair'; 
   imageUrl: string;
   aiScore: number;
-  badgeType?: 'Swap' | 'Sale' | 'Hot'; 
-  description?: string;            
-  size?: string;                      
+  badgeType?: 'Swap' | 'Sale' | 'Hot' | 'Flash Deal';
+  description?: string;
+  size?: string;
+  sold?: string;
+  freeShipping?: boolean;
+  swapFor?: string;
   seller: {
     name: string;
     rating: number;
@@ -30,11 +33,12 @@ interface ListingCardProps {
 }
 
 const BADGE_STYLES: Record<
-  NonNullable<Exclude<Listing['badgeType'], 'Hot'>>, 
+  NonNullable<Exclude<Listing['badgeType'], 'Hot'>>,
   { bg: string; text: string; icon: keyof typeof Ionicons.glyphMap }
 > = {
   Swap: { bg: '#2563EB', text: '#fff', icon: 'swap-horizontal' },
   Sale: { bg: '#10B981', text: '#fff', icon: 'pricetag' },
+  'Flash Deal': { bg: '#F59E0B', text: '#fff', icon: 'flash' },
 };
 
 const CONDITION_COLORS: Record<Listing['condition'], string> = {
@@ -58,9 +62,8 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-2xl overflow-hidden mr-3"
+      className="bg-white rounded-2xl overflow-hidden flex-1"
       style={{
-        width: 172,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
@@ -103,6 +106,16 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
           </View>
         )}
 
+        {/* Free shipping badge */}
+        {listing.freeShipping && (
+          <View
+            className="absolute bottom-2 left-2"
+            style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#D1FAE5' }}
+          >
+            <Text style={{ color: '#059669', fontSize: 9, fontWeight: '600' }}>Free Ship</Text>
+          </View>
+        )}
+
         {/* Save button */}
         <TouchableOpacity
           className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white items-center justify-center"
@@ -135,35 +148,63 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
           {listing.name}
         </Text>
 
-        {/* Price */}
-        <View className="flex-row items-center mb-2">
-          <Text className="text-blue-600 font-bold text-base">
-            ₱{listing.price.toLocaleString()}
-          </Text>
-          {listing.originalPrice && (
-            <Text className="text-gray-400 text-xs line-through ml-2">
-              ₱{listing.originalPrice.toLocaleString()}
+        {listing.badgeType === 'Swap' ? (
+          /* ── Swap footer ── */
+          <View className="pt-2 border-t border-gray-100">
+            <Text className="text-gray-400 text-xs mb-1">Looking to swap for</Text>
+            <Text className="text-gray-800 font-semibold text-xs mb-3" numberOfLines={2}>
+              {listing.swapFor ?? 'Open to offers'}
             </Text>
-          )}
-        </View>
+            <TouchableOpacity
+              className="flex-row items-center justify-center rounded-xl py-2"
+              style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
+              activeOpacity={0.75}
+              onPress={(e) => { e.stopPropagation(); }}
+            >
+              <Ionicons name="swap-horizontal" size={13} color="#2563EB" />
+              <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
+                Propose Swap
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          /* ── Sale/Flash footer ── */
+          <>
+            <View className="flex-row items-center mb-2">
+              <Text className="text-blue-600 font-bold text-base">
+                ₱{listing.price.toLocaleString()}
+              </Text>
+              {listing.originalPrice && (
+                <Text className="text-gray-400 text-xs line-through ml-2">
+                  ₱{listing.originalPrice.toLocaleString()}
+                </Text>
+              )}
+            </View>
 
-        {/* Seller snippet */}
-        <View className="flex-row items-center pt-2 border-t border-gray-100">
-          <View className="w-5 h-5 rounded-full bg-blue-100 items-center justify-center mr-1.5">
-            <Text className="text-blue-600 text-xs font-bold">
-              {listing.seller.name[0].toUpperCase()}
-            </Text>
-          </View>
-          <Text className="text-gray-500 text-xs flex-1" numberOfLines={1}>
-            {listing.seller.name}
-          </Text>
-          <View className="flex-row items-center">
-            <Ionicons name="star" size={10} color="#F59E0B" />
-            <Text className="text-gray-500 text-xs ml-0.5">
-              {listing.seller.rating.toFixed(1)}
-            </Text>
-          </View>
-        </View>
+            <View className="flex-row items-center pt-2 border-t border-gray-100">
+              <View className="w-5 h-5 rounded-full bg-blue-100 items-center justify-center mr-1.5">
+                <Text className="text-blue-600 text-xs font-bold">
+                  {listing.seller.name[0].toUpperCase()}
+                </Text>
+              </View>
+              <Text className="text-gray-500 text-xs flex-1" numberOfLines={1}>
+                {listing.seller.name}
+              </Text>
+              <View className="flex-row items-center">
+                {listing.sold ? (
+                  <Text className="text-gray-400 text-xs">Sold {listing.sold}</Text>
+                ) : (
+                  <>
+                    <Ionicons name="star" size={10} color="#F59E0B" />
+                    <Text className="text-gray-500 text-xs ml-0.5">
+                      {listing.seller.rating.toFixed(1)}
+                    </Text>
+                  </>
+                )}
+              </View>
+            </View>
+          </>
+        )}
       </View>
     </TouchableOpacity>
   );
