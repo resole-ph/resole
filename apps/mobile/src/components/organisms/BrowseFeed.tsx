@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import ListingCard, { Listing } from '@/components/molecules/ListingCard';
 import { MOCK_LISTINGS } from '@/data/MockListings';
 
@@ -16,7 +16,7 @@ export default function BrowseFeed({
   return (
     <View className="mb-6">
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 mb-1">
+      <View className="flex-row items-center justify-between px-5 mb-3">
         <View>
           <Text className="text-gray-900 font-bold text-base">Trending now</Text>
           <Text className="text-gray-400 text-xs mt-0.5">Hot listings expiring soon</Text>
@@ -26,20 +26,14 @@ export default function BrowseFeed({
         </TouchableOpacity>
       </View>
 
-      {/* Horizontal scroll of cards */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 }}
-      >
+      {/* 2-column vertical grid */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 }}>
         {MOCK_LISTINGS.map((listing) => (
-          <ListingCard
-            key={listing.id}
-            listing={listing}
-            onSave={onSaveListing}
-          />
+          <View key={listing.id} style={{ width: '50%', padding: 5 }}>
+            <ListingCard listing={listing} onSave={onSaveListing} />
+          </View>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }

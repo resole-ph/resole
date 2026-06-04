@@ -58,9 +58,8 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-2xl overflow-hidden mr-3"
+      className="bg-white rounded-2xl overflow-hidden flex-1"
       style={{
-        width: 172,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
