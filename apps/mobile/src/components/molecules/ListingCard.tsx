@@ -11,9 +11,11 @@ export interface Listing {
   condition: 'New' | 'Like New' | 'Good' | 'Fair'; 
   imageUrl: string;
   aiScore: number;
-  badgeType?: 'Swap' | 'Sale' | 'Hot'; 
-  description?: string;            
-  size?: string;                      
+  badgeType?: 'Swap' | 'Sale' | 'Hot' | 'Flash Deal';
+  description?: string;
+  size?: string;
+  sold?: string;
+  freeShipping?: boolean;
   seller: {
     name: string;
     rating: number;
@@ -30,11 +32,12 @@ interface ListingCardProps {
 }
 
 const BADGE_STYLES: Record<
-  NonNullable<Exclude<Listing['badgeType'], 'Hot'>>, 
+  NonNullable<Exclude<Listing['badgeType'], 'Hot'>>,
   { bg: string; text: string; icon: keyof typeof Ionicons.glyphMap }
 > = {
   Swap: { bg: '#2563EB', text: '#fff', icon: 'swap-horizontal' },
   Sale: { bg: '#10B981', text: '#fff', icon: 'pricetag' },
+  'Flash Deal': { bg: '#F59E0B', text: '#fff', icon: 'flash' },
 };
 
 const CONDITION_COLORS: Record<Listing['condition'], string> = {
@@ -102,6 +105,16 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
           </View>
         )}
 
+        {/* Free shipping badge */}
+        {listing.freeShipping && (
+          <View
+            className="absolute bottom-2 left-2"
+            style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#D1FAE5' }}
+          >
+            <Text style={{ color: '#059669', fontSize: 9, fontWeight: '600' }}>Free Ship</Text>
+          </View>
+        )}
+
         {/* Save button */}
         <TouchableOpacity
           className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white items-center justify-center"
@@ -157,10 +170,16 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
             {listing.seller.name}
           </Text>
           <View className="flex-row items-center">
-            <Ionicons name="star" size={10} color="#F59E0B" />
-            <Text className="text-gray-500 text-xs ml-0.5">
-              {listing.seller.rating.toFixed(1)}
-            </Text>
+            {listing.sold ? (
+              <Text className="text-gray-400 text-xs">Sold {listing.sold}</Text>
+            ) : (
+              <>
+                <Ionicons name="star" size={10} color="#F59E0B" />
+                <Text className="text-gray-500 text-xs ml-0.5">
+                  {listing.seller.rating.toFixed(1)}
+                </Text>
+              </>
+            )}
           </View>
         </View>
       </View>
