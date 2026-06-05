@@ -9,12 +9,16 @@ import StatsRow from '@/components/organisms/StatsRow';
 import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import { useOnboardingStore } from '@/store/onboarding';
+import { useNotificationsStore } from '@/store/notifications';
 
 export default function HomeScreen() {
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
   const router = useRouter();
   const [hydrated, setHydrated] = useState(
     () => useOnboardingStore.persist.hasHydrated()
+  );
+  const unreadCount = useNotificationsStore((s) =>
+    s.notifications.filter((n) => !n.read).length,
   );
 
   useEffect(() => {
@@ -36,7 +40,11 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <Header onInboxPress={() => router.push('/inbox' as any)} />
+      <Header
+        onInboxPress={() => router.push('/inbox' as any)}
+        onNotificationPress={() => router.push('/notifications' as any)}
+        notificationCount={unreadCount}
+      />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SearchBar />
         <HeroBanner />
