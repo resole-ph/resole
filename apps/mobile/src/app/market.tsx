@@ -7,9 +7,12 @@ import BrowseFeed from '@/components/organisms/BrowseFeed';
 import HeroBanner from '@/components/organisms/HeroBanner';
 import BottomNav from '@/components/organisms/BottomNav';
 import { MARKET_LISTINGS, SWAP_LISTINGS } from '@/data/MockListings';
+import { useCartStore } from '@/store/cart';
 
 export default function MarketScreen() {
   const router = useRouter();
+  const cartItems = useCartStore((s) => s.items);
+  const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -17,8 +20,9 @@ export default function MarketScreen() {
         title="Resole"
         showInbox={false}
         showCart
-        cartCount={3}
+        cartCount={cartCount}
         notificationCount={2}
+        onCartPress={() => router.push('/cart')}
       />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SearchBar />

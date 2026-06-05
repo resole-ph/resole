@@ -3,7 +3,10 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
-import { MOCK_LISTINGS } from '@/data/MockListings';
+import { MOCK_LISTINGS, MARKET_LISTINGS, SWAP_LISTINGS } from '@/data/MockListings';
+import { useCartStore } from '@/store/cart';
+
+const ALL_LISTINGS = [...MOCK_LISTINGS, ...MARKET_LISTINGS, ...SWAP_LISTINGS];
 
 
 export const CONDITION_COLORS: Record<Listing['condition'], string> = {
@@ -16,9 +19,9 @@ export const CONDITION_COLORS: Record<Listing['condition'], string> = {
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const addItem = useCartStore((s) => s.addItem);
 
-  // Find listing by id — swap with API call later
-  const listing = MOCK_LISTINGS.find((l) => l.id === id);
+  const listing = ALL_LISTINGS.find((l) => l.id === id);
 
   if (!listing) {
     return (
@@ -34,6 +37,11 @@ export default function ListingDetailScreen() {
 
   const isSwappable = listing.badgeType === 'Swap';
   const conditionColor = CONDITION_COLORS[listing.condition];
+
+  const handleBuyNow = () => {
+    addItem(listing);
+    router.push('/cart');
+  };
 
   const handleSwap = () => {
     router.push({
@@ -204,6 +212,7 @@ export default function ListingDetailScreen() {
             <TouchableOpacity
               className="flex-1 bg-gray-100 rounded-2xl py-4 items-center"
               activeOpacity={0.8}
+              onPress={handleBuyNow}
             >
               <Text className="text-gray-700 font-bold text-base">Buy Now</Text>
             </TouchableOpacity>
@@ -235,6 +244,7 @@ export default function ListingDetailScreen() {
             <TouchableOpacity
               className="flex-1 bg-blue-600 rounded-2xl py-4 items-center"
               activeOpacity={0.85}
+              onPress={handleBuyNow}
               style={{
                 shadowColor: '#2563EB',
                 shadowOffset: { width: 0, height: 4 },
