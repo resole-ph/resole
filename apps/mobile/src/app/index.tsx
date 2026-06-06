@@ -45,6 +45,21 @@ export default function HomeScreen() {
         onNotificationPress={() => router.push('/notifications' as any)}
         notificationCount={unreadCount}
       />
+      {/* TEMP: dev shortcuts — remove before release */}
+      <View className="flex-row gap-2 px-4 py-2 bg-yellow-100 border-b border-yellow-300">
+        <TouchableOpacity
+          onPress={handleResetOnboarding}
+          className="flex-1 items-center rounded-md bg-yellow-400 py-1.5"
+        >
+          <Text className="text-xs font-semibold text-yellow-900">Onboarding</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => router.push('/onboarding/auth' as any)}
+          className="flex-1 items-center rounded-md bg-yellow-400 py-1.5"
+        >
+          <Text className="text-xs font-semibold text-yellow-900">Auth</Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SearchBar />
         <HeroBanner />
