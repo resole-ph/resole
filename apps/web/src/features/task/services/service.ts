@@ -31,7 +31,7 @@ export async function createUserTask(data: CreateUserTask) {
       .values(data)
       .returning({ id: userTask.id });
 
-    return 0;
+    return getUserTaskById(result[0].id);
   } catch (error) {
     console.error("Error creating user task.");
     return null;
@@ -80,6 +80,26 @@ export async function getTaskById(id: number) {
     return rows[0] as Task ?? null;
   } catch (error) {
     console.error("Error fetching task.");
+    return null;
+  }
+}
+
+export async function getUserTaskById(id: number) {
+  try {
+    const rows = await db
+      .select({
+        task: getTableColumns(task),
+        user: getTableColumns(user),
+        ...getTableColumns(userTask)
+      })
+      .from(userTask)
+      .innerJoin(task, eq(userTask.taskId, task.id))
+      .innerJoin(user, eq(userTask.userId, user.id))
+      .where(eq(userTask.id, id));
+    
+    return rows[0] as UserTask ?? null;
+  } catch (error) {
+    console.error("Error fetching user task.");
     return null;
   }
 }
