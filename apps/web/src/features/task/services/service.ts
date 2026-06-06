@@ -97,7 +97,7 @@ export async function getUserTaskById(id: number) {
       .innerJoin(user, eq(userTask.userId, user.id))
       .where(eq(userTask.id, id));
     
-    return rows[0] as UserTask ?? null;
+    return rows as UserTask[] ?? null;
   } catch (error) {
     console.error("Error fetching user task.");
     return null;
@@ -117,7 +117,7 @@ export async function getUserTaskByTaskId(id: number) {
       .innerJoin(user, eq(userTask.userId, user.id))
       .where(eq(userTask.taskId, id));
     
-    return rows[0] as UserTask ?? null;
+    return rows as UserTask[] ?? null;
   } catch (error) {
     console.error("Error fetching user task.");
     return null;
