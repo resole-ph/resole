@@ -1,13 +1,8 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
-}
+const resoleLogo = require('../../../assets/ReSoleLogo.png');
 
 const ICON_BTN_SHADOW = {
   shadowColor: '#000',
@@ -18,8 +13,8 @@ const ICON_BTN_SHADOW = {
 };
 
 interface HeaderProps {
-  name?: string;
   title?: string;
+  branded?: boolean;
   hasNotifications?: boolean;
   notificationCount?: number;
   hasMessages?: boolean;
@@ -32,8 +27,8 @@ interface HeaderProps {
 }
 
 export default function Header({
-  name = 'Miguel',
   title,
+  branded: brandedProp = false,
   hasNotifications = true,
   notificationCount,
   hasMessages = true,
@@ -45,26 +40,17 @@ export default function Header({
   onCartPress,
 }: HeaderProps) {
   const insets = useSafeAreaInsets();
-  const branded = !!title;
+  const branded = brandedProp || !!title;
 
   return (
     <View
       className={`flex-row items-center justify-between px-5 pb-4 ${branded ? 'bg-white' : 'bg-gray-50'}`}
       style={{ paddingTop: insets.top + 8 }}
     >
-      {/* Left: branded title or greeting */}
-      {branded ? (
-        <Text style={{ color: '#2563EB', fontWeight: '800', fontSize: 19, letterSpacing: -0.5, flex: 1 }}>
-          {title}
-        </Text>
-      ) : (
-        <View className="flex-1 mr-4">
-          <Text className="text-2xl font-bold text-gray-900" numberOfLines={1}>
-            {getGreeting()}, {name}
-          </Text>
-          <Text className="text-sm text-gray-400 mt-0.5">Find your next pair today</Text>
-        </View>
-      )}
+      {/* Left: logo */}
+      <View style={{ flex: 1 }}>
+        <Image source={resoleLogo} style={{ height: 34, width: 146 }} resizeMode="contain" />
+      </View>
 
       {/* Inbox icon (home mode only) */}
       {showInbox && (

@@ -22,7 +22,7 @@ export default function MarketScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <Header
-        title="Resole"
+        branded
         showInbox={false}
         showCart
         cartCount={cartCount}

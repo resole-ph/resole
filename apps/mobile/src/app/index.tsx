@@ -1,5 +1,5 @@
 import { ScrollView, View, TouchableOpacity, Text } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Redirect, useRouter } from 'expo-router';
 import BottomNav from '@/components/organisms/BottomNav';
 import Header from '@/components/organisms/Header';
@@ -32,6 +32,13 @@ export default function HomeScreen() {
     return <Redirect href="/onboarding/step1" />;
   }
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
   const handleResetOnboarding = () => {
     useOnboardingStore.persist.clearStorage();
     useOnboardingStore.setState({ hasSeenOnboarding: false, intent: 'buy', location: '' });
@@ -61,6 +68,10 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="px-5 pt-3 pb-1">
+          <Text className="text-2xl font-bold text-gray-900">{greeting}, Miguel</Text>
+          <Text className="text-sm text-gray-400 mt-0.5">Find your next pair today</Text>
+        </View>
         <SearchBar />
         <HeroBanner />
         <StatsRow />
