@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import SellStepHeader from '../components/SellStepHeader';
@@ -21,39 +21,75 @@ export default function PhotoUploadContainer() {
   const { photos, setPhoto, allPhotosUploaded, setStep } = useSellFlow();
   const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
   const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle } | null>(null);
+  const [queuedAction, setQueuedAction] = useState<{ type: 'camera' | 'library'; angle: PhotoAngle } | null>(null);
 
   function handlePhotoPress(angle: PhotoAngle) {
     setPendingAngle(angle);
   }
 
-  async function handleCameraPress() {
-    const angle = pendingAngle;
-    if (!angle) return;
-    setPendingAngle(null);
+  // Called by the Modal's onDismiss (iOS) — fires only after the modal is fully gone
+  async function handlePickerModalDismiss() {
+    if (!queuedAction) return;
+    const { type, angle } = queuedAction;
+    setQueuedAction(null);
 
-    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
-    if (!granted) return;
-
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
-
-    if (!result.canceled && result.assets[0]) {
-      setPreviewPhoto({ uri: result.assets[0].uri, angle });
+    try {
+      if (type === 'camera') {
+        const { granted, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
+        if (!granted) {
+          if (!canAskAgain) {
+            Alert.alert(
+              'Camera Access Needed',
+              'Go to Settings > Resole > Camera and enable access.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Open Settings', onPress: () => Linking.openSettings() },
+              ]
+            );
+          }
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
+        if (!result.canceled && result.assets[0]) {
+          setPreviewPhoto({ uri: result.assets[0].uri, angle });
+        }
+      } else {
+        const { granted, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!granted) {
+          if (!canAskAgain) {
+            Alert.alert(
+              'Photo Access Needed',
+              'Go to Settings > Resole > Photos and enable access.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Open Settings', onPress: () => Linking.openSettings() },
+              ]
+            );
+          }
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+        if (!result.canceled && result.assets[0]) {
+          setPreviewPhoto({ uri: result.assets[0].uri, angle });
+        }
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not open camera. Please try again.');
     }
   }
 
-  async function handleLibraryPress() {
+  function handleCameraPress() {
     const angle = pendingAngle;
     if (!angle) return;
+    setQueuedAction({ type: 'camera', angle });
     setPendingAngle(null);
+  }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.85,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      setPreviewPhoto({ uri: result.assets[0].uri, angle });
-    }
+  function handleLibraryPress() {
+    const angle = pendingAngle;
+    if (!angle) return;
+    setQueuedAction({ type: 'library', angle });
+    setPendingAngle(null);
   }
 
   function handleConfirmPhoto() {
@@ -136,6 +172,7 @@ export default function PhotoUploadContainer() {
         transparent
         animationType="slide"
         onRequestClose={() => setPendingAngle(null)}
+        onDismiss={handlePickerModalDismiss}
       >
         <Pressable
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
