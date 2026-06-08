@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "resole",
+    "slug": "resole",
+    "scheme": "resole",
+    "version": "1.0.0",
+    "ios": {
+      "bundleIdentifier": "com.resole.mobile"
+    },
+    "android": {
+      "package": "com.resole.mobile"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "243df212-19b6-4132-9050-dd6d5271a4dc"
+      }
+    }
+  }
+}

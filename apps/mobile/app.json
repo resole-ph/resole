@@ -8,16 +8,21 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.resole.mobile"
     },
     "android": {
+      "package": "com.resole.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -25,15 +30,23 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      ["expo-image-picker", {
-        "cameraPermission": "Allow Resole to take photos of your shoes.",
-        "photosPermission": "Allow Resole to access your photos to upload shoe images."
-      }],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Resole to take photos of your shoes.",
+          "photosPermission": "Allow Resole to access your photos to upload shoe images."
+        }
+      ],
       "./plugins/withCropUIColors"
-
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a5bac29f-bbb3-4937-a432-a49249ac9a81"
+      }
     }
   }
 }
