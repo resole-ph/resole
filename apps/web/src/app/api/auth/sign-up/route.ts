@@ -44,9 +44,9 @@ export async function POST(request: Request) {
   const password = typeof body?.password === 'string' ? body.password : '';
   const contactNo = normalizeContactNo(body?.contactNo);
   const name = typeof body?.name === 'string' && body.name.trim() ? body.name.trim() : '';
-  const address = typeof body?.address === 'string' ? body.address.trim() : '';
-  const city = typeof body?.city === 'string' ? body.city.trim() : '';
-  const image = typeof body?.image === 'string' ? body.image.trim() : '';
+  const address = typeof body?.address === 'string' && body.address.trim() ? body.address.trim() : null;
+  const city = typeof body?.city === 'string' && body.city.trim() ? body.city.trim() : null;
+  const image = typeof body?.image === 'string' && body.image.trim() ? body.image.trim() : null;
 
   if (!email || !isValidEmail(email)) {
     return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
@@ -58,30 +58,35 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
-  const existingUser = await getUserByEmail(email);
-  if (existingUser) {
-    return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
+  try {
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
+    }
+
+    const newUser = await createCredentialsUser({
+      id: randomUUID(),
+      name: name || email.split('@')[0] || 'Resole User',
+      email,
+      password,
+      address,
+      city,
+      contactNo,
+      image,
+    });
+
+    if (!newUser) {
+      return NextResponse.json({ error: 'Unable to create account' }, { status: 500 });
+    }
+
+    const session = await createSessionForUser(newUser.id, request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unable to create session' }, { status: 500 });
+    }
+
+    return buildAuthResponse(newUser, session);
+  } catch (error: unknown) {
+    console.error('Signup error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-
-  const newUser = await createCredentialsUser({
-    id: randomUUID(),
-    name: name || email.split('@')[0] || 'Resole User',
-    email,
-    password,
-    address: address || null,
-    city: city || null,
-    contactNo: contactNo || null,
-    image: image || null,
-  });
-
-  if (!newUser) {
-    return NextResponse.json({ error: 'Unable to create account' }, { status: 500 });
-  }
-
-  const session = await createSessionForUser(newUser.id, request);
-  if (!session) {
-    return NextResponse.json({ error: 'Unable to create session' }, { status: 500 });
-  }
-
-  return buildAuthResponse(newUser, session);
 }

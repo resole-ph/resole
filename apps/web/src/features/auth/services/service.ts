@@ -110,8 +110,7 @@ export async function createCredentialsUser(input: CreateCredentialsInput): Prom
         contactNo: input.contactNo ?? null,
         description: 'I love shoes!',
         coins: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        intent: 'explore',
       });
 
       await tx.insert(account).values({
@@ -120,8 +119,6 @@ export async function createCredentialsUser(input: CreateCredentialsInput): Prom
         accountId: input.email,
         providerId: 'credentials',
         password: hashPassword(input.password),
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
     });
 
@@ -155,8 +152,7 @@ export async function createGoogleUser(input: CreateGoogleUserInput): Promise<Us
         contactNo: input.contactNo ?? null,
         description: 'I love shoes!',
         coins: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        intent: 'explore',
       });
 
       await tx.insert(account).values({
@@ -165,8 +161,6 @@ export async function createGoogleUser(input: CreateGoogleUserInput): Promise<Us
         accountId: input.googleSub,
         providerId: 'google',
         idToken: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
     });
 
@@ -191,8 +185,6 @@ export async function linkGoogleAccountToUser({
       accountId: googleSub,
       providerId: 'google',
       idToken: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     });
 
     return getAccountByProviderAndAccountId('google', googleSub);
@@ -217,8 +209,6 @@ export async function createSessionForUser(userId: string, request: Request): Pr
         ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || null,
         userAgent: request.headers.get('user-agent') || null,
         expiresAt,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       })
       .returning();
 
