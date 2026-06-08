@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq, getTableColumns } from 'drizzle-orm';
+import { sql, gt, eq, desc, getTableColumns, cosineDistance } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user } from '@/db/schema';
 import { 
   Shoe, 
@@ -12,6 +12,19 @@ import {
   CreateShoeListing,
   UpdateShoeListing 
 } from '@/features/shoe/types/types';
+import { GoogleGenAI } from "@google/genai";
+
+async function generateEmbedding(context: string): Promise<number[]> {
+
+  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY  });
+
+  const response = await ai.models.embedContent({
+    model: 'gemini-embedding-2',
+    contents: context,
+  });
+
+  return response.embeddings as number[];
+}
 
 export async function createShoe(data: CreateShoe) {
   try {
@@ -95,11 +108,52 @@ export async function getAllShoeListing() {
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
-      .innerJoin(user, eq(shoeListing.userId, user.id));
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(eq(shoeListing.isAvailable, true))
+      .orderBy(desc(shoeListing.updatedAt))
+      .limit(20);
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe listings.");
+    return null;
+  }
+}
+
+export async function getShoeCategories() {
+  try {
+    const rows = await db
+      .selectDistinct({ categories: shoe.category })
+      .from(shoe);
+    
+    return rows[0] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe categories.");
+    return null;
+  }
+}
+
+export async function getShoeBySearch(query: string) {
+  try {
+    const embedding = await generateEmbedding(query);
+
+    const similarity = sql<number>`1 - (${cosineDistance(shoe.embedding, embedding)})`;
+    
+    const result = await db
+      .select({
+        shoe,
+        similarity
+      })
+      .from(shoe)
+      .where(gt(similarity, 0.5))
+      .orderBy(desc(similarity))
+      .limit(20);
+    
+    const searchResults = result.map(item => item.shoe);  
+
+    return searchResults as Shoe[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe search results.");
     return null;
   }
 }
