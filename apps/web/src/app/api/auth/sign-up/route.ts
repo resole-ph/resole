@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createCredentialsUser, getUserByEmail, createSessionForUser } from '@/features/auth/services/service';
+import { createCredentialsUser, getUserByEmail, createSessionForUser, type User, type Session } from '@/features/auth/services/service';
 import {
   isStrongPassword,
   isValidEmail,
@@ -12,13 +12,13 @@ function getSessionCookieOptions() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   };
 }
 
-function buildAuthResponse(user, session) {
+function buildAuthResponse(user: User, session: Session) {
   const response = NextResponse.json({
     user,
     sessionToken: session.token,
@@ -31,8 +31,8 @@ function buildAuthResponse(user, session) {
   return response;
 }
 
-export async function POST(request) {
-  let body;
+export async function POST(request: Request) {
+  let body: Record<string, unknown>;
 
   try {
     body = await request.json();
@@ -63,7 +63,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
   }
 
-  const user = await createCredentialsUser({
+  const newUser = await createCredentialsUser({
     id: randomUUID(),
     name: name || email.split('@')[0] || 'Resole User',
     email,
@@ -74,14 +74,14 @@ export async function POST(request) {
     image: image || null,
   });
 
-  if (!user) {
+  if (!newUser) {
     return NextResponse.json({ error: 'Unable to create account' }, { status: 500 });
   }
 
-  const session = await createSessionForUser(user.id, request);
+  const session = await createSessionForUser(newUser.id, request);
   if (!session) {
     return NextResponse.json({ error: 'Unable to create session' }, { status: 500 });
   }
 
-  return buildAuthResponse(user, session);
+  return buildAuthResponse(newUser, session);
 }

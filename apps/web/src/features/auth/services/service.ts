@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, type InferSelectModel } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db } from '@/config/db';
 import { account, session, user } from '@/db/schema';
@@ -10,7 +10,11 @@ import {
 } from '@/lib/auth';
 import type { UpdateUserProfileInput } from '@/features/auth/types/types';
 
-export async function getUserById(userId: string) {
+export type User = InferSelectModel<typeof user>;
+export type Session = InferSelectModel<typeof session>;
+export type Account = InferSelectModel<typeof account>;
+
+export async function getUserById(userId: string): Promise<User | null> {
   try {
     const users = await db
       .select()
@@ -25,7 +29,7 @@ export async function getUserById(userId: string) {
   }
 }
 
-export async function getUserByEmail(email: string) {
+export async function getUserByEmail(email: string): Promise<User | null> {
   try {
     const normalizedEmail = normalizeEmail(email);
     if (!normalizedEmail) {
@@ -45,7 +49,10 @@ export async function getUserByEmail(email: string) {
   }
 }
 
-export async function getAccountByProviderAndAccountId(providerId: string, accountId: string) {
+export async function getAccountByProviderAndAccountId(
+  providerId: string, 
+  accountId: string
+): Promise<Account | null> {
   try {
     const rows = await db
       .select()
@@ -60,7 +67,10 @@ export async function getAccountByProviderAndAccountId(providerId: string, accou
   }
 }
 
-export async function getAccountByUserIdAndProviderId(userId: string, providerId: string) {
+export async function getAccountByUserIdAndProviderId(
+  userId: string, 
+  providerId: string
+): Promise<Account | null> {
   try {
     const rows = await db
       .select()
@@ -75,27 +85,29 @@ export async function getAccountByUserIdAndProviderId(userId: string, providerId
   }
 }
 
-export async function createCredentialsUser({
-  id,
-  name,
-  email,
-  password,
-  address,
-  city,
-  contactNo,
-  image,
-}) {
+export interface CreateCredentialsInput {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  address?: string | null;
+  city?: string | null;
+  contactNo?: string | null;
+  image?: string | null;
+}
+
+export async function createCredentialsUser(input: CreateCredentialsInput): Promise<User | null> {
   try {
     await db.transaction(async (tx) => {
       await tx.insert(user).values({
-        id,
-        name,
-        email,
+        id: input.id,
+        name: input.name,
+        email: input.email,
         emailVerified: false,
-        image: image ?? null,
-        address: address ?? null,
-        city: city ?? null,
-        contactNo: contactNo ?? null,
+        image: input.image ?? null,
+        address: input.address ?? null,
+        city: input.city ?? null,
+        contactNo: input.contactNo ?? null,
         description: 'I love shoes!',
         coins: 0,
         createdAt: new Date(),
@@ -103,41 +115,44 @@ export async function createCredentialsUser({
       });
 
       await tx.insert(account).values({
-        id,
-        userId: id,
-        accountId: email,
+        id: randomUUID(),
+        userId: input.id,
+        accountId: input.email,
         providerId: 'credentials',
-        password: hashPassword(password),
+        password: hashPassword(input.password),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
     });
 
-    return await getUserById(id);
+    return await getUserById(input.id);
   } catch (error) {
     console.error('Error creating credentials user:', error);
     return null;
   }
 }
 
-export async function createGoogleUser({
-  id,
-  name,
-  email,
-  image,
-  googleSub,
-}) {
+export interface CreateGoogleUserInput {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+  googleSub: string;
+  contactNo?: string | null;
+}
+
+export async function createGoogleUser(input: CreateGoogleUserInput): Promise<User | null> {
   try {
     await db.transaction(async (tx) => {
       await tx.insert(user).values({
-        id,
-        name,
-        email,
+        id: input.id,
+        name: input.name,
+        email: input.email,
         emailVerified: true,
-        image: image ?? null,
+        image: input.image ?? null,
         address: null,
         city: null,
-        contactNo: null,
+        contactNo: input.contactNo ?? null,
         description: 'I love shoes!',
         coins: 0,
         createdAt: new Date(),
@@ -145,9 +160,9 @@ export async function createGoogleUser({
       });
 
       await tx.insert(account).values({
-        id: googleSub,
-        userId: id,
-        accountId: googleSub,
+        id: input.googleSub,
+        userId: input.id,
+        accountId: input.googleSub,
         providerId: 'google',
         idToken: null,
         createdAt: new Date(),
@@ -155,14 +170,20 @@ export async function createGoogleUser({
       });
     });
 
-    return await getUserById(id);
+    return await getUserById(input.id);
   } catch (error) {
     console.error('Error creating Google user:', error);
     return null;
   }
 }
 
-export async function linkGoogleAccountToUser({ userId, googleSub }) {
+export async function linkGoogleAccountToUser({ 
+  userId, 
+  googleSub 
+}: { 
+  userId: string; 
+  googleSub: string; 
+}): Promise<Account | null> {
   try {
     await db.insert(account).values({
       id: googleSub,
@@ -181,7 +202,7 @@ export async function linkGoogleAccountToUser({ userId, googleSub }) {
   }
 }
 
-export async function createSessionForUser(userId: string, request: Request) {
+export async function createSessionForUser(userId: string, request: Request): Promise<Session | null> {
   try {
     const token = createSessionToken();
     const expiresAt = new Date();
@@ -208,7 +229,7 @@ export async function createSessionForUser(userId: string, request: Request) {
   }
 }
 
-export async function verifyCredentials(email: string, password: string) {
+export async function verifyCredentials(email: string, password: string): Promise<User | null> {
   try {
     const userRecord = await getUserByEmail(email);
     if (!userRecord) {
@@ -231,7 +252,7 @@ export async function verifyCredentials(email: string, password: string) {
   }
 }
 
-export async function deleteSessionByToken(token: string) {
+export async function deleteSessionByToken(token: string): Promise<boolean> {
   try {
     await db.delete(session).where(eq(session.token, token));
     return true;
@@ -244,7 +265,7 @@ export async function deleteSessionByToken(token: string) {
 export async function updateUserProfile(
   userId: string,
   data: UpdateUserProfileInput,
-) {
+): Promise<User | null> {
   try {
     const setObj: Partial<typeof user.$inferInsert> = {
       updatedAt: new Date(),

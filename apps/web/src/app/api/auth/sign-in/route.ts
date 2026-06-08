@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { createSessionForUser, verifyCredentials } from '@/features/auth/services/service';
+import { createSessionForUser, verifyCredentials, type User, type Session } from '@/features/auth/services/service';
 
 function getSessionCookieOptions() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   };
 }
 
-function buildAuthResponse(user, session) {
+function buildAuthResponse(user: User, session: Session) {
   const response = NextResponse.json({
     user,
     sessionToken: session.token,
@@ -24,8 +24,8 @@ function buildAuthResponse(user, session) {
   return response;
 }
 
-export async function POST(request) {
-  let body;
+export async function POST(request: Request) {
+  let body: Record<string, unknown>;
 
   try {
     body = await request.json();

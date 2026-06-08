@@ -4,7 +4,7 @@ import { updateUserProfile } from '@/features/auth/services/service';
 import { normalizeContactNo } from '@/lib/auth';
 import type { UpdateUserProfileInput } from '@/features/auth/types/types';
 
-export async function GET(request) {
+export async function GET(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
 
   if (!currentUser) {
@@ -14,7 +14,7 @@ export async function GET(request) {
   return NextResponse.json({ user: currentUser.user });
 }
 
-export async function PATCH(request) {
+export async function PATCH(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
 
   if (!currentUser) {
@@ -48,7 +48,7 @@ export async function PATCH(request) {
   }
 
   if (typeof body?.intent === 'string' && ['buy', 'sell', 'explore'].includes(body.intent)) {
-    updates.intent = body.intent;
+    updates.intent = body.intent as 'buy' | 'sell' | 'explore';
   }
 
   const cityValue = typeof body?.city === 'string'

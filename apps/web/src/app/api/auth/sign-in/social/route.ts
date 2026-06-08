@@ -1,26 +1,32 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import {
-  createGoogleUser,
   createSessionForUser,
   getAccountByProviderAndAccountId,
   getUserById,
   getUserByEmail,
+  createGoogleUser,
   linkGoogleAccountToUser,
+  type User,
+  type Session
 } from '@/features/auth/services/service';
-import { normalizeEmail, verifyGoogleIdToken } from '@/lib/auth';
+import { 
+  normalizeEmail, 
+  verifyGoogleIdToken,
+  type GoogleProfile 
+} from '@/lib/auth';
 
 function getSessionCookieOptions() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   };
 }
 
-function buildAuthResponse(user, session) {
+function buildAuthResponse(user: User, session: Session) {
   const response = NextResponse.json({
     user,
     sessionToken: session.token,
@@ -33,8 +39,8 @@ function buildAuthResponse(user, session) {
   return response;
 }
 
-export async function POST(request) {
-  let body;
+export async function POST(request: Request) {
+  let body: Record<string, unknown>;
 
   try {
     body = await request.json();
@@ -43,11 +49,12 @@ export async function POST(request) {
   }
 
   const provider = typeof body?.provider === 'string' ? body.provider.toLowerCase().trim() : 'google';
+  
   if (provider !== 'google') {
     return NextResponse.json({ error: 'Only Google social sign-in is supported' }, { status: 400 });
   }
 
-  const idToken = typeof body?.idToken === 'string'
+  const token = typeof body?.idToken === 'string'
     ? body.idToken
     : typeof body?.token === 'string'
       ? body.token
@@ -55,9 +62,16 @@ export async function POST(request) {
         ? body.credential
         : '';
 
-  const profile = await verifyGoogleIdToken(idToken);
+  if (!token) {
+    return NextResponse.json({ error: 'Google identity token or credential is required' }, { status: 400 });
+  }
+
+  const profile: GoogleProfile | null = await verifyGoogleIdToken(token);
+
   if (!profile) {
-    return NextResponse.json({ error: 'Invalid Google identity token' }, { status: 401 });
+    return NextResponse.json({ 
+      error: 'Invalid Google identity token or verification failed' 
+    }, { status: 401 });
   }
 
   const email = normalizeEmail(profile.email);
@@ -66,18 +80,18 @@ export async function POST(request) {
   }
 
   const existingGoogleAccount = await getAccountByProviderAndAccountId('google', profile.sub);
-  let user = null;
+  let authenticatedUser: User | null = null;
 
   if (existingGoogleAccount) {
-    user = await getUserById(existingGoogleAccount.userId);
-    if (!user || user.deletedAt) {
+    authenticatedUser = await getUserById(existingGoogleAccount.userId);
+    if (!authenticatedUser || authenticatedUser.deletedAt) {
       return NextResponse.json({ error: 'Unable to authenticate Google account' }, { status: 401 });
     }
   } else {
     const existingUser = await getUserByEmail(email);
 
     if (existingUser) {
-      user = existingUser;
+      authenticatedUser = existingUser;
       const linkedAccount = await linkGoogleAccountToUser({
         userId: existingUser.id,
         googleSub: profile.sub,
@@ -87,24 +101,24 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Unable to link Google account' }, { status: 500 });
       }
     } else {
-      user = await createGoogleUser({
+      authenticatedUser = await createGoogleUser({
         id: randomUUID(),
         name: profile.name,
         email,
-        image: profile.image,
+        image: profile.image || null,
         googleSub: profile.sub,
       });
 
-      if (!user) {
+      if (!authenticatedUser) {
         return NextResponse.json({ error: 'Unable to create account' }, { status: 500 });
       }
     }
   }
 
-  const session = await createSessionForUser(user.id, request);
+  const session = await createSessionForUser(authenticatedUser.id, request);
   if (!session) {
     return NextResponse.json({ error: 'Unable to create session' }, { status: 500 });
   }
 
-  return buildAuthResponse(user, session);
+  return buildAuthResponse(authenticatedUser, session);
 }

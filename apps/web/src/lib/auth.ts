@@ -5,7 +5,7 @@ const PASSWORD_HASH_LENGTH = 32;
 const PASSWORD_SALT_BYTES = 16;
 const SESSION_TOKEN_BYTES = 32;
 
-export function normalizeEmail(email) {
+export function normalizeEmail(email: unknown): string | null {
   if (typeof email !== 'string') {
     return null;
   }
@@ -14,11 +14,11 @@ export function normalizeEmail(email) {
   return normalizedEmail || null;
 }
 
-export function isValidEmail(email) {
+export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export function isStrongPassword(password) {
+export function isStrongPassword(password: string): boolean {
   if (typeof password !== 'string' || password.length < 8) {
     return false;
   }
@@ -26,7 +26,7 @@ export function isStrongPassword(password) {
   return /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
 }
 
-export function normalizeContactNo(contactNo) {
+export function normalizeContactNo(contactNo: unknown): string | null {
   if (typeof contactNo !== 'string') {
     return null;
   }
@@ -37,6 +37,7 @@ export function normalizeContactNo(contactNo) {
     return null;
   }
 
+  // Handle Philippine mobile numbers
   if (digits.length === 10 && digits.startsWith('9')) {
     return `+63${digits}`;
   }
@@ -52,7 +53,7 @@ export function normalizeContactNo(contactNo) {
   return null;
 }
 
-export function hashPassword(password) {
+export function hashPassword(password: string): string {
   const salt = crypto.randomBytes(PASSWORD_SALT_BYTES).toString('hex');
   const derived = crypto
     .scryptSync(password, salt, PASSWORD_HASH_LENGTH)
@@ -61,7 +62,7 @@ export function hashPassword(password) {
   return `scrypt$${PASSWORD_HASH_ITERATIONS}$${salt}$${derived}`;
 }
 
-export function verifyPassword(password, storedPassword) {
+export function verifyPassword(password: string, storedPassword: string): boolean {
   if (typeof password !== 'string' || typeof storedPassword !== 'string') {
     return false;
   }
@@ -86,11 +87,11 @@ export function verifyPassword(password, storedPassword) {
   return crypto.timingSafeEqual(storedBuffer, derivedBuffer);
 }
 
-export function createSessionToken() {
+export function createSessionToken(): string {
   return crypto.randomBytes(SESSION_TOKEN_BYTES).toString('base64url');
 }
 
-export function getAllowedGoogleClientIds() {
+export function getAllowedGoogleClientIds(): string[] {
   return [
     process.env.GOOGLE_OAUTH_CLIENT_IDS,
     process.env.GOOGLE_CLIENT_ID,
@@ -103,48 +104,60 @@ export function getAllowedGoogleClientIds() {
     .filter(Boolean);
 }
 
-export async function verifyGoogleIdToken(idToken) {
+export interface GoogleProfile {
+  sub: string;
+  email: string;
+  name: string;
+  image?: string;
+}
+
+export async function verifyGoogleIdToken(idToken: string): Promise<GoogleProfile | null> {
   if (typeof idToken !== 'string' || !idToken.trim()) {
     return null;
   }
 
-  const response = await fetch(
-    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken.trim())}`,
-  );
+  try {
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken.trim())}`,
+    );
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json() as Record<string, unknown>;
+    const allowedClientIds = getAllowedGoogleClientIds();
+
+    if (allowedClientIds.length === 0) {
+      return null;
+    }
+
+    const audience = typeof payload.aud === 'string' ? payload.aud : '';
+    const issuer = typeof payload.iss === 'string' ? payload.iss : '';
+    const email = normalizeEmail(payload.email);
+    const emailVerified = payload.email_verified === true || payload.email_verified === 'true';
+    const subject = typeof payload.sub === 'string' ? payload.sub : '';
+
+    if (!allowedClientIds.includes(audience)) {
+      return null;
+    }
+
+    if (issuer !== 'accounts.google.com' && issuer !== 'https://accounts.google.com') {
+      return null;
+    }
+
+    if (!email || !emailVerified || !subject) {
+      return null;
+    }
+
+    return {
+      sub: subject,
+      email,
+      name: typeof payload.name === 'string' && payload.name.trim() ? payload.name.trim() : email.split('@')[0],
+      image: typeof payload.picture === 'string' ? payload.picture.trim() : '',
+    };
+  } catch (error) {
+    console.error('Error verifying Google token:', error);
     return null;
   }
-
-  const payload = await response.json();
-  const allowedClientIds = getAllowedGoogleClientIds();
-
-  if (allowedClientIds.length === 0) {
-    return null;
-  }
-
-  const audience = typeof payload.aud === 'string' ? payload.aud : '';
-  const issuer = typeof payload.iss === 'string' ? payload.iss : '';
-  const email = normalizeEmail(payload.email);
-  const emailVerified = payload.email_verified === true || payload.email_verified === 'true';
-  const subject = typeof payload.sub === 'string' ? payload.sub : '';
-
-  if (!allowedClientIds.includes(audience)) {
-    return null;
-  }
-
-  if (issuer !== 'accounts.google.com' && issuer !== 'https://accounts.google.com') {
-    return null;
-  }
-
-  if (!email || !emailVerified || !subject) {
-    return null;
-  }
-
-  return {
-    sub: subject,
-    email,
-    name: typeof payload.name === 'string' && payload.name.trim() ? payload.name.trim() : email.split('@')[0],
-    image: typeof payload.picture === 'string' ? payload.picture.trim() : '',
-  };
 }

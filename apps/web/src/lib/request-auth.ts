@@ -1,8 +1,9 @@
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { db } from '@/config/db';
 import { session, user } from '@/db/schema';
+import type { AuthSession } from '@/features/auth/types/types';
 
-function getCookieValue(cookieHeader, cookieName) {
+function getCookieValue(cookieHeader: string | null, cookieName: string): string | null {
   if (!cookieHeader) {
     return null;
   }
@@ -30,7 +31,7 @@ function getCookieValue(cookieHeader, cookieName) {
   return null;
 }
 
-function getBearerToken(authorizationHeader) {
+function getBearerToken(authorizationHeader: string | null): string | null {
   if (!authorizationHeader) {
     return null;
   }
@@ -43,7 +44,7 @@ function getBearerToken(authorizationHeader) {
   return token.trim();
 }
 
-export function getSessionTokenFromRequest(request) {
+export function getSessionTokenFromRequest(request: Request): string | null {
   const authorizationHeader = request.headers.get('authorization');
   const bearerToken = getBearerToken(authorizationHeader);
 
@@ -59,7 +60,7 @@ export function getSessionTokenFromRequest(request) {
   );
 }
 
-export async function getAuthenticatedUser(request) {
+export async function getAuthenticatedUser(request: Request): Promise<AuthSession | null> {
   const token = getSessionTokenFromRequest(request);
 
   if (!token) {
@@ -82,5 +83,5 @@ export async function getAuthenticatedUser(request) {
     )
     .limit(1);
 
-  return rows[0] ?? null;
+  return (rows[0] as AuthSession) ?? null;
 }
