@@ -11,9 +11,11 @@ export interface AuthSession {
 }
 
 export type UpdateUserProfileInput = {
+  name?: string;
   image?: string;
   description?: string;
   address?: string;
   city?: string;
   contactNo?: string;
+  intent?: 'buy' | 'sell' | 'explore';
 };

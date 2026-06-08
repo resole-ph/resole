@@ -43,7 +43,7 @@ function getBearerToken(authorizationHeader) {
   return token.trim();
 }
 
-function getSessionTokenFromRequest(request) {
+export function getSessionTokenFromRequest(request) {
   const authorizationHeader = request.headers.get('authorization');
   const bearerToken = getBearerToken(authorizationHeader);
 
