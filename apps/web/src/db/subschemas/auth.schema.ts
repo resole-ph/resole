@@ -1,23 +1,28 @@
 import { 
     pgTable, 
+    pgEnum,
     text, 
     timestamp, 
     boolean, 
     integer,
-    serial
+    serial,
+    uniqueIndex
 } from 'drizzle-orm/pg-core';
+
+export const intentEnum = pgEnum('intent_enum', ['buy', 'sell', 'explore']);
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  email: text('email').notNull(),
+  email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').default(false).notNull(),
   image: text('image'),
-  address: text('address').notNull(),
-  city: text('city').notNull(),
-  contactNo: text('contact_no').notNull(),
+  address: text('address'),
+  city: text('city'),
+  contactNo: text('contact_no'),
   description: text('description').default('I love shoes!'),
   coins: integer('coins').default(0).notNull(),
+  intent: intentEnum('intent').default('explore').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -62,7 +67,9 @@ export const account = pgTable('account', {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   deletedAt: timestamp('deleted_at')
-});
+}, (table) => [
+  uniqueIndex('account_provider_id_account_id_unique').on(table.providerId, table.accountId),
+]);
 
 export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
