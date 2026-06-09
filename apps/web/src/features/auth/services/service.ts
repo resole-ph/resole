@@ -261,6 +261,13 @@ export async function updateUserProfile(
       setObj.name = data.name;
     }
 
+    if (data.email !== undefined) {
+      const normalizedEmail = normalizeEmail(data.email);
+      if (normalizedEmail) {
+        setObj.email = normalizedEmail;
+      }
+    }
+
     if (data.image !== undefined) {
       setObj.image = data.image;
     }
@@ -299,5 +306,47 @@ export async function updateUserProfile(
   } catch (error) {
     console.error('Error updating user profile:', error);
     return null;
+  }
+}
+
+export async function deleteUser(userId: string): Promise<boolean> {
+  try {
+    await db
+      .update(user)
+      .set({
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, userId));
+
+    // Also delete active sessions
+    await db.delete(session).where(eq(session.userId, userId));
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return false;
+  }
+}
+
+export async function changePassword(
+  userId: string,
+  newPassword: string,
+): Promise<boolean> {
+  try {
+    const hashed = hashPassword(newPassword);
+    
+    await db
+      .update(account)
+      .set({
+        password: hashed,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(account.userId, userId), eq(account.providerId, 'credentials')));
+
+    return true;
+  } catch (error) {
+    console.error('Error changing password:', error);
+    return false;
   }
 }
