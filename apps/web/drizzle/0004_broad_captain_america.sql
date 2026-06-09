@@ -1,5 +1,10 @@
-CREATE TYPE "public"."notification_category_enum" AS ENUM('listing', 'offer', 'promotion', 'system');--> statement-breakpoint
-CREATE TABLE "notification" (
+DO $$ BEGIN
+    CREATE TYPE "public"."notification_category_enum" AS ENUM('listing', 'offer', 'promotion', 'system');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "notification" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"category" "notification_category_enum" NOT NULL,
@@ -14,7 +19,7 @@ CREATE TABLE "notification" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "notification_device" (
+CREATE TABLE IF NOT EXISTS "notification_device" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"expo_push_token" text NOT NULL,
@@ -26,7 +31,17 @@ CREATE TABLE "notification_device" (
 	CONSTRAINT "notification_device_expo_push_token_unique" UNIQUE("expo_push_token")
 );
 --> statement-breakpoint
-ALTER TABLE "notification" ADD CONSTRAINT "notification_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "notification_device" ADD CONSTRAINT "notification_device_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "notification_user_id_created_at_idx" ON "notification" USING btree ("user_id","created_at");--> statement-breakpoint
-CREATE INDEX "notification_device_user_id_idx" ON "notification_device" USING btree ("user_id");
+DO $$ BEGIN
+    ALTER TABLE "notification" ADD CONSTRAINT "notification_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+    ALTER TABLE "notification_device" ADD CONSTRAINT "notification_device_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "notification_user_id_created_at_idx" ON "notification" USING btree ("user_id","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "notification_device_user_id_idx" ON "notification_device" USING btree ("user_id");

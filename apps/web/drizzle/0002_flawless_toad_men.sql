@@ -1,1 +1,1 @@
-ALTER TABLE "user" ALTER COLUMN "contact_no" SET NOT NULL;
+-- ALTER TABLE "user" ALTER COLUMN "contact_no" SET NOT NULL;
