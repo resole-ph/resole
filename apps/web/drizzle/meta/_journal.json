@@ -50,6 +50,13 @@
       "when": 1780890092077,
       "tag": "0006_gorgeous_invisible_woman",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781011185137,
+      "tag": "0007_greedy_wong",
+      "breakpoints": true
     }
   ]
 }
