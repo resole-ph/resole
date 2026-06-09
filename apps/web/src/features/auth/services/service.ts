@@ -9,6 +9,7 @@ import {
   verifyPassword,
 } from '@/lib/auth';
 import type { User, Session, Account, UpdateUserProfileInput } from '@/features/auth/types/types';
+export type { User, Session, Account };
 
 export async function getUserById(userId: string): Promise<User | null> {
   try {

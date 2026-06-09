@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { registerExpoPushToken } from '@/features/notifications/services/service';
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
 
   if (!currentUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {

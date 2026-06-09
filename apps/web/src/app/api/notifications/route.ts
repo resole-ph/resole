@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getNotificationsByUserId } from '@/features/notifications/services/service';
 
-export async function GET(request) {
+export async function GET(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
 
   if (!currentUser) {
