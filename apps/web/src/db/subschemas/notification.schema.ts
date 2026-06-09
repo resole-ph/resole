@@ -55,3 +55,20 @@ export const notificationDevice = pgTable('notification_device', {
 }, (table) => [
   index('notification_device_user_id_idx').on(table.userId),
 ]);
+
+export const notificationPreference = pgTable('notification_preference', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  listing: boolean('listing').default(true).notNull(),
+  offer: boolean('offer').default(true).notNull(),
+  promotion: boolean('promotion').default(true).notNull(),
+  system: boolean('system').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});

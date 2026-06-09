@@ -13,6 +13,7 @@ export interface AuthSession {
 
 export type UpdateUserProfileInput = {
   name?: string;
+  email?: string;
   image?: string;
   description?: string;
   address?: string;
