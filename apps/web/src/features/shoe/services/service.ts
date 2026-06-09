@@ -126,7 +126,7 @@ export async function getShoeCategories() {
       .selectDistinct({ categories: shoe.category })
       .from(shoe);
     
-    return rows[0] ?? null;
+    return rows ?? null;
   } catch (error) {
     console.error("Error fetching shoe categories.");
     return null;
