@@ -1,8 +1,9 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/config/db';
 import { notification, notificationDevice } from '@/db/schema';
+import type { Notification, NotificationDevice } from '@/features/notifications/types/types';
 
-export async function getNotificationsByUserId(userId) {
+export async function getNotificationsByUserId(userId: string): Promise<Notification[] | null> {
   try {
     return await db
       .select()
@@ -16,7 +17,10 @@ export async function getNotificationsByUserId(userId) {
   }
 }
 
-export async function getNotificationForUser(userId, notificationId) {
+export async function getNotificationForUser(
+  userId: string, 
+  notificationId: number
+): Promise<Notification | null> {
   try {
     const rows = await db
       .select()
@@ -31,7 +35,10 @@ export async function getNotificationForUser(userId, notificationId) {
   }
 }
 
-export async function markNotificationAsRead(userId, notificationId) {
+export async function markNotificationAsRead(
+  userId: string, 
+  notificationId: number
+): Promise<Notification | null> {
   try {
     const rows = await db
       .update(notification)
@@ -50,7 +57,7 @@ export async function markNotificationAsRead(userId, notificationId) {
   }
 }
 
-export async function markAllNotificationsAsRead(userId) {
+export async function markAllNotificationsAsRead(userId: string): Promise<{ id: number }[] | null> {
   try {
     return await db
       .update(notification)
@@ -67,7 +74,11 @@ export async function markAllNotificationsAsRead(userId) {
   }
 }
 
-export async function registerExpoPushToken(userId, expoPushToken, platform) {
+export async function registerExpoPushToken(
+  userId: string, 
+  expoPushToken: string, 
+  platform?: string | null
+): Promise<NotificationDevice | null> {
   try {
     const rows = await db
       .insert(notificationDevice)

@@ -36,6 +36,20 @@
       "when": 1780885823069,
       "tag": "0004_broad_captain_america",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780889353775,
+      "tag": "0005_perfect_black_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780890092077,
+      "tag": "0006_gorgeous_invisible_woman",
+      "breakpoints": true
     }
   ]
 }
