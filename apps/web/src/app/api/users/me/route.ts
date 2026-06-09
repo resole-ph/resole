@@ -21,7 +21,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body;
+  let body: Record<string, unknown>;
 
   try {
     body = await request.json();
@@ -54,7 +54,7 @@ export async function PATCH(request: Request) {
   const cityValue = typeof body?.city === 'string'
     ? body.city.trim()
     : typeof body?.location === 'string'
-      ? body.location.trim()
+      ? (body.location as string).trim()
       : '';
 
   if (cityValue) {

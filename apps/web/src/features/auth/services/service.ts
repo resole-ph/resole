@@ -1,4 +1,4 @@
-import { and, eq, type InferSelectModel } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db } from '@/config/db';
 import { account, session, user } from '@/db/schema';
@@ -8,11 +8,7 @@ import {
   normalizeEmail,
   verifyPassword,
 } from '@/lib/auth';
-import type { UpdateUserProfileInput } from '@/features/auth/types/types';
-
-export type User = InferSelectModel<typeof user>;
-export type Session = InferSelectModel<typeof session>;
-export type Account = InferSelectModel<typeof account>;
+import type { User, Session, Account, UpdateUserProfileInput } from '@/features/auth/types/types';
 
 export async function getUserById(userId: string): Promise<User | null> {
   try {

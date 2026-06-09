@@ -1,9 +1,7 @@
-import { and, desc, eq, type InferSelectModel } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/config/db';
 import { notification, notificationDevice } from '@/db/schema';
-
-export type Notification = InferSelectModel<typeof notification>;
-export type NotificationDevice = InferSelectModel<typeof notificationDevice>;
+import type { Notification, NotificationDevice } from '@/features/notifications/types/types';
 
 export async function getNotificationsByUserId(userId: string): Promise<Notification[] | null> {
   try {
