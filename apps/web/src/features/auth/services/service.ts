@@ -3,9 +3,44 @@ import { user, save, login } from '@/db/schema';
 import { eq, desc, count } from 'drizzle-orm';
 import type { UpdateUserProfileInput } from '@/features/auth/types/types';
 
-function getNumberOfDays(startDate: Date, endDate: Date) {
-  const oneDayInMs = 1000 * 60 * 60 * 24;
-  return (endDate.getTime() - startDate.getTime()) / oneDayInMs;
+async function getLoginStreak(logins: Date[]) {
+  if (logins.length === 0) {
+    return 0;
+  }
+
+  const normalizeToMidnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  const uniqueDaysMs = Array.from(
+    new Set(logins.map(l => normalizeToMidnight(l).getTime()))
+  );
+  const uniqueDays = uniqueDaysMs.map(ms => new Date(ms));
+
+  const today = normalizeToMidnight(new Date());
+  const lastLoginDay = uniqueDays[0];
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysSinceLastLogin = (today.getTime() - lastLoginDay.getTime()) / msPerDay;
+
+  if (daysSinceLastLogin > 1) {
+    return 0;
+  }
+
+  let streak = 1;
+
+  for (let i = 0; i < uniqueDays.length - 1; i++) {
+    const currentDay = uniqueDays[i];
+    const previousDay = uniqueDays[i + 1]; 
+
+    const diffInDays = (currentDay.getTime() - previousDay.getTime()) / msPerDay;
+
+    if (diffInDays === 1) {
+      streak++;
+    } else {
+      break; 
+    }
+  }
+
+  return streak;
 }
 
 export async function getUserById(userId: string) {
@@ -51,25 +86,17 @@ export async function getUserStatsById(userId: string) {
       .where(eq(user.id, userId));
     
     const logins = await db
-      .selectDistinct({ date: login.createdAt})
+      .select({ date: login.createdAt })
       .from(login)
       .where(eq(login.userId, userId))
-      .orderBy(desc(save.createdAt));
+      .orderBy(desc(login.createdAt));
     
-    let i;
-    if (getNumberOfDays(logins[0].date, new Date()) < 2) {
-      i = 2;
-      while (getNumberOfDays(logins[i + 1].date, logins[i].date) <= 1 && i < logins.length - 1) 
-        i++;
-    }
-    else {
-      i = 1;
-    }
+    const loginStreak = getLoginStreak(logins.map(item => item.date))
 
     return {
       pairsSaved: saved[0].value,
       coinBalance: coins[0].value,
-      loginStreak: i
+      loginStreak: loginStreak
     };
   } catch (error) {
     console.error('Error fetching user by ID:', error);
