@@ -8,7 +8,14 @@ import {
   normalizeEmail,
   verifyPassword,
 } from '@/lib/auth';
-import type { User, Session, Account, UpdateUserProfileInput } from '@/features/auth/types/types';
+import type { 
+  User, 
+  Session, 
+  Account, 
+  UpdateUserProfileInput,
+  CreateCredentialsInput,
+  CreateGoogleUserInput,
+} from '@/features/auth/types/types';
 export type { User, Session, Account };
 
 export async function getUserById(userId: string): Promise<User | null> {
@@ -82,17 +89,6 @@ export async function getAccountByUserIdAndProviderId(
   }
 }
 
-export interface CreateCredentialsInput {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  address?: string | null;
-  city?: string | null;
-  contactNo?: string | null;
-  image?: string | null;
-}
-
 export async function createCredentialsUser(input: CreateCredentialsInput): Promise<User | null> {
   try {
     await db.transaction(async (tx) => {
@@ -124,15 +120,6 @@ export async function createCredentialsUser(input: CreateCredentialsInput): Prom
     console.error('Error creating credentials user:', error);
     return null;
   }
-}
-
-export interface CreateGoogleUserInput {
-  id: string;
-  name: string;
-  email: string;
-  image?: string | null;
-  googleSub: string;
-  contactNo?: string | null;
 }
 
 export async function createGoogleUser(input: CreateGoogleUserInput): Promise<User | null> {

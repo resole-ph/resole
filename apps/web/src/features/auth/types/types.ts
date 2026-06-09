@@ -21,3 +21,23 @@ export type UpdateUserProfileInput = {
   contactNo?: string;
   intent?: 'buy' | 'sell' | 'explore';
 };
+
+export interface CreateCredentialsInput {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  address?: string | null;
+  city?: string | null;
+  contactNo?: string | null;
+  image?: string | null;
+}
+
+export interface CreateGoogleUserInput {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+  googleSub: string;
+  contactNo?: string | null;
+}
