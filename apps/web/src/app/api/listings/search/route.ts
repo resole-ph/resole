@@ -9,6 +9,10 @@ export async function GET(request: Request, query: string) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (query.length < 3) {
+    return NextResponse.json({ error: 'Search query must be at least 3 characters long.'}, { status: 400 } );
+  }
+
   const shoeSearch = await getShoeBySearch(query);
 
   if (!shoeSearch) {
