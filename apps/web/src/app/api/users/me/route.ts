@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { updateUserProfile } from '@/features/auth/services/service';
-import { normalizeContactNo } from '@/lib/auth';
+import { updateUserProfile, deleteUser } from '@/features/auth/services/service';
+import { normalizeContactNo, isValidEmail } from '@/lib/auth';
 import type { UpdateUserProfileInput } from '@/features/auth/types/types';
 
 export async function GET(request: Request) {
@@ -33,6 +33,14 @@ export async function PATCH(request: Request) {
 
   if (typeof body?.name === 'string' && body.name.trim()) {
     updates.name = body.name.trim();
+  }
+
+  if (typeof body?.email === 'string' && body.email.trim()) {
+    const email = body.email.trim();
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
+    }
+    updates.email = email;
   }
 
   if (typeof body?.image === 'string') {
@@ -87,4 +95,23 @@ export async function PATCH(request: Request) {
   }
 
   return NextResponse.json({ user: updatedUser });
+}
+
+export async function DELETE(request: Request) {
+  const currentUser = await getAuthenticatedUser(request);
+
+  if (!currentUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const success = await deleteUser(currentUser.user.id);
+
+  if (!success) {
+    return NextResponse.json({ error: 'Unable to delete account' }, { status: 500 });
+  }
+
+  const response = NextResponse.json({ message: 'Account deleted successfully' });
+  response.cookies.delete('session');
+  
+  return response;
 }

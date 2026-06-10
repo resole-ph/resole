@@ -1,7 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/config/db';
-import { notification, notificationDevice } from '@/db/schema';
-import type { Notification, NotificationDevice } from '@/features/notifications/types/types';
+import { notification, notificationDevice, notificationPreference } from '@/db/schema';
+import type { Notification, NotificationDevice, NotificationPreference } from '@/features/notifications/types/types';
 
 export async function getNotificationsByUserId(userId: string): Promise<Notification[] | null> {
   try {
@@ -105,6 +105,65 @@ export async function registerExpoPushToken(
     return rows[0] ?? null;
   } catch (error) {
     console.error('Error registering Expo push token:', error);
+    return null;
+  }
+}
+
+export async function getNotificationPreferences(userId: string): Promise<NotificationPreference | null> {
+  try {
+    const rows = await db
+      .select()
+      .from(notificationPreference)
+      .where(eq(notificationPreference.userId, userId))
+      .limit(1);
+
+    if (rows.length === 0) {
+      // Create default preferences if they don't exist
+      const newPrefs = await db
+        .insert(notificationPreference)
+        .values({
+          userId,
+        })
+        .returning();
+      return newPrefs[0] ?? null;
+    }
+
+    return rows[0] ?? null;
+  } catch (error) {
+    console.error('Error fetching notification preferences:', error);
+    return null;
+  }
+}
+
+export async function updateNotificationPreferences(
+  userId: string,
+  data: Partial<Omit<NotificationPreference, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
+): Promise<NotificationPreference | null> {
+  try {
+    const rows = await db
+      .update(notificationPreference)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(notificationPreference.userId, userId))
+      .returning();
+
+    if (rows.length === 0) {
+      // Create if doesn't exist (though it should be created by getNotificationPreferences)
+      const newPrefs = await db
+        .insert(notificationPreference)
+        .values({
+          userId,
+          ...data,
+        })
+        .returning();
+      return newPrefs[0] ?? null;
+    }
+
+    return rows[0] ?? null;
+  } catch (error) {
+    console.error('Error updating notification preferences:', error);
     return null;
   }
 }

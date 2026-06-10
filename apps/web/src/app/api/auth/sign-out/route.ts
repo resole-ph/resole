@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { deleteSessionByToken } from '@/features/auth/services/service';
 import { getSessionTokenFromRequest } from '@/lib/request-auth';
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const token = getSessionTokenFromRequest(request);
 
   if (token) {
