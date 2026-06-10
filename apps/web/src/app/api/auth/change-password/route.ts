@@ -31,7 +31,6 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
-  // Get current account to verify password
   const account = await getAccountByUserIdAndProviderId(currentUser.user.id, 'credentials');
   
   if (!account || !account.password) {
