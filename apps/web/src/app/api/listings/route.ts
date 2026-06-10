@@ -6,20 +6,19 @@ import {
   getAllShoeListingForSwap
  } from '@/features/shoe/services/service';
 
-export async function POST(
-  request: Request, 
-  context: { params: Promise<{ query: string }> }
-) {
+export async function GET(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
 
   if (!currentUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { query } = await context.params;
+  const { searchParams } = new URL(request.url);
+  const section = searchParams.get('section');
 
   let shoeListings;
-  switch (query) {
+  
+  switch (section) {
     case 'sale-board':
       shoeListings = await getAllShoeListingForSale();
       break;
@@ -31,11 +30,9 @@ export async function POST(
       break;
   }
 
-  if (!shoeListings) {
+  if (!shoeListings || shoeListings.length === 0) {
     return NextResponse.json({ error: 'Shoe listings not found' }, { status: 404 });
   }
 
-  return NextResponse.json({
-    shoeListings,
-  });
+  return NextResponse.json({ shoeListings });
 }
