@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { markAllNotificationsAsRead } from '@/features/notifications/services/service';
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
 
   if (!currentUser) {

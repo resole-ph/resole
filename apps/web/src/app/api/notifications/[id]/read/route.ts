@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getNotificationForUser, markNotificationAsRead } from '@/features/notifications/services/service';
 
-function parseNotificationId(rawId) {
+function parseNotificationId(rawId: string) {
   const notificationId = Number.parseInt(rawId, 10);
 
   if (!Number.isInteger(notificationId) || notificationId <= 0) {
@@ -12,14 +12,18 @@ function parseNotificationId(rawId) {
   return notificationId;
 }
 
-export async function POST(request, context) {
+export async function POST(
+  request: Request, 
+  context: { params: Promise<{ id: string }> }
+) {
   const currentUser = await getAuthenticatedUser(request);
 
   if (!currentUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const notificationId = parseNotificationId(context.params.id);
+  const { id } = await context.params;
+  const notificationId = parseNotificationId(id);
   if (!notificationId) {
     return NextResponse.json({ error: 'Invalid notification id' }, { status: 400 });
   }

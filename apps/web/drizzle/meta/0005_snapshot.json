@@ -1,5 +1,5 @@
 {
-  "id": "b824fee2-5184-4e5d-92f0-3e2fe034f205",
+  "id": "84f33948-81e2-48ce-bef1-badabafef4dc",
   "prevId": "e220a949-a0df-443b-acc6-c46e9059529b",
   "version": "7",
   "dialect": "postgresql",
@@ -95,7 +95,29 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "account_provider_id_account_id_unique": {
+          "name": "account_provider_id_account_id_unique",
+          "columns": [
+            {
+              "expression": "provider_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "account_user_id_user_id_fk": {
           "name": "account_user_id_user_id_fk",
@@ -287,19 +309,19 @@
           "name": "address",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "city": {
           "name": "city",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "contact_no": {
           "name": "contact_no",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "description": {
           "name": "description",
@@ -339,7 +361,15 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -718,14 +748,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "category": {
-          "name": "category",
-          "type": "caetgory_enum",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'other'"
         },
         "co2_footprint": {
           "name": "co2_footprint",
@@ -1760,8 +1782,8 @@
           "primaryKey": true,
           "notNull": true
         },
-        "shoe_id": {
-          "name": "shoe_id",
+        "listing_id": {
+          "name": "listing_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -1788,12 +1810,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "save_shoe_id_shoe_id_fk": {
-          "name": "save_shoe_id_shoe_id_fk",
+        "save_listing_id_shoe_listing_id_fk": {
+          "name": "save_listing_id_shoe_listing_id_fk",
           "tableFrom": "save",
-          "tableTo": "shoe",
+          "tableTo": "shoe_listing",
           "columnsFrom": [
-            "shoe_id"
+            "listing_id"
           ],
           "columnsTo": [
             "id"
@@ -1831,17 +1853,6 @@
         "offer",
         "promotion",
         "system"
-      ]
-    },
-    "public.caetgory_enum": {
-      "name": "caetgory_enum",
-      "schema": "public",
-      "values": [
-        "running",
-        "basketball",
-        "football",
-        "casual",
-        "other"
       ]
     },
     "public.listing_enum": {
