@@ -9,7 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
-import { shoeListing } from './shoe.schema';
+import { shoe } from './shoe.schema';
 
 export const referalEnum = pgEnum('referal_enum', [
   'facebook',
@@ -57,9 +57,9 @@ export const rating = pgTable('rating', {
 
 export const save = pgTable('save', {
   id: serial('id').primaryKey(),
-  listingId: integer('listing_id')
+  shoeId: integer('shoe_id')
     .notNull()
-    .references(() => shoeListing.id, { onDelete: 'cascade' }),
+    .references(() => shoe.id, { onDelete: 'cascade' }),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),

@@ -11,6 +11,7 @@
     "db:migrate": "tsx src/config/migrate.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.8.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "next": "16.2.6",

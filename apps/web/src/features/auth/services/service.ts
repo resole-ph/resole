@@ -1,6 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db } from '@/config/db';
+import { user, save, login } from '@/db/schema';
+import { eq, desc, count } from 'drizzle-orm';
+import type { UpdateUserProfileInput } from '@/features/auth/types/types';
 import { account, session, user } from '@/db/schema';
 import {
   createSessionToken,
@@ -17,6 +20,46 @@ import type {
   CreateGoogleUserInput,
 } from '@/features/auth/types/types';
 export type { User, Session, Account };
+
+async function getLoginStreak(logins: Date[]) {
+  if (logins.length === 0) {
+    return 0;
+  }
+
+  const normalizeToMidnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  const uniqueDaysMs = Array.from(
+    new Set(logins.map(l => normalizeToMidnight(l).getTime()))
+  );
+  const uniqueDays = uniqueDaysMs.map(ms => new Date(ms));
+
+  const today = normalizeToMidnight(new Date());
+  const lastLoginDay = uniqueDays[0];
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysSinceLastLogin = (today.getTime() - lastLoginDay.getTime()) / msPerDay;
+
+  if (daysSinceLastLogin > 1) {
+    return 0;
+  }
+
+  let streak = 1;
+
+  for (let i = 0; i < uniqueDays.length - 1; i++) {
+    const currentDay = uniqueDays[i];
+    const previousDay = uniqueDays[i + 1]; 
+
+    const diffInDays = (currentDay.getTime() - previousDay.getTime()) / msPerDay;
+
+    if (diffInDays === 1) {
+      streak++;
+    } else {
+      break; 
+    }
+  }
+
+  return streak;
+}
 
 export async function getUserById(userId: string): Promise<User | null> {
   try {
@@ -53,6 +96,36 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   }
 }
 
+export async function getUserStatsById(userId: string) {
+  try {
+    const saved = await db
+      .select({ value: count(save.userId) })
+      .from(save)
+      .where(eq(save.userId, userId));
+
+    const coins = await db
+      .select({ value: user.coins })
+      .from(user)
+      .where(eq(user.id, userId));
+    
+    const logins = await db
+      .select({ date: login.createdAt })
+      .from(login)
+      .where(eq(login.userId, userId))
+      .orderBy(desc(login.createdAt));
+    
+    const loginStreak = getLoginStreak(logins.map(item => item.date))
+
+    return {
+      pairsSaved: saved[0].value,
+      coinBalance: coins[0].value,
+      loginStreak: loginStreak
+    };
+  } catch (error) {
+    console.error('Error fetching user by ID:', error);
+    return null;
+  }
+}
 export async function getAccountByProviderAndAccountId(
   providerId: string, 
   accountId: string
@@ -151,9 +224,6 @@ export async function createGoogleUser(input: CreateGoogleUserInput): Promise<Us
     return await getUserById(input.id);
   } catch (error) {
     console.error('Error creating Google user:', error);
-    return null;
-  }
-}
 
 export async function linkGoogleAccountToUser({ 
   userId, 

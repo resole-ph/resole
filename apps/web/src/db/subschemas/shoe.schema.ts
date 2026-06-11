@@ -15,6 +15,14 @@ import {
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 
+export const categoryEnum = pgEnum('caetgory_enum', [
+  'running',
+  'basketball',
+  'football',
+  'casual',
+  'other'
+]);
+
 export const listingEnum = pgEnum('listing_enum', [
   'sale',
   'swap',
@@ -25,6 +33,7 @@ export const shoe = pgTable('shoe', {
   id: serial('id').primaryKey(),
   model: text('model').notNull(),
   brand: text('brand').notNull(),
+  category: categoryEnum('category').default('other').notNull(),
   co2Footprint: numeric('co2_footprint').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
@@ -69,6 +78,7 @@ export const shoeListing = pgTable('shoe_listing', {
   defects: text('defects').array(),
   isRefurbished: boolean('is_refurbished').default(false).notNull(),
   listingMode: listingEnum('listing_mode').default('both').notNull(),
+  isAvailable: boolean('is_available').default(true).notNull(),
   imageUrlTop: text('image_url_top').notNull(),
   imageUrlSide: text('image_url_side').notNull(),
   imageUrlSole: text('image_url_sole').notNull(),

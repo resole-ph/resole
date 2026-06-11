@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
+import { getUserById } from '@/features/auth/services/service';
 import { updateUserProfile, deleteUser } from '@/features/auth/services/service';
 import { normalizeContactNo, isValidEmail } from '@/lib/auth';
 import type { UpdateUserProfileInput } from '@/features/auth/types/types';
