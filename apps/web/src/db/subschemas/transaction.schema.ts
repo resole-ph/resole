@@ -8,6 +8,7 @@ import {
   numeric,
   serial,
   check,
+  index
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
@@ -19,6 +20,12 @@ export const transactionEnum = pgEnum('transaction_enum', [
   'swap',
   'donate'
 ]);
+
+export const voucherEnum = pgEnum('voucher_enum', [
+  'percent_off',
+  'price_off',
+  'free_coins'
+])
 
 export const transaction = pgTable('transaction', {
   id: serial('id').primaryKey(),
@@ -98,4 +105,30 @@ export const donation = pgTable('donation', {
 }, (table) => [
   check('pickup_date_check', sql`${table.pickupDate} > ${table.createdAt}`),
   check('shipped_date_check', sql`${table.shippedDate} > ${table.pickupDate}`)
+]);
+
+export const voucher = pgTable('voucher', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  amount: numeric('amount'),
+  voucherType: voucherEnum('voucher_type').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at').notNull()
+}, (table) => [
+  index('voucher_pkey').on(table.id)
+]);
+
+export const voucherRedeem = pgTable('voucher_redeem', {
+  id: serial('id').primaryKey(),
+  voucherId: integer('voucher_id')
+    .notNull()
+    .references(() => voucher.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id),
+  redeemedAt: timestamp('created_at').defaultNow().notNull()
+}, (table) => [
+  index('voucher_redeem_pkey').on(table.id),
+  index('voucher_redeem_user_id_idx').on(table.userId)
 ]);

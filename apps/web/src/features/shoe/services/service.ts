@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq, getTableColumns } from 'drizzle-orm';
+import { eq, getTableColumns, or } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user } from '@/db/schema';
 import { 
   Shoe, 
@@ -96,6 +96,46 @@ export async function getAllShoeListing() {
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id));
+    
+    return rows as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe listings.");
+    return null;
+  }
+}
+
+export async function getAllShoeListingForSale() {
+  try {
+    const rows = await db
+      .select({
+        user: getTableColumns(user),
+        shoe: getTableColumns(shoe),
+        ...getTableColumns(shoeListing)
+      })
+      .from(shoeListing)
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(or(eq(shoeListing.listingMode, 'sale'), eq(shoeListing.listingMode, 'both')));
+    
+    return rows as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe listings.");
+    return null;
+  }
+}
+
+export async function getAllShoeListingForSwap() {
+  try {
+    const rows = await db
+      .select({
+        user: getTableColumns(user),
+        shoe: getTableColumns(shoe),
+        ...getTableColumns(shoeListing)
+      })
+      .from(shoeListing)
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(or(eq(shoeListing.listingMode, 'swap'), eq(shoeListing.listingMode, 'both')));
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
