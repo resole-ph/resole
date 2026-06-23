@@ -4,15 +4,11 @@ import { referal, rating, save, user, shoe, shoeListing } from '@/db/schema';
 import { 
   Referal,
   CreateReferal,
-  UpdateReferal,
   Rating,
   CreateRating,
   UpdateRating,
-  Save,
   CreateSave,
-  UpdateSave
 } from '@/features/user-action/types/types';
-import { resumeToPipeableStream } from 'react-dom/server';
 
 export async function createReferal(data: CreateReferal) {
   try {
@@ -295,7 +291,7 @@ export async function getSaveByUserId(id: string) {
 
 export async function updateRating(data: UpdateRating, id: number) {
   try {
-    const result = await db 
+    await db 
       .update(rating)
       .set(data)
       .where(eq(rating.id, id))
@@ -310,7 +306,7 @@ export async function updateRating(data: UpdateRating, id: number) {
 
 export async function deleteRating(id: number) {
   try {
-    const result = await db 
+    await db 
       .delete(rating)
       .where(eq(rating.id, id))
 
@@ -323,7 +319,7 @@ export async function deleteRating(id: number) {
 
 export async function deleteSave(id: number) {
   try {
-    const result = await db 
+    await db 
       .delete(save)
       .where(eq(save.id, id))
 
