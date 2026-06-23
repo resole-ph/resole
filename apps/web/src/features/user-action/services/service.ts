@@ -103,7 +103,7 @@ export async function getAllSave() {
         ...getTableColumns(save)
       })
       .from(save)
-      .innerJoin(shoeListing, eq(save.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(save.shoeId, shoe.id))
       .innerJoin(user, eq(save.userId, user.id));
     
     return rows ?? null;
@@ -242,7 +242,7 @@ export async function getSaveById(id: number) {
         ...getTableColumns(referal)
       })
       .from(referal)
-      .innerJoin(shoeListing, eq(save.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(save.shoeId, shoe.id))
       .innerJoin(user, eq(save.userId, user.id))
       .where(eq(save.id, id));
     
@@ -262,9 +262,9 @@ export async function getSaveByListingId(id: number) {
         ...getTableColumns(referal)
       })
       .from(referal)
-      .innerJoin(shoeListing, eq(save.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(save.shoeId, shoe.id))
       .innerJoin(user, eq(save.userId, user.id))
-      .where(eq(save.listingId, id));
+      .where(eq(save.shoeId, id));
     
     return rows ?? null;
   } catch (error) {
@@ -282,7 +282,7 @@ export async function getSaveByUserId(id: string) {
         ...getTableColumns(referal)
       })
       .from(referal)
-      .innerJoin(shoeListing, eq(save.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(save.shoeId, shoe.id))
       .innerJoin(user, eq(save.userId, user.id))
       .where(eq(save.userId, id));
     
