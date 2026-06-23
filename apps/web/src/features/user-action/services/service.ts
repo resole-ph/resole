@@ -19,7 +19,7 @@ export async function createReferal(data: CreateReferal) {
 
     return getReferalById(result[0].id);
   } catch (error) {
-    console.error("Error creating referal.");
+    console.error("Error creating referal.", error);
     return null;
   }
 }
@@ -33,7 +33,7 @@ export async function createRating(data: CreateRating) {
 
     return getRatingById(result[0].id);
   } catch (error) {
-    console.error("Error creating rating.");
+    console.error("Error creating rating.", error);
     return null;
   }
 }
@@ -47,7 +47,7 @@ export async function createSave(data: CreateSave) {
 
     return getSaveById(result[0].id);
   } catch (error) {
-    console.error("Error creating save.");
+    console.error("Error creating save.", error);
     return null;
   }
 }
@@ -66,7 +66,7 @@ export async function getAllReferal() {
     
     return rows as Referal[] ?? null;
   } catch (error) {
-    console.error("Error fetching referals.");
+    console.error("Error fetching referals.", error);
     return null;
   }
 }
@@ -85,7 +85,7 @@ export async function getAllRating() {
     
     return rows as Rating[] ?? null;
   } catch (error) {
-    console.error("Error fetching ratings.");
+    console.error("Error fetching ratings.", error);
     return null;
   }
 }
@@ -104,7 +104,7 @@ export async function getAllSave() {
     
     return rows ?? null;
   } catch (error) {
-    console.error("Error fetching saves.");
+    console.error("Error fetching saves.", error);
     return null;
   }
 }
@@ -124,7 +124,7 @@ export async function getReferalById(id: number) {
     
     return rows[0] as Referal ?? null;
   } catch (error) {
-    console.error("Error fetching referal.");
+    console.error("Error fetching referal.", error);
     return null;
   }
 }
@@ -144,7 +144,7 @@ export async function getReferalByReferedById(id: string) {
     
     return rows as Referal[] ?? null;
   } catch (error) {
-    console.error("Error fetching referal.");
+    console.error("Error fetching referal.", error);
     return null;
   }
 }
@@ -164,7 +164,7 @@ export async function getReferalByReferedToId(id: string) {
     
     return rows as Referal[] ?? null;
   } catch (error) {
-    console.error("Error fetching referal.");
+    console.error("Error fetching referal.", error);
     return null;
   }
 }
@@ -184,7 +184,7 @@ export async function getRatingById(id: number) {
     
     return rows[0] as Rating ?? null;
   } catch (error) {
-    console.error("Error fetching rating.");
+    console.error("Error fetching rating.", error);
     return null;
   }
 }
@@ -204,7 +204,7 @@ export async function getRatingByRaterId(id: string) {
     
     return rows as Rating[] ?? null;
   } catch (error) {
-    console.error("Error fetching rating.");
+    console.error("Error fetching rating.", error);
     return null;
   }
 }
@@ -224,7 +224,7 @@ export async function getRatingByRateeId(id: string) {
     
     return rows as Rating[] ?? null;
   } catch (error) {
-    console.error("Error fetching rating.");
+    console.error("Error fetching rating.", error);
     return null;
   }
 }
@@ -244,7 +244,7 @@ export async function getSaveById(id: number) {
     
     return rows[0] ?? null;
   } catch (error) {
-    console.error("Error fetching save.");
+    console.error("Error fetching save.", error);
     return null;
   }
 }
@@ -264,7 +264,7 @@ export async function getSaveByListingId(id: number) {
     
     return rows ?? null;
   } catch (error) {
-    console.error("Error fetching saves.");
+    console.error("Error fetching saves.", error);
     return null;
   }
 }
@@ -284,7 +284,7 @@ export async function getSaveByUserId(id: string) {
     
     return rows ?? null;
   } catch (error) {
-    console.error("Error fetching saves.");
+    console.error("Error fetching saves.", error);
     return null;
   }
 }
@@ -299,7 +299,7 @@ export async function updateRating(data: UpdateRating, id: number) {
 
     return getRatingById(id) ?? null;
   } catch (error) {
-    console.error("Error updating rating.");
+    console.error("Error updating rating.", error);
     return null
   }
 }
@@ -312,7 +312,7 @@ export async function deleteRating(id: number) {
 
     return "Rating successfully deleted.";
   } catch (error) {
-    console.error("Error deleting rating.");
+    console.error("Error deleting rating.", error);
     return null
   }
 }
@@ -325,7 +325,7 @@ export async function deleteSave(id: number) {
 
     return "Save successfully removed.";
   } catch (error) {
-    console.error("Error deleting save.");
+    console.error("Error deleting save.", error);
     return null
   }
 }
