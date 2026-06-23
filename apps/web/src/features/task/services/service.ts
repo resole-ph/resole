@@ -6,8 +6,7 @@ import {
   CreateTask,
   UpdateTask,
   UserTask,
-  CreateUserTask,
-  UpdateUserTask
+  CreateUserTask
 } from '@/features/task/types/types';
 
 export async function createTask(data: CreateTask) {
