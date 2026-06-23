@@ -35,7 +35,7 @@ export async function createShoe(data: CreateShoe) {
 
     return result[0] as Shoe ?? null;
   } catch (error) {
-    console.error("Error creating shoe.");
+    console.error("Error creating shoe.", error);
     return null;
   }
 }
@@ -49,7 +49,7 @@ export async function createShoePrice(data: CreateShoePrice) {
 
     return getShoePriceByShoeId(result[0].id);
   } catch (error) {
-    console.error("Error creating shoe pricing.");
+    console.error("Error creating shoe pricing.", error);
     return null;
   }
 }
@@ -63,7 +63,7 @@ export async function createShoeListing(data: CreateShoeListing) {
 
     return getShoeListingById(result[0].id);
   } catch (error) {
-    console.error("Error creating shoe listing.");
+    console.error("Error creating shoe listing.", error);
     return null;
   }
 }
@@ -76,7 +76,7 @@ export async function getAllShoe() {
     
     return rows as Shoe[] ?? null;
   } catch (error) {
-    console.error("Error fetching shoes.");
+    console.error("Error fetching shoes.", error);
     return null;
   }
 }
@@ -93,7 +93,7 @@ export async function getAllShoePrice() {
     
     return rows as ShoePrice[] ?? null;
   } catch (error) {
-    console.error("Error fetching shoe prices.");
+    console.error("Error fetching shoe prices.", error);
     return null;
   }
 }
@@ -115,7 +115,7 @@ export async function getAllShoeListing() {
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
-    console.error("Error fetching shoe listings.");
+    console.error("Error fetching shoe listings.", error);
     return null;
   }
 }
@@ -128,7 +128,7 @@ export async function getShoeCategories() {
     
     return rows ?? null;
   } catch (error) {
-    console.error("Error fetching shoe categories.");
+    console.error("Error fetching shoe categories.", error);
     return null;
   }
 }
@@ -148,7 +148,7 @@ export async function getAllShoeListingForSale() {
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
-    console.error("Error fetching shoe listings.");
+    console.error("Error fetching shoe listings.", error);
     return null;
   }
 }
@@ -168,7 +168,7 @@ export async function getAllShoeListingForSwap() {
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
-    console.error("Error fetching shoe listings.");
+    console.error("Error fetching shoe listings.", error);
     return null;
   }
 }
@@ -193,7 +193,7 @@ export async function getShoeBySearch(query: string) {
 
     return searchResults as Shoe[] ?? null;
   } catch (error) {
-    console.error("Error fetching shoe search results.");
+    console.error("Error fetching shoe search results.", error);
     return null;
   }
 }
@@ -207,7 +207,7 @@ export async function getShoeById(id: number) {
     
     return rows[0] as Shoe ?? null;
   } catch (error) {
-    console.error("Error fetching shoe.");
+    console.error("Error fetching shoe.", error);
     return null;
   }
 }
@@ -225,7 +225,7 @@ export async function getShoePriceByShoeId(id: number) {
     
     return rows[0] as ShoePrice ?? null;
   } catch (error) {
-    console.error("Error fetching shoe pricing.");
+    console.error("Error fetching shoe pricing.", error);
     return null;
   }
 }
@@ -245,7 +245,7 @@ export async function getShoeListingById(id: number) {
     
     return rows[0] as ShoeListing ?? null;
   } catch (error) {
-    console.error("Error fetching shoe listings.");
+    console.error("Error fetching shoe listings.", error);
     return null;
   }
 }
@@ -260,7 +260,7 @@ export async function updateShoe(data: UpdateShoe, id: number) {
 
     return result[0] as Shoe ?? null;
   } catch (error) {
-    console.error("Error updating shoe.");
+    console.error("Error updating shoe.", error);
     return null
   }
 }
@@ -275,7 +275,7 @@ export async function updateShoePrice(data: UpdateShoePrice, id: number) {
 
     return getShoePriceByShoeId(result[0].id);
   } catch (error) {
-    console.error("Error updating shoe pricing.");
+    console.error("Error updating shoe pricing.", error);
     return null
   }
 }
@@ -290,7 +290,7 @@ export async function updateShoeListing(data: UpdateShoeListing, id: number) {
 
     return getShoeListingById(result[0].id);
   } catch (error) {
-    console.error("Error updating shoe pricing.");
+    console.error("Error updating shoe pricing.", error);
     return null
   }
 }
@@ -303,7 +303,7 @@ export async function deleteShoe(id: number) {
 
     return "Shoe successfully deleted.";
   } catch (error) {
-    console.error("Error deleting shoe.");
+    console.error("Error deleting shoe.", error);
     return null
   }
 }
@@ -316,7 +316,7 @@ export async function deleteShoeListing(id: number) {
 
     return "Shoe listing successfully deleted.";
   } catch (error) {
-    console.error("Error deleting shoe listing.");
+    console.error("Error deleting shoe listing.", error);
     return null
   }
 }
