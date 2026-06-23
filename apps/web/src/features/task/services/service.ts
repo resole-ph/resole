@@ -160,7 +160,7 @@ export async function updateTask(data: UpdateTask, id: number) {
 
 export async function deleteTask(id: number) {
   try {
-    const result = await db 
+    await db 
       .delete(task)
       .where(eq(task.id, id))
 
