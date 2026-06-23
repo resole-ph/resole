@@ -6,8 +6,7 @@ import {
   CreateTask,
   UpdateTask,
   UserTask,
-  CreateUserTask,
-  UpdateUserTask
+  CreateUserTask
 } from '@/features/task/types/types';
 
 export async function createTask(data: CreateTask) {
@@ -19,7 +18,7 @@ export async function createTask(data: CreateTask) {
 
     return result[0] as Task ?? null;
   } catch (error) {
-    console.error("Error creating task.");
+    console.error("Error creating task.", error);
     return null;
   }
 }
@@ -33,7 +32,7 @@ export async function createUserTask(data: CreateUserTask) {
 
     return getUserTaskById(result[0].id);
   } catch (error) {
-    console.error("Error creating user task.");
+    console.error("Error creating user task.", error);
     return null;
   }
 }
@@ -46,7 +45,7 @@ export async function getAllTask() {
     
     return rows as Task[] ?? null;
   } catch (error) {
-    console.error("Error fetching tasks.");
+    console.error("Error fetching tasks.", error);
     return null;
   }
 }
@@ -65,7 +64,7 @@ export async function getAllUserTask() {
     
     return rows as UserTask[] ?? null;
   } catch (error) {
-    console.error("Error fetching user tasks.");
+    console.error("Error fetching user tasks.", error);
     return null;
   }
 }
@@ -79,7 +78,7 @@ export async function getTaskById(id: number) {
     
     return rows[0] as Task ?? null;
   } catch (error) {
-    console.error("Error fetching task.");
+    console.error("Error fetching task.", error);
     return null;
   }
 }
@@ -99,7 +98,7 @@ export async function getUserTaskById(id: number) {
     
     return rows as UserTask[] ?? null;
   } catch (error) {
-    console.error("Error fetching user task.");
+    console.error("Error fetching user task.", error);
     return null;
   }
 }
@@ -119,7 +118,7 @@ export async function getUserTaskByTaskId(id: number) {
     
     return rows as UserTask[] ?? null;
   } catch (error) {
-    console.error("Error fetching user task.");
+    console.error("Error fetching user task.", error);
     return null;
   }
 }
@@ -139,7 +138,7 @@ export async function getUserTaskByUserId(id: string) {
     
     return rows[0] as UserTask ?? null;
   } catch (error) {
-    console.error("Error fetching user task.");
+    console.error("Error fetching user task.", error);
     return null;
   }
 }
@@ -154,20 +153,20 @@ export async function updateTask(data: UpdateTask, id: number) {
 
     return result[0] as Task ?? null;
   } catch (error) {
-    console.error("Error updating task.");
+    console.error("Error updating task.", error);
     return null
   }
 }
 
 export async function deleteTask(id: number) {
   try {
-    const result = await db 
+    await db 
       .delete(task)
       .where(eq(task.id, id))
 
     return "Task successfully deleted.";
   } catch (error) {
-    console.error("Error deleting task.");
+    console.error("Error deleting task.", error);
     return null
   }
 }

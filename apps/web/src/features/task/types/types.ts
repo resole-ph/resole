@@ -1,4 +1,4 @@
-import { task, userTask, user } from '@/db/schema';
+import { task, userTask } from '@/db/schema';
 import { User } from '@/features/auth/types/types';
 
 export type Task = typeof task.$inferSelect;

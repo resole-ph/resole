@@ -1,10 +1,7 @@
-import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db } from '@/config/db';
-import { user, save, login } from '@/db/schema';
-import { eq, desc, count } from 'drizzle-orm';
-import type { UpdateUserProfileInput } from '@/features/auth/types/types';
-import { account, session, user } from '@/db/schema';
+import { and, eq, desc, count } from 'drizzle-orm';
+import { account, session, user, save, login } from '@/db/schema';
 import {
   createSessionToken,
   hashPassword,
@@ -224,6 +221,9 @@ export async function createGoogleUser(input: CreateGoogleUserInput): Promise<Us
     return await getUserById(input.id);
   } catch (error) {
     console.error('Error creating Google user:', error);
+    return null;
+  }
+}
 
 export async function linkGoogleAccountToUser({ 
   userId, 
