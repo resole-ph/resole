@@ -1,4 +1,4 @@
-import { shoe, shoePrice, shoeListing, user } from '@/db/schema';
+import { shoe, shoePrice, shoeListing } from '@/db/schema';
 import { User } from '@/features/auth/types/types';
 
 export type Shoe = typeof shoe.$inferSelect;
