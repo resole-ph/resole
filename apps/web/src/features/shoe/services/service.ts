@@ -297,7 +297,7 @@ export async function updateShoeListing(data: UpdateShoeListing, id: number) {
 
 export async function deleteShoe(id: number) {
   try {
-    const result = await db 
+    await db 
       .delete(shoe)
       .where(eq(shoe.id, id))
 
@@ -310,7 +310,7 @@ export async function deleteShoe(id: number) {
 
 export async function deleteShoeListing(id: number) {
   try {
-    const result = await db 
+    await db 
       .delete(shoeListing)
       .where(eq(shoeListing.id, id))
 
