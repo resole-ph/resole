@@ -12,7 +12,7 @@ export async function createCharity(data: CreateCharity) {
 
     return result[0] as Charity ?? null;
   } catch (error) {
-    console.error("Error creating charity.");
+    console.error("Error creating charity.", error);
     return null;
   }
 }
@@ -25,7 +25,7 @@ export async function getAllCharity() {
     
     return rows as Charity[] ?? null;
   } catch (error) {
-    console.error("Error fetching charities.");
+    console.error("Error fetching charities.", error);
     return null;
   }
 }
@@ -39,7 +39,7 @@ export async function getCharityById(id: number) {
     
     return rows[0] as Charity ?? null;
   } catch (error) {
-    console.error("Error fetching charity.");
+    console.error("Error fetching charity.", error);
     return null;
   }
 }
@@ -54,20 +54,20 @@ export async function updateCharity(data: UpdateCharity, id: number) {
 
     return rows[0] as Charity ?? null;
   } catch (error) {
-    console.error("Error updating charity.");
+    console.error("Error updating charity.", error);
     return null
   }
 }
 
 export async function deleteCharity(id: number) {
   try {
-    const result = await db 
+    await db 
       .delete(charity)
       .where(eq(charity.id, id))
 
     return "Charity successfully deleted.";
   } catch (error) {
-    console.error("Error deleting charity.");
+    console.error("Error deleting charity.", error);
     return null
   }
 }
