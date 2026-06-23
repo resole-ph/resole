@@ -11,7 +11,7 @@ export async function getAllVoucher() {
     
     return rows as Voucher[] ?? null;
   } catch (error) {
-    console.error("Error fetching vouchers.");
+    console.error("Error fetching vouchers.", error);
     return null;
   }
 }
@@ -25,7 +25,7 @@ export async function getVoucherById(id: number) {
     
     return rows[0] as Voucher ?? null;
   } catch (error) {
-    console.error("Error fetching voucher.");
+    console.error("Error fetching voucher.", error);
     return null;
   }
 }
