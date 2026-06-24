@@ -41,7 +41,8 @@ export const transaction = pgTable('transaction', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull()
+    .notNull(),
+  completedAt: timestamp('completed_at')
 }, (table) => [
   check('coins_earned_check', sql`${table.coinsEarned} > 0`),
   index('transaction_listing_id_idx').on(table.listingId),
