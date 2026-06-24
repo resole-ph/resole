@@ -18,10 +18,8 @@ export type Transaction = Omit<InferTransaction, 'listingId' | 'recipientId' > &
 export type CreateTransaction = typeof transaction.$inferInsert;
 export type UpdateTransaction = Partial<InferTransaction>;
 
-type InferTrackingEvent = typeof trackingEvent.$inferSelect;
-export type TrackingEvent = Omit<InferTrackingEvent, 'transactionId'> & { transaction: Transaction };
+export type TrackingEvent = typeof trackingEvent.$inferSelect;
 export type CreateTrackingEvent = typeof trackingEvent.$inferInsert;
-export type UpdateTrackingEvent = Partial<InferTrackingEvent>;
 
 type InferSale = typeof sale.$inferSelect;
 export type Sale = Omit<InferSale, 'transactionId'> & { transaction: Transaction };
