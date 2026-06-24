@@ -14,9 +14,9 @@ import {
 } from '@/features/shoe/types/types';
 import { GoogleGenAI } from "@google/genai";
 
-async function generateEmbedding(context: string): Promise<number[]> {
-
-  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY  });
+export async function generateEmbedding(context: string): Promise<number[]> {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
 
   const response = await ai.models.embedContent({
     model: 'gemini-embedding-2',
