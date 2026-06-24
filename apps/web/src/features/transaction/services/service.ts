@@ -17,7 +17,7 @@ import {
 import { 
   Voucher } from '@/features/transaction/types/types';
 
-async function getTransactionDetails(transaction: any) {
+export async function getTransactionDetails(transaction: any) {
   if (!transaction.id || !transaction.type) return;
 
   let details;
@@ -57,7 +57,7 @@ export async function getAllTransaction() {
       .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
       .leftJoin(user, eq(transaction.recipientId, user.id));
 
-    return rows.map(item => getTransactionDetails(item)) ?? null;
+    return rows ?? null;
   } catch (error) {
     console.error("Error fetching transactions.", error);
     return null;
@@ -143,7 +143,7 @@ export async function getTransactionById(id: number) {
       .leftJoin(user, eq(transaction.recipientId, user.id))
       .where(eq(transaction.id, id));
 
-    return getTransactionDetails(result[0]) ?? null;
+    return result[0] ?? null;
   } catch (error) {
     console.error("Error fetching transactions.", error);
     return null;
@@ -169,7 +169,7 @@ export async function getAllUserTransactions(userId: string) {
         )
       );
 
-    return rows.map(item => getTransactionDetails(item)) ?? null;
+    return rows ?? null;
   } catch (error) {
     console.error("Error fetching user transactions.", error);
     return null;
