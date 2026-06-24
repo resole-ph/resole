@@ -48,6 +48,18 @@ export const transaction = pgTable('transaction', {
   index('transaction_recipient_id_idx').on(table.recipientId)
 ]);
 
+export const trackingEvent = pgTable('tracking_event', {
+  id: serial('id').primaryKey(),
+  transactionId: integer('transaction_id')
+    .notNull()
+    .references(() => transaction.id, { onDelete: 'cascade' }),
+  status: text('status').notNull(),
+  message: text('message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('tracking_event_transaction_id_idx').on(table.transactionId)
+]);
+
 export const sale = pgTable('sale', {
   id: serial('id').primaryKey(),
   transactionId: integer('transaction_id')
@@ -108,12 +120,8 @@ export const donation = pgTable('donation', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  pickupDate: timestamp('pickup_date'),
-  shippedDate: timestamp('shipped_date')
+    .notNull()
 }, (table) => [
-  check('pickup_date_check', sql`${table.pickupDate} > ${table.createdAt}`),
-  check('shipped_date_check', sql`${table.shippedDate} > ${table.pickupDate}`),
   index('donation_transaction_id_idx').on(table.transactionId),
   index('donation_charity_id_idx').on(table.charityId)
 ]);

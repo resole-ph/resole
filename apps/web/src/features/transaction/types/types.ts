@@ -1,5 +1,6 @@
 import { 
-  transaction,  
+  transaction,
+  trackingEvent,  
   sale,
   swap,
   donation,
@@ -16,6 +17,11 @@ type InferTransaction = typeof transaction.$inferSelect;
 export type Transaction = Omit<InferTransaction, 'listingId' | 'recipientId' > & { listing: ShoeListing, recipient: User };
 export type CreateTransaction = typeof transaction.$inferInsert;
 export type UpdateTransaction = Partial<InferTransaction>;
+
+type InferTrackingEvent = typeof trackingEvent.$inferSelect;
+export type TrackingEvent = Omit<InferTrackingEvent, 'transactionId'> & { transaction: Transaction };
+export type CreateTrackingEvent = typeof trackingEvent.$inferInsert;
+export type UpdateTrackingEvent = Partial<InferTrackingEvent>;
 
 type InferSale = typeof sale.$inferSelect;
 export type Sale = Omit<InferSale, 'transactionId'> & { transaction: Transaction };
@@ -38,7 +44,7 @@ export type CreateRedemption = typeof redemption.$inferInsert;
 export type UpdateRedemption = Partial<InferRedemption>;
 
 type InferSwapItem = typeof swapItem.$inferSelect;
-export type SwapItem = Omit<InferSwapItem, 'swapId' | 'swapItemId'> & { swap: Swap, swapItem: ShoeListing };
+export type SwapItem = Omit<InferSwapItem, 'swapId' | 'itemId'> & { swap: Swap, item: ShoeListing };
 export type CreateSwapItem = typeof swapItem.$inferInsert;
 export type UpdateSwapItem = Partial<InferSwapItem>;
 
