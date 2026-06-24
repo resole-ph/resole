@@ -30,7 +30,6 @@ export const ticket = pgTable('ticket', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   transactionId: integer('transaction_id')
-    .notNull()
     .references(() => transaction.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   issue: text('issue').notNull(),
