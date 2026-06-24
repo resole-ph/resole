@@ -1,4 +1,4 @@
-{
+  {
   "version": "7",
   "dialect": "postgresql",
   "entries": [
@@ -56,6 +56,13 @@
       "version": "7",
       "when": 1781011185137,
       "tag": "0007_greedy_wong",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781011185138,
+      "tag": "0008_add_cart_table",
       "breakpoints": true
     }
   ]
