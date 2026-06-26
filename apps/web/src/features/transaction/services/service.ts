@@ -15,7 +15,11 @@ import {
   trackingEvent
 } from '@/db/schema';
 import { 
-  Voucher } from '@/features/transaction/types/types';
+  CreateTransaction, 
+  Voucher 
+} from '@/features/transaction/types/types';
+import { getSaveById } from '@/features/user-action/services/service';
+import { ShoeListing } from '@/features/shoe/types/types';
 
 export async function getTransactionDetails(transaction: any) {
   if (!transaction.id || !transaction.type) return;
@@ -43,6 +47,62 @@ export async function getTransactionDetails(transaction: any) {
     details: details,
     ...transaction
   };
+}
+
+export async function createTransaction(data: CreateTransaction) {
+  try {
+    const result = await db
+      .insert(transaction)
+      .values(data)
+      .returning({ id: transaction.id });
+    
+    return getTransactionById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error creating transaction.", error);
+    return null;
+  }
+}
+
+export async function createSale(transactionId: number, price: number) {
+  try {
+    const result = await db
+      .insert(sale)
+      .values({
+        transactionId: transactionId,
+        price: price.toString()
+      })
+      .returning({ id: sale.id });
+    
+    return getSaveById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error creating sale.", error);
+    return null;
+  }
+}
+
+export async function createSwap(transactionId: number, listings: ShoeListing[]) {
+  try {
+    const result = await db
+      .insert(swap)
+      .values({
+        transactionId: transactionId,
+      })
+      .returning({ id: sale.id });
+    
+    for (const listing of listings) {
+      await db
+        .insert(swapItem)
+        .values({
+          swapId: result[0].id,
+          itemId: listing.id
+        })
+    }
+
+    return getSwapById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error creating sale.", error);
+    return null;
+  }
 }
 
 export async function getAllTransaction() {
@@ -221,7 +281,7 @@ export async function getSwapById(id: number) {
       (swapResult as any).items = items;
     }
 
-    return swapResult ? { ...swapResult, items } : null;
+    return swapResult ? { items, ...swapResult } : null;
   } catch (error) {
     console.error("Error fetching swap transaction.", error);
     return null;

@@ -30,7 +30,7 @@ export async function GET(
 
   const shoeListing = await getShoeListingById(shoeListingId);
   if (!shoeListing) {
-    return NextResponse.json({ error: 'Invalid shoeListingId id' }, { status: 404 });
+    return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 404 });
   }
 
   return NextResponse.json({
