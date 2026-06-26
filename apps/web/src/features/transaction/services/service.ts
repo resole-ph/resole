@@ -18,7 +18,6 @@ import {
   CreateTransaction, 
   Voucher 
 } from '@/features/transaction/types/types';
-import { getSaveById } from '@/features/user-action/services/service';
 import { ShoeListing } from '@/features/shoe/types/types';
 
 export async function getTransactionDetails(transaction: any) {
@@ -73,7 +72,7 @@ export async function createSale(transactionId: number, price: number) {
       })
       .returning({ id: sale.id });
     
-    return getSaveById(result[0].id) ?? null;
+    return getSaleById(result[0].id) ?? null;
   } catch (error) {
     console.error("Error creating sale.", error);
     return null;
@@ -133,6 +132,7 @@ export async function getAllSale() {
       })
       .from(sale)
       .innerJoin(transaction, eq(sale.transactionId, transaction.id))
+      .leftJoin(redemption, eq(sale.id, redemption.saleId))
 
     return rows ?? null;
   } catch (error) {
@@ -246,7 +246,7 @@ export async function getSaleById(id: number) {
       })
       .from(sale)
       .innerJoin(transaction, eq(sale.transactionId, transaction.id))
-      .innerJoin(redemption, eq(sale.id, redemption.saleId))
+      .leftJoin(redemption, eq(sale.id, redemption.saleId))
       .where(eq(sale.id, id));
 
     return result[0] ?? null;

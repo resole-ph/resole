@@ -44,12 +44,12 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to create swap transaction' }, { status: 400 });
   }
 
-  const items = await createSwap(transactionDetails.id, listings);
-  if (!items) {
+  const swap = await createSwap(transactionDetails.id, listings);
+  if (!swap) {
     return NextResponse.json({ error: 'Failed to retrieve swap details and items' }, { status: 400 });
   }
 
-  const { transaction, ...swapDetails } = items;
+  const { transaction, ...swapDetails } = swap;
 
   return NextResponse.json({
     transactionDetails: transactionDetails,
