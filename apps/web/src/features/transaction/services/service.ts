@@ -340,3 +340,39 @@ export async function getVoucherById(id: number) {
     return null;
   }
 }
+
+export async function acceptOffer(id: number) {
+  try {
+    const result = await db 
+      .update(transaction)
+      .set({ 
+        isAccepted: true,
+        acceptedAt: new Date() 
+      })
+      .where(eq(transaction.id, id))
+      .returning({ id: transaction.id });
+
+    return getTransactionById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error accepting offer.", error);
+    return null
+  }
+}
+
+export async function declineOffer(id: number) {
+  try {
+    const result = await db 
+      .update(transaction)
+      .set({ 
+        isAccepted: false,
+        acceptedAt: null 
+      })
+      .where(eq(transaction.id, id))
+      .returning({ id: transaction.id });
+
+    return getTransactionById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error declining offer.", error);
+    return null
+  }
+}   

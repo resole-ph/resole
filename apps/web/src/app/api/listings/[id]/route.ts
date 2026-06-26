@@ -25,12 +25,12 @@ export async function GET(
   const { id } = await context.params;
   const shoeListingId = parseShoeListingId(id);
   if (!shoeListingId) {
-    return NextResponse.json({ error: 'Invalid notification id' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
 
   const shoeListing = await getShoeListingById(shoeListingId);
   if (!shoeListing) {
-    return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 404 });
+    return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
   }
 
   return NextResponse.json({

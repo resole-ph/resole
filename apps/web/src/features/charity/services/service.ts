@@ -46,13 +46,13 @@ export async function getCharityById(id: number) {
 
 export async function updateCharity(data: UpdateCharity, id: number) {
   try {
-    const rows = await db 
+    const result = await db 
       .update(charity)
       .set(data)
       .where(eq(charity.id, id))
       .returning();
 
-    return rows[0] as Charity ?? null;
+    return result[0] as Charity ?? null;
   } catch (error) {
     console.error("Error updating charity.", error);
     return null
