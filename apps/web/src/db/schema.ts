@@ -6,3 +6,4 @@ export * from './subschemas/task.schema';
 export * from './subschemas/transaction.schema';
 export * from './subschemas/user-action.schema';
 export * from './subschemas/ticket.schema';
+export * from './subschemas/inbox.schema';
