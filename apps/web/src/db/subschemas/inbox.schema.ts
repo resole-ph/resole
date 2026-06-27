@@ -5,11 +5,13 @@ import {
   boolean,
   timestamp,
   integer,
+  index,
+  check,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 import { transaction } from './transaction.schema';
+import { sql } from 'drizzle-orm';
 
 export const conversation = pgTable('conversation', {
   id: serial('id').primaryKey(),
@@ -27,7 +29,12 @@ export const conversation = pgTable('conversation', {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull()
-});
+}, (table) => [
+  check('conversation_user_check', sql`${table.listerId} != ${table.recipientId}`),
+  index('conversation_lister_id_idx').on(table.listerId),
+  index('conversation_recipient_id_idx').on(table.recipientId),
+  index('conversation_transaction_id_idx').on(table.transactionId),
+]);
 
 export const message = pgTable('message', {
   id: serial('id').primaryKey(),
@@ -46,4 +53,8 @@ export const message = pgTable('message', {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   deletedAt: timestamp('deleted_at')
-});
+}, (table) => [
+  check('message_reply_check', sql`${table.id} != ${table.replyTo}`),
+  index('message_user_id_idx').on(table.userId),
+  index('message_conversation_id_idx').on(table.conversationId),
+]);
