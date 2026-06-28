@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { createMessage, getConversationById, getConversationMessages } from '@/features/inbox/services/service';
-import { getTransactionDetails } from '@/features/transaction/services/service';
+import { createMessage, getConversationById } from '@/features/inbox/services/service';
 
 function parseConversationId(rawId: string) {
   const conversationId = Number.parseInt(rawId, 10);

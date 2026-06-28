@@ -34,7 +34,7 @@ export async function createMessage(data: CreateMessage) {
   }
 }
 
-export async function getConversations(id: number) {
+export async function getConversations() {
   try {
     const rows = await db
       .select({

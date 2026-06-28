@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
 import { eq, getTableColumns } from 'drizzle-orm';
-import { ticket, transaction, user } from '@/db/schema';
+import { ticket, user } from '@/db/schema';
 import { Ticket, CreateTicket, UpdateTicket } from '@/features/ticket/types/types';
 
 export async function createTicket(data: CreateTicket) {

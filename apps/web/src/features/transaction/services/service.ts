@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq, and, or, sql, desc, aliasedTable, getTableColumns } from 'drizzle-orm';
+import { eq, and, or, sql, desc, getTableColumns } from 'drizzle-orm';
 import { 
   transaction,  
   sale,
@@ -10,7 +10,6 @@ import {
   charity,
   voucher, 
   user,
-  shoe,
   shoeListing,
   trackingEvent,
   cartItem
