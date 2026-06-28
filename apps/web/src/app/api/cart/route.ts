@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { db } from '@/config/db';
-import { and, eq, getTableColumns } from 'drizzle-orm';
-import { cartItem, shoeListing, shoe } from '@/db/schema';
+import { getCartItems } from '@/features/cart/services/service';
 
 export async function GET(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
@@ -15,25 +13,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const isBuyNow = searchParams.get('isBuyNow') === 'true';
 
-    const items = await db
-      .select({
-        cartItemId: cartItem.id,
-        quantity: cartItem.quantity,
-        isBuyNow: cartItem.isBuyNow,
-        createdAt: cartItem.createdAt,
-        updatedAt: cartItem.updatedAt,
-        listing: getTableColumns(shoeListing),
-        shoe: getTableColumns(shoe),
-      })
-      .from(cartItem)
-      .innerJoin(shoeListing, eq(cartItem.listingId, shoeListing.id))
-      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
-      .where(
-        and(
-          eq(cartItem.userId, currentUser.user.id),
-          eq(cartItem.isBuyNow, isBuyNow)
-        )
-      );
+    const items = await getCartItems(currentUser.user.id, isBuyNow);
 
     return NextResponse.json({ cart: items });
   } catch (error) {

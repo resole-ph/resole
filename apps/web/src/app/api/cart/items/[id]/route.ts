@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { db } from '@/config/db';
-import { and, eq } from 'drizzle-orm';
-import { cartItem } from '@/db/schema';
+import { updateCartItem, deleteCartItem } from '@/features/cart/services/service';
 
 function parseCartItemId(rawId: string) {
   const cartItemId = Number.parseInt(rawId, 10);
@@ -38,28 +36,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Quantity must be a positive number' }, { status: 400 });
     }
 
-    const updated = await db
-      .update(cartItem)
-      .set({
-        quantity: quantity,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(cartItem.id, cartItemId),
-          eq(cartItem.userId, currentUser.user.id)
-        )
-      )
-      .returning();
-
-    if (updated.length === 0) {
-      return NextResponse.json({ error: 'Cart item not found or unauthorized' }, { status: 404 });
-    }
-
-    return NextResponse.json({ cartItem: updated[0] });
-  } catch (error) {
+    const result = await updateCartItem(cartItemId, currentUser.user.id, quantity);
+    return NextResponse.json({ cartItem: result });
+  } catch (error: any) {
     console.error('Error updating cart item:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 400 });
   }
 }
 
@@ -80,23 +61,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid cart item id' }, { status: 400 });
     }
 
-    const deleted = await db
-      .delete(cartItem)
-      .where(
-        and(
-          eq(cartItem.id, cartItemId),
-          eq(cartItem.userId, currentUser.user.id)
-        )
-      )
-      .returning();
-
-    if (deleted.length === 0) {
-      return NextResponse.json({ error: 'Cart item not found or unauthorized' }, { status: 404 });
-    }
-
+    await deleteCartItem(cartItemId, currentUser.user.id);
     return NextResponse.json({ message: 'Item successfully removed from cart' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting cart item:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 400 });
   }
 }
