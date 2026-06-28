@@ -1,4 +1,4 @@
-  {
+{
   "version": "7",
   "dialect": "postgresql",
   "entries": [
@@ -63,6 +63,13 @@
       "version": "7",
       "when": 1781011185138,
       "tag": "0008_add_cart_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782671328208,
+      "tag": "0009_nappy_bloodaxe",
       "breakpoints": true
     }
   ]
