@@ -15,7 +15,167 @@ import {
   trackingEvent,
   cartItem
 } from '@/db/schema';
-import { Voucher } from '@/features/transaction/types/types';
+import { 
+  CreateTransaction, 
+  Voucher 
+} from '@/features/transaction/types/types';
+import { ShoeListing } from '@/features/shoe/types/types';
+
+export async function getTransactionDetails(transaction: any) {
+  if (!transaction.id || !transaction.type) return;
+
+  let details;
+  switch (transaction.type) {
+    case 'sale':
+      details = await getSaleById(transaction.id);
+      break;
+    case 'swap':
+      details = await getSwapById(transaction.id);
+      break;
+    case 'donation':
+      details = await getDonationById(transaction.id);
+      break;
+    default:
+      details = null;
+  }
+
+  if (details && typeof details === 'object' && 'transaction' in details) {
+    delete (details as any).transaction;
+  }
+
+  return {
+    details: details,
+    ...transaction
+  };
+}
+
+export async function createTransaction(data: CreateTransaction) {
+  try {
+    const result = await db
+      .insert(transaction)
+      .values(data)
+      .returning({ id: transaction.id });
+    
+    return getTransactionById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error creating transaction.", error);
+    return null;
+  }
+}
+
+export async function createSale(transactionId: number, price: number) {
+  try {
+    const result = await db
+      .insert(sale)
+      .values({
+        transactionId: transactionId,
+        price: price.toString()
+      })
+      .returning({ id: sale.id });
+    
+    return getSaleById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error creating sale.", error);
+    return null;
+  }
+}
+
+export async function createSwap(transactionId: number, listings: ShoeListing[]) {
+  try {
+    const result = await db
+      .insert(swap)
+      .values({
+        transactionId: transactionId,
+      })
+      .returning({ id: sale.id });
+    
+    for (const listing of listings) {
+      await db
+        .insert(swapItem)
+        .values({
+          swapId: result[0].id,
+          itemId: listing.id
+        })
+    }
+
+    return getSwapById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error creating sale.", error);
+    return null;
+  }
+}
+
+export async function getAllTransaction() {
+  try {
+    const rows = await db
+      .select({
+        listing: getTableColumns(shoeListing),
+        recipient: getTableColumns(user),
+        ...getTableColumns(transaction)
+      })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .leftJoin(user, eq(transaction.recipientId, user.id));
+
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching transactions.", error);
+    return null;
+  }
+}
+
+export async function getAllSale() {
+  try {
+    const rows = await db
+      .select({
+        transaction: getTableColumns(transaction),
+        ...getTableColumns(sale)
+      })
+      .from(sale)
+      .innerJoin(transaction, eq(sale.transactionId, transaction.id))
+      .leftJoin(redemption, eq(sale.id, redemption.saleId))
+
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching sale transactions.", error);
+    return null;
+  }
+}
+
+export async function getAllSwap() {
+  try {
+    const rows = await db
+      .select({
+        transaction: getTableColumns(transaction),
+        ...getTableColumns(swap)
+      })
+      .from(swap)
+      .innerJoin(transaction, eq(swap.transactionId, transaction.id))
+
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching swap transactions.", error);
+    return null;
+  }
+}
+
+export async function getAllDonation() {
+  try {
+    const rows = await db
+      .select({
+        transaction: getTableColumns(transaction),
+        charity: getTableColumns(charity),
+        ...getTableColumns(donation)
+      })
+      .from(donation)
+      .innerJoin(transaction, eq(donation.transactionId, transaction.id))
+      .innerJoin(charity, eq(donation.charityId, charity.id));
+
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching donation transactions.", error);
+    return null;
+  }
 
 export async function getTransactionDetails(transaction: any) {
   if (!transaction.id || !transaction.type) return;
@@ -186,7 +346,7 @@ export async function getSaleById(id: number) {
       })
       .from(sale)
       .innerJoin(transaction, eq(sale.transactionId, transaction.id))
-      .innerJoin(redemption, eq(sale.id, redemption.saleId))
+      .leftJoin(redemption, eq(sale.id, redemption.saleId))
       .where(eq(sale.id, id));
 
     return result[0] ?? null;
@@ -221,7 +381,7 @@ export async function getSwapById(id: number) {
       (swapResult as any).items = items;
     }
 
-    return swapResult ? { ...swapResult, items } : null;
+    return swapResult ? { items, ...swapResult } : null;
   } catch (error) {
     console.error("Error fetching swap transaction.", error);
     return null;

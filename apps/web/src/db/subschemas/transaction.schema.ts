@@ -35,13 +35,15 @@ export const transaction = pgTable('transaction', {
   recipientId: text('recipient_id')
     .references(() => user.id),
   type: transactionEnum('type').notNull(),
+  isAccepted: boolean('is_accepted').default(false).notNull(),
   isCompleted: boolean('is_completed').default(false).notNull(),
-  coinsEarned: integer('coins_earned').notNull(),
+  coinsEarned: integer('coins_earned'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  acceptedAt: timestamp('accepted_at'),
   completedAt: timestamp('completed_at')
 }, (table) => [
   check('coins_earned_check', sql`${table.coinsEarned} > 0`),

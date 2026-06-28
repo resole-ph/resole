@@ -233,9 +233,9 @@ export async function getSaveById(id: number) {
   try {
     const rows = await db
       .select({
-        listing: getTableColumns(shoeListing),
+        shoe: getTableColumns(shoe),
         user: getTableColumns(user),
-        ...getTableColumns(referal)
+        ...getTableColumns(save)
       })
       .from(referal)
       .innerJoin(shoe, eq(save.shoeId, shoe.id))
@@ -253,9 +253,9 @@ export async function getSaveByListingId(id: number) {
   try {
     const rows = await db
       .select({
-        listing: getTableColumns(shoeListing),
+        listing: getTableColumns(shoe),
         user: getTableColumns(user),
-        ...getTableColumns(referal)
+        ...getTableColumns(save)
       })
       .from(referal)
       .innerJoin(shoe, eq(save.shoeId, shoe.id))
@@ -273,9 +273,9 @@ export async function getSaveByUserId(id: string) {
   try {
     const rows = await db
       .select({
-        listing: getTableColumns(shoeListing),
+        listing: getTableColumns(shoe),
         user: getTableColumns(user),
-        ...getTableColumns(referal)
+        ...getTableColumns(save)
       })
       .from(referal)
       .innerJoin(shoe, eq(save.shoeId, shoe.id))
