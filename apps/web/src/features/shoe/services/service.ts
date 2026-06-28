@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, getTableColumns, cosineDistance } from 'drizzle-orm';
+import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user } from '@/db/schema';
 import { 
   Shoe, 
@@ -319,4 +319,167 @@ export async function deleteShoeListing(id: number) {
     console.error("Error deleting shoe listing.", error);
     return null
   }
+}
+
+export async function analyzeShoePhotos(photoUrls: { top: string; side: string; sole: string; insole: string }) {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not configured');
+  }
+
+  const imageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
+  const urls = {
+    top: photoUrls.top,
+    side: photoUrls.side,
+    sole: photoUrls.sole,
+    insole: photoUrls.insole,
+  };
+
+  for (const [key, url] of Object.entries(urls)) {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Failed to download ${key} image from URL`);
+    }
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const base64 = buffer.toString('base64');
+    const contentType = res.headers.get('content-type') || 'image/jpeg';
+
+    imageParts.push({
+      inlineData: {
+        mimeType: contentType,
+        data: base64,
+      },
+    });
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = 'Analyze these four photos of a shoe representing its top, side, sole, and insole. Accurately identify the brand, model, provide a description outlining its wear, condition, and visible defects, estimate a condition score from 1 to 10 (where 10 is brand new), and suggest a fair resale pricing value in PHP (Philippine Peso) based on its current condition.';
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: [prompt, ...imageParts],
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        properties: {
+          brand: { type: 'STRING' },
+          model: { type: 'STRING' },
+          conditionScore: { type: 'NUMBER' },
+          description: { type: 'STRING' },
+          estimatedPrice: { type: 'NUMBER' },
+        },
+        required: ['brand', 'model', 'conditionScore', 'description', 'estimatedPrice'],
+      },
+    },
+  });
+
+  const resultText = response.text;
+  if (!resultText) {
+    throw new Error('Failed to generate content from AI model');
+  }
+
+  return JSON.parse(resultText);
+}
+
+export async function getShoeByModelAndBrand(brand: string, model: string) {
+  try {
+    const rows = await db
+      .select()
+      .from(shoe)
+      .where(
+        and(
+          eq(sql`lower(${shoe.brand})`, brand.toLowerCase().trim()),
+          eq(sql`lower(${shoe.model})`, model.toLowerCase().trim())
+        )
+      )
+      .limit(1);
+
+    return rows[0] as Shoe ?? null;
+  } catch (error) {
+    console.error('Error fetching shoe by model and brand:', error);
+    return null;
+  }
+}
+
+export async function publishShoeListing(userId: string, data: any) {
+  const {
+    brand,
+    model,
+    category = 'other',
+    value,
+    description,
+    colorway,
+    size,
+    conditionScore,
+    defects = [],
+    isRefurbished = false,
+    listingMode = 'both',
+    imageUrlTop,
+    imageUrlSide,
+    imageUrlSole,
+    imageUrlInsole,
+  } = data;
+
+  if (!brand || !model || !value || !colorway || !size || !conditionScore || !imageUrlTop || !imageUrlSide || !imageUrlSole || !imageUrlInsole) {
+    throw new Error('Missing required listing information');
+  }
+
+  const priceValue = Number.parseFloat(value.toString());
+  const sizeValue = Number.parseFloat(size.toString());
+  const scoreValue = Number.parseFloat(conditionScore.toString());
+
+  if (Number.isNaN(priceValue) || priceValue <= 0 || Number.isNaN(sizeValue) || sizeValue <= 0 || Number.isNaN(scoreValue) || scoreValue <= 0) {
+    throw new Error('Invalid numeric values provided');
+  }
+
+  const brandStr = brand.trim();
+  const modelStr = model.trim();
+
+  let catalogShoeId: number;
+
+  const existingShoe = await getShoeByModelAndBrand(brandStr, modelStr);
+
+  if (existingShoe) {
+    catalogShoeId = existingShoe.id;
+  } else {
+    const embeddingText = `${brandStr} ${modelStr} ${category}`;
+    const embedding = await generateEmbedding(embeddingText);
+
+    const [newShoe] = await db
+      .insert(shoe)
+      .values({
+        brand: brandStr,
+        model: modelStr,
+        category,
+        co2Footprint: '10.0',
+        embedding,
+      })
+      .returning();
+
+    catalogShoeId = newShoe.id;
+  }
+
+  const [newListing] = await db
+    .insert(shoeListing)
+    .values({
+      userId,
+      shoeId: catalogShoeId,
+      value: priceValue.toString(),
+      description,
+      colorway,
+      size: sizeValue.toString(),
+      conditionScore: scoreValue.toString(),
+      defects,
+      isRefurbished,
+      listingMode,
+      imageUrlTop,
+      imageUrlSide,
+      imageUrlSole,
+      imageUrlInsole,
+      isAvailable: true,
+    })
+    .returning();
+
+  return getShoeListingById(newListing.id);
 }
