@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq, or, sql, desc, aliasedTable, getTableColumns } from 'drizzle-orm';
+import { eq, and, or, sql, desc, aliasedTable, getTableColumns } from 'drizzle-orm';
 import { 
   transaction,  
   sale,
@@ -12,7 +12,8 @@ import {
   user,
   shoe,
   shoeListing,
-  trackingEvent
+  trackingEvent,
+  cartItem
 } from '@/db/schema';
 import { 
   CreateTransaction, 
@@ -133,6 +134,105 @@ export async function getAllSale() {
       .from(sale)
       .innerJoin(transaction, eq(sale.transactionId, transaction.id))
       .leftJoin(redemption, eq(sale.id, redemption.saleId))
+
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching sale transactions.", error);
+    return null;
+  }
+}
+
+export async function getAllSwap() {
+  try {
+    const rows = await db
+      .select({
+        transaction: getTableColumns(transaction),
+        ...getTableColumns(swap)
+      })
+      .from(swap)
+      .innerJoin(transaction, eq(swap.transactionId, transaction.id))
+
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching swap transactions.", error);
+    return null;
+  }
+}
+
+export async function getAllDonation() {
+  try {
+    const rows = await db
+      .select({
+        transaction: getTableColumns(transaction),
+        charity: getTableColumns(charity),
+        ...getTableColumns(donation)
+      })
+      .from(donation)
+      .innerJoin(transaction, eq(donation.transactionId, transaction.id))
+      .innerJoin(charity, eq(donation.charityId, charity.id));
+
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching donation transactions.", error);
+    return null;
+  }
+
+export async function getTransactionDetails(transaction: any) {
+  if (!transaction.id || !transaction.type) return;
+
+  let details;
+  switch (transaction.type) {
+    case 'sale':
+      details = await getSaleById(transaction.id);
+      break;
+    case 'swap':
+      details = await getSwapById(transaction.id);
+      break;
+    case 'donation':
+      details = await getDonationById(transaction.id);
+      break;
+    default:
+      details = null;
+  }
+
+  if (details && typeof details === 'object' && 'transaction' in details) {
+    delete (details as any).transaction;
+  }
+
+  return {
+    details: details,
+    ...transaction
+  };
+}
+
+export async function getAllTransaction() {
+  try {
+    const rows = await db
+      .select({
+        listing: getTableColumns(shoeListing),
+        recipient: getTableColumns(user),
+        ...getTableColumns(transaction)
+      })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .leftJoin(user, eq(transaction.recipientId, user.id));
+
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching transactions.", error);
+    return null;
+  }
+}
+
+export async function getAllSale() {
+  try {
+    const rows = await db
+      .select({
+        transaction: getTableColumns(transaction),
+        ...getTableColumns(sale)
+      })
+      .from(sale)
+      .innerJoin(transaction, eq(sale.transactionId, transaction.id))
 
     return rows ?? null;
   } catch (error) {
@@ -339,4 +439,103 @@ export async function getVoucherById(id: number) {
     console.error("Error fetching voucher.", error);
     return null;
   }
+}
+
+export async function checkoutCart(userId: string, isBuyNow: boolean) {
+  const items = await db
+    .select({
+      cartItemId: cartItem.id,
+      quantity: cartItem.quantity,
+      listingId: shoeListing.id,
+      value: shoeListing.value,
+      isAvailable: shoeListing.isAvailable,
+      sellerId: shoeListing.userId,
+    })
+    .from(cartItem)
+    .innerJoin(shoeListing, eq(cartItem.listingId, shoeListing.id))
+    .where(
+      and(
+        eq(cartItem.userId, userId),
+        eq(cartItem.isBuyNow, isBuyNow)
+      )
+    );
+
+  if (items.length === 0) {
+    throw new Error('Cart is empty');
+  }
+
+  for (const item of items) {
+    if (!item.isAvailable) {
+      throw new Error(`Shoe listing ${item.listingId} is no longer available`);
+    }
+    if (item.sellerId === userId) {
+      throw new Error('You cannot purchase your own shoe listing');
+    }
+  }
+
+  const subtotal = items.reduce((sum, item) => sum + (Number.parseFloat(item.value) * item.quantity), 0);
+
+  const transactionResults = await db.transaction(async (tx) => {
+    const results = [];
+
+    for (const item of items) {
+      const currentListings = await tx
+        .select()
+        .from(shoeListing)
+        .where(eq(shoeListing.id, item.listingId))
+        .limit(1);
+
+      if (currentListings.length === 0 || !currentListings[0].isAvailable) {
+        throw new Error(`Shoe listing ${item.listingId} is no longer available`);
+      }
+
+      const calculatedCoins = Math.max(1, Math.floor(Number.parseFloat(item.value) * 0.05));
+
+      const [txRecord] = await tx
+        .insert(transaction)
+        .values({
+          listingId: item.listingId,
+          recipientId: userId,
+          type: 'sale',
+          isCompleted: true,
+          coinsEarned: calculatedCoins,
+        })
+        .returning();
+
+      const [saleRecord] = await tx
+        .insert(sale)
+        .values({
+          transactionId: txRecord.id,
+          price: item.value,
+        })
+        .returning();
+
+      await tx
+        .update(shoeListing)
+        .set({
+          isAvailable: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(shoeListing.id, item.listingId));
+
+      await tx
+        .delete(cartItem)
+        .where(eq(cartItem.id, item.cartItemId));
+
+      results.push({
+        transactionId: txRecord.id,
+        saleId: saleRecord.id,
+        listingId: item.listingId,
+        price: item.value,
+        coinsEarned: calculatedCoins,
+      });
+    }
+
+    return results;
+  });
+
+  return {
+    total: subtotal,
+    transactions: transactionResults,
+  };
 }
