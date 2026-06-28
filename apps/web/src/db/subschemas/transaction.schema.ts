@@ -41,9 +41,24 @@ export const transaction = pgTable('transaction', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull()
+    .notNull(),
+  completedAt: timestamp('completed_at')
 }, (table) => [
   check('coins_earned_check', sql`${table.coinsEarned} > 0`),
+  index('transaction_listing_id_idx').on(table.listingId),
+  index('transaction_recipient_id_idx').on(table.recipientId)
+]);
+
+export const trackingEvent = pgTable('tracking_event', {
+  id: serial('id').primaryKey(),
+  transactionId: integer('transaction_id')
+    .notNull()
+    .references(() => transaction.id, { onDelete: 'cascade' }),
+  status: text('status').notNull(),
+  message: text('message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('tracking_event_transaction_id_idx').on(table.transactionId)
 ]);
 
 export const sale = pgTable('sale', {
@@ -54,7 +69,8 @@ export const sale = pgTable('sale', {
   price: numeric('price').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
-  check('price_check', sql`${table.price} > 0`)
+  check('price_check', sql`${table.price} > 0`),
+  index('sale_transaction_id_idx').on(table.transactionId)
 ]);
 
 export const redemption = pgTable('redemption', {
@@ -65,7 +81,8 @@ export const redemption = pgTable('redemption', {
   coinsRedeemed: integer('coins_redeemed').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
-  check('coins_redeemed_check', sql`${table.coinsRedeemed} > 0`)
+  check('coins_redeemed_check', sql`${table.coinsRedeemed} > 0`),
+  index('redemption_sale_id_idx').on(table.saleId),
 ]);
 
 export const swap = pgTable('swap', {
@@ -74,18 +91,23 @@ export const swap = pgTable('swap', {
     .notNull()
     .references(() => transaction.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('swap_transaction_id_idx').on(table.transactionId)
+]);
 
 export const swapItem = pgTable('swap_item', {
   id: serial('id').primaryKey(),
   swapId: integer('swap_id')
     .notNull()
     .references(() => swap.id, { onDelete: 'cascade' }),
-  swapItemId: integer('swap_item_id')
+  itemId: integer('swap_item_id')
     .notNull()
     .references(() => shoeListing.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('swap_item_swap_id_idx').on(table.swapId),
+  index('swap_item_item_id_idx').on(table.itemId),
+]);
 
 export const donation = pgTable('donation', {
   id: serial('id').primaryKey(),
@@ -99,12 +121,10 @@ export const donation = pgTable('donation', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  pickupDate: timestamp('pickup_date'),
-  shippedDate: timestamp('shipped_date')
+    .notNull()
 }, (table) => [
-  check('pickup_date_check', sql`${table.pickupDate} > ${table.createdAt}`),
-  check('shipped_date_check', sql`${table.shippedDate} > ${table.pickupDate}`)
+  index('donation_transaction_id_idx').on(table.transactionId),
+  index('donation_charity_id_idx').on(table.charityId)
 ]);
 
 export const voucher = pgTable('voucher', {
@@ -129,6 +149,5 @@ export const voucherRedeem = pgTable('voucher_redeem', {
     .references(() => user.id),
   redeemedAt: timestamp('created_at').defaultNow().notNull()
 }, (table) => [
-  index('voucher_redeem_pkey').on(table.id),
   index('voucher_redeem_user_id_idx').on(table.userId)
 ]);
