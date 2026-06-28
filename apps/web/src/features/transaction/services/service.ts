@@ -176,105 +176,6 @@ export async function getAllDonation() {
     console.error("Error fetching donation transactions.", error);
     return null;
   }
-
-export async function getTransactionDetails(transaction: any) {
-  if (!transaction.id || !transaction.type) return;
-
-  let details;
-  switch (transaction.type) {
-    case 'sale':
-      details = await getSaleById(transaction.id);
-      break;
-    case 'swap':
-      details = await getSwapById(transaction.id);
-      break;
-    case 'donation':
-      details = await getDonationById(transaction.id);
-      break;
-    default:
-      details = null;
-  }
-
-  if (details && typeof details === 'object' && 'transaction' in details) {
-    delete (details as any).transaction;
-  }
-
-  return {
-    details: details,
-    ...transaction
-  };
-}
-
-export async function getAllTransaction() {
-  try {
-    const rows = await db
-      .select({
-        listing: getTableColumns(shoeListing),
-        recipient: getTableColumns(user),
-        ...getTableColumns(transaction)
-      })
-      .from(transaction)
-      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
-      .leftJoin(user, eq(transaction.recipientId, user.id));
-
-    return rows ?? null;
-  } catch (error) {
-    console.error("Error fetching transactions.", error);
-    return null;
-  }
-}
-
-export async function getAllSale() {
-  try {
-    const rows = await db
-      .select({
-        transaction: getTableColumns(transaction),
-        ...getTableColumns(sale)
-      })
-      .from(sale)
-      .innerJoin(transaction, eq(sale.transactionId, transaction.id))
-
-    return rows ?? null;
-  } catch (error) {
-    console.error("Error fetching sale transactions.", error);
-    return null;
-  }
-}
-
-export async function getAllSwap() {
-  try {
-    const rows = await db
-      .select({
-        transaction: getTableColumns(transaction),
-        ...getTableColumns(swap)
-      })
-      .from(swap)
-      .innerJoin(transaction, eq(swap.transactionId, transaction.id))
-
-    return rows ?? null;
-  } catch (error) {
-    console.error("Error fetching swap transactions.", error);
-    return null;
-  }
-}
-
-export async function getAllDonation() {
-  try {
-    const rows = await db
-      .select({
-        transaction: getTableColumns(transaction),
-        charity: getTableColumns(charity),
-        ...getTableColumns(donation)
-      })
-      .from(donation)
-      .innerJoin(transaction, eq(donation.transactionId, transaction.id))
-      .innerJoin(charity, eq(donation.charityId, charity.id));
-
-    return rows ?? null;
-  } catch (error) {
-    console.error("Error fetching donation transactions.", error);
-    return null;
-  }
 }
 
 export async function getAllVoucher() {
@@ -441,6 +342,42 @@ export async function getVoucherById(id: number) {
   }
 }
 
+export async function acceptOffer(id: number) {
+  try {
+    const result = await db 
+      .update(transaction)
+      .set({ 
+        isAccepted: true,
+        acceptedAt: new Date() 
+      })
+      .where(eq(transaction.id, id))
+      .returning({ id: transaction.id });
+
+    return getTransactionById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error accepting offer.", error);
+    return null
+  }
+}
+
+export async function declineOffer(id: number) {
+  try {
+    const result = await db 
+      .update(transaction)
+      .set({ 
+        isAccepted: false,
+        acceptedAt: null 
+      })
+      .where(eq(transaction.id, id))
+      .returning({ id: transaction.id });
+
+    return getTransactionById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error declining offer.", error);
+    return null
+  }
+}   
+  
 export async function checkoutCart(userId: string, isBuyNow: boolean) {
   const items = await db
     .select({

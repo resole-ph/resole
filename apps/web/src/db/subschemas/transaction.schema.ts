@@ -35,7 +35,7 @@ export const transaction = pgTable('transaction', {
   recipientId: text('recipient_id')
     .references(() => user.id),
   type: transactionEnum('type').notNull(),
-  isAccepted: boolean('is_accepted').default(false).notNull(),
+  isAccepted: boolean('is_accepted'),
   isCompleted: boolean('is_completed').default(false).notNull(),
   coinsEarned: integer('coins_earned'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
