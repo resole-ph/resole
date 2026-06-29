@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq, getTableColumns } from 'drizzle-orm';
+import { and, eq, getTableColumns, isNull } from 'drizzle-orm';
 import { referal, rating, save, user, shoe, shoeListing } from '@/db/schema';
 import { 
   Referal,
@@ -12,7 +12,6 @@ import {
   CreateSave,
   UpdateSave
 } from '@/features/user-action/types/types';
-import { resumeToPipeableStream } from 'react-dom/server';
 
 export async function createReferal(data: CreateReferal) {
   try {
@@ -331,5 +330,71 @@ export async function deleteSave(id: number) {
   } catch (error) {
     console.error("Error deleting save.");
     return null
+  }
+}
+
+export async function getFavouriteListingsByUserId(userId: string) {
+  try {
+    const rows = await db
+      .select({
+        id: save.id,
+        savedAt: save.createdAt,
+        listing: getTableColumns(shoeListing),
+        shoe: getTableColumns(shoe),
+        user: getTableColumns(user),
+      })
+      .from(save)
+      .innerJoin(shoeListing, eq(save.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(and(eq(save.userId, userId), isNull(save.removedAt)));
+
+    return rows;
+  } catch (error) {
+    console.error("Error fetching favourite listings.");
+    return null;
+  }
+}
+
+export async function saveFavouriteListing(userId: string, listingId: number) {
+  try {
+    const existing = await db
+      .select({ id: save.id })
+      .from(save)
+      .where(
+        and(
+          eq(save.userId, userId),
+          eq(save.listingId, listingId),
+          isNull(save.removedAt),
+        ),
+      )
+      .limit(1);
+
+    if (existing[0]) {
+      return existing[0];
+    }
+
+    const result = await db
+      .insert(save)
+      .values({ userId, listingId })
+      .returning({ id: save.id });
+
+    return result[0] ?? null;
+  } catch (error) {
+    console.error("Error saving favourite listing.");
+    return null;
+  }
+}
+
+export async function removeFavouriteListing(userId: string, listingId: number) {
+  try {
+    await db
+      .delete(save)
+      .where(and(eq(save.userId, userId), eq(save.listingId, listingId)));
+
+    return true;
+  } catch (error) {
+    console.error("Error removing favourite listing.");
+    return null;
   }
 }
