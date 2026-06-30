@@ -170,6 +170,61 @@ export const MARKET_LISTINGS: Listing[] = [
   },
 ];
 
+export const MY_LISTINGS: Listing[] = [
+  {
+    id: 'mine-1',
+    name: 'Nike Dunk Low Retro White Black',
+    brand: 'Nike',
+    price: 6500,
+    condition: 'Like New',
+    imageUrl: 'https://images.unsplash.com/photo-1607522370275-f14206abe5d3?auto=format&fit=crop&w=800&q=80',
+    aiScore: 92,
+    badgeType: 'Swap',
+    size: 'US 10',
+    description: 'Worn twice, box included.',
+    seller: { name: 'Miguel', rating: 5.0, verified: true, avatarColor: '#0054d3' },
+  },
+  {
+    id: 'mine-2',
+    name: 'Adidas Forum Low Cloud White',
+    brand: 'Adidas',
+    price: 4200,
+    condition: 'Excellent',
+    imageUrl: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=800&q=80',
+    aiScore: 85,
+    badgeType: 'Swap',
+    size: 'US 9',
+    description: 'Light use, clean soles.',
+    seller: { name: 'Miguel', rating: 5.0, verified: true, avatarColor: '#0054d3' },
+  },
+  {
+    id: 'mine-3',
+    name: 'New Balance 2002R Protection Pack',
+    brand: 'New Balance',
+    price: 7800,
+    condition: 'Like New',
+    imageUrl: 'https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=800&q=80',
+    aiScore: 96,
+    badgeType: 'Swap',
+    size: 'US 10',
+    description: 'DS condition, never worn outdoors.',
+    seller: { name: 'Miguel', rating: 5.0, verified: true, avatarColor: '#0054d3' },
+  },
+  {
+    id: 'mine-4',
+    name: 'Jordan 4 Retro Military Blue',
+    brand: 'Jordan',
+    price: 14500,
+    condition: 'Good',
+    imageUrl: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80',
+    aiScore: 78,
+    badgeType: 'Swap',
+    size: 'US 10.5',
+    description: 'Some creasing on toe box, soles clean.',
+    seller: { name: 'Miguel', rating: 5.0, verified: true, avatarColor: '#0054d3' },
+  },
+];
+
 export const SWAP_LISTINGS: Listing[] = [
   {
     id: 's1',

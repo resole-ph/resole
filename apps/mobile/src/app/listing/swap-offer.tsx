@@ -1,27 +1,19 @@
-    import { useState } from 'react';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
+  View, Text, ScrollView, TouchableOpacity,
+  TextInput, Image, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { MY_LISTINGS } from '@/data/MockListings';
 
-type Condition = 'New' | 'Like New' | 'Good' | 'Fair';
-
-const CONDITIONS: Condition[] = ['New', 'Like New', 'Good', 'Fair'];
-
-const CONDITION_COLORS: Record<Condition, string> = {
-  'New':      '#10B981',
-  'Like New': '#3B82F6',
-  'Good':     '#F59E0B',
-  'Fair':     '#9CA3AF',
+const CONDITION_COLORS: Record<string, string> = {
+  'Like New':  '#10B981',
+  'Excellent': '#3B82F6',
+  'Good':      '#F59E0B',
+  'Fair':      '#9CA3AF',
+  'Poor':      '#EF4444',
 };
 
 export default function SwapOfferScreen() {
@@ -34,26 +26,23 @@ export default function SwapOfferScreen() {
       listingImage: string;
     }>();
 
-  const [shoeName, setShoeName] = useState('');
-  const [brand, setBrand] = useState('');
-  const [size, setSize] = useState('');
-  const [condition, setCondition] = useState<Condition | null>(null);
-  const [cashTopUp, setCashTopUp] = useState('');
-  const [notes, setNotes] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [cashTopUp, setCashTopUp]   = useState('');
+  const [notes, setNotes]           = useState('');
+  const [sent, setSent]             = useState(false);
 
-  const isFormValid = shoeName.trim() && brand.trim() && size.trim() && condition;
+  const selectedListing = MY_LISTINGS.find((l) => l.id === selectedId);
+  const isValid = !!selectedId;
 
-  const handleSubmit = () => {
-    // TODO: wire up to API
-    console.log('Swap offer submitted:', {
-      listingId,
-      offeredShoe: { shoeName, brand, size, condition },
-      cashTopUp: cashTopUp ? parseInt(cashTopUp) : 0,
-      notes,
-    });
-    // Navigate back to home after submit
-    router.dismissAll();
-  };
+  function handleSubmit() {
+    if (!isValid) return;
+    setSent(true);
+    setTimeout(() => {
+      setSent(false);
+      router.dismissAll();
+      router.push('/inbox' as any);
+    }, 1200);
+  }
 
   return (
     <KeyboardAvoidingView
@@ -76,20 +65,15 @@ export default function SwapOfferScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Listing they're swapping for */}
-        <View className="px-5 pt-5 mb-6">
-          <Text className="text-gray-500 text-xs font-medium uppercase tracking-wide mb-3">
+
+        {/* Listing they want */}
+        <View className="px-5 pt-5 mb-5">
+          <Text className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-3">
             You're offering to swap for
           </Text>
           <View
             className="flex-row items-center bg-white rounded-2xl p-3"
-            style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              elevation: 3,
-            }}
+            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}
           >
             <Image
               source={{ uri: listingImage }}
@@ -97,9 +81,7 @@ export default function SwapOfferScreen() {
               resizeMode="cover"
             />
             <View className="flex-1 ml-3">
-              <Text className="text-gray-900 font-semibold text-sm" numberOfLines={2}>
-                {listingName}
-              </Text>
+              <Text className="text-gray-900 font-semibold text-sm" numberOfLines={2}>{listingName}</Text>
               <Text className="text-blue-600 font-bold text-base mt-1">
                 ₱{parseInt(listingPrice).toLocaleString()}
               </Text>
@@ -108,127 +90,116 @@ export default function SwapOfferScreen() {
         </View>
 
         {/* Swap arrow */}
-        <View className="items-center mb-6">
-          <View className="w-10 h-10 rounded-full bg-blue-600 items-center justify-center"
-            style={{
-              shadowColor: '#2563EB',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 6,
-            }}
+        <View className="items-center mb-5">
+          <View
+            className="w-10 h-10 rounded-full bg-violet-600 items-center justify-center"
+            style={{ shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }}
           >
             <Ionicons name="swap-vertical" size={20} color="#fff" />
           </View>
         </View>
 
-        {/* Your shoe form */}
+        {/* Pick from your listings */}
         <View className="px-5">
-          <Text className="text-gray-500 text-xs font-medium uppercase tracking-wide mb-4">
-            Your shoe details
+          <Text className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-1">
+            Choose one of your listings to offer
+          </Text>
+          <Text className="text-gray-400 text-xs mb-4">
+            Only AI-evaluated listings can be used in a swap.
           </Text>
 
-          {/* Shoe name */}
-          <View className="mb-4">
-            <Text className="text-gray-700 text-sm font-medium mb-2">Shoe Name *</Text>
-            <TextInput
-              className="bg-white rounded-2xl px-4 py-3.5 text-gray-800 text-base"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
-              placeholder="e.g. Air Force 1 Low"
-              placeholderTextColor="#9CA3AF"
-              value={shoeName}
-              onChangeText={setShoeName}
-            />
-          </View>
-
-          {/* Brand */}
-          <View className="mb-4">
-            <Text className="text-gray-700 text-sm font-medium mb-2">Brand *</Text>
-            <TextInput
-              className="bg-white rounded-2xl px-4 py-3.5 text-gray-800 text-base"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
-              placeholder="e.g. Nike"
-              placeholderTextColor="#9CA3AF"
-              value={brand}
-              onChangeText={setBrand}
-            />
-          </View>
-
-          {/* Size */}
-          <View className="mb-4">
-            <Text className="text-gray-700 text-sm font-medium mb-2">Size *</Text>
-            <TextInput
-              className="bg-white rounded-2xl px-4 py-3.5 text-gray-800 text-base"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
-              placeholder="e.g. US 10"
-              placeholderTextColor="#9CA3AF"
-              value={size}
-              onChangeText={setSize}
-            />
-          </View>
-
-          {/* Condition */}
-          <View className="mb-4">
-            <Text className="text-gray-700 text-sm font-medium mb-2">Condition *</Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {CONDITIONS.map((c) => {
-                const isSelected = condition === c;
+          {MY_LISTINGS.length === 0 ? (
+            <View className="bg-white rounded-2xl p-6 items-center" style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#E5E7EB' }}>
+              <Ionicons name="cube-outline" size={32} color="#9CA3AF" />
+              <Text className="text-gray-500 font-semibold mt-3 text-center">No listings yet</Text>
+              <Text className="text-gray-400 text-sm text-center mt-1">
+                You need at least one AI-evaluated listing to make a swap offer.
+              </Text>
+              <TouchableOpacity
+                className="mt-4 bg-violet-600 rounded-full px-6 py-3"
+                onPress={() => router.push('/sell' as any)}
+                activeOpacity={0.85}
+              >
+                <Text className="text-white font-bold">List a Shoe</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View className="gap-3">
+              {MY_LISTINGS.map((item) => {
+                const selected = selectedId === item.id;
+                const condColor = CONDITION_COLORS[item.condition] ?? '#9CA3AF';
                 return (
                   <TouchableOpacity
-                    key={c}
-                    className="rounded-full px-4 py-2 border"
+                    key={item.id}
+                    onPress={() => setSelectedId(selected ? null : item.id)}
+                    activeOpacity={0.8}
                     style={{
-                      borderColor: isSelected ? CONDITION_COLORS[c] : '#E5E7EB',
-                      backgroundColor: isSelected ? CONDITION_COLORS[c] + '15' : '#fff',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: selected ? '#F5F3FF' : '#ffffff',
+                      borderRadius: 18,
+                      padding: 12,
+                      borderWidth: 1.5,
+                      borderColor: selected ? '#7C3AED' : '#F3F4F6',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 8,
+                      elevation: 2,
                     }}
-                    onPress={() => setCondition(c)}
-                    activeOpacity={0.75}
                   >
-                    <Text
-                      className="text-sm font-medium"
-                      style={{ color: isSelected ? CONDITION_COLORS[c] : '#6B7280' }}
-                    >
-                      {c}
-                    </Text>
+                    {/* Shoe image */}
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: '#F3F4F6' }}
+                      resizeMode="cover"
+                    />
+
+                    {/* Info */}
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 1 }}>{item.brand}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }} numberOfLines={1}>{item.name}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 8 }}>
+                        {/* Condition badge */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: condColor + '18', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
+                          <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: condColor, marginRight: 4 }} />
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: condColor }}>{item.condition}</Text>
+                        </View>
+                        {/* AI score */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
+                          <Ionicons name="sparkles" size={9} color="#D97706" />
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#D97706', marginLeft: 3 }}>AI {item.aiScore}%</Text>
+                        </View>
+                        {item.size && <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{item.size}</Text>}
+                      </View>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#7C3AED', marginTop: 4 }}>
+                        ₱{item.price.toLocaleString()}
+                      </Text>
+                    </View>
+
+                    {/* Selector */}
+                    <View style={{
+                      width: 22, height: 22, borderRadius: 11,
+                      borderWidth: 2,
+                      borderColor: selected ? '#7C3AED' : '#D1D5DB',
+                      backgroundColor: selected ? '#7C3AED' : 'transparent',
+                      alignItems: 'center', justifyContent: 'center', marginLeft: 8,
+                    }}>
+                      {selected && <Ionicons name="checkmark" size={13} color="#fff" />}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
             </View>
-          </View>
+          )}
 
           {/* Cash top-up */}
-          <View className="mb-4">
-            <Text className="text-gray-700 text-sm font-medium mb-1">Cash Top-up</Text>
-            <Text className="text-gray-400 text-xs mb-2">
-              Add cash to sweeten your offer (optional)
-            </Text>
+          <View className="mt-5 mb-4">
+            <Text className="text-gray-700 text-sm font-semibold mb-1">Cash Top-up</Text>
+            <Text className="text-gray-400 text-xs mb-2">Add cash to sweeten your offer (optional)</Text>
             <View
               className="flex-row items-center bg-white rounded-2xl px-4"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
+              style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 }}
             >
               <Text className="text-gray-400 text-base mr-2">₱</Text>
               <TextInput
@@ -244,18 +215,10 @@ export default function SwapOfferScreen() {
 
           {/* Notes */}
           <View className="mb-4">
-            <Text className="text-gray-700 text-sm font-medium mb-2">Notes</Text>
+            <Text className="text-gray-700 text-sm font-semibold mb-2">Message to seller</Text>
             <TextInput
               className="bg-white rounded-2xl px-4 py-3.5 text-gray-800 text-base"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
-                height: 96,
-                textAlignVertical: 'top',
-              }}
+              style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2, height: 88, textAlignVertical: 'top' }}
               placeholder="Any additional info for the seller..."
               placeholderTextColor="#9CA3AF"
               value={notes}
@@ -267,36 +230,38 @@ export default function SwapOfferScreen() {
         </View>
       </ScrollView>
 
-      {/* Submit button */}
+      {/* Submit */}
       <View
         className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 pt-4"
-        style={{
-          paddingBottom: Math.max(insets.bottom, 16),
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          elevation: 10,
-        }}
+        style={{ paddingBottom: Math.max(insets.bottom, 16), shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 10 }}
       >
+        {selectedListing && (
+          <View className="flex-row items-center bg-violet-50 rounded-2xl px-4 py-3 mb-3 border border-violet-200">
+            <Ionicons name="swap-horizontal" size={16} color="#7C3AED" />
+            <Text className="text-violet-700 text-sm font-medium ml-2 flex-1" numberOfLines={1}>
+              Offering: {selectedListing.name}
+            </Text>
+            {cashTopUp ? (
+              <Text className="text-violet-600 text-xs font-semibold">+₱{parseInt(cashTopUp).toLocaleString()}</Text>
+            ) : null}
+          </View>
+        )}
         <TouchableOpacity
-          className="rounded-2xl py-4 items-center"
+          className="rounded-2xl py-4 items-center flex-row justify-center"
           style={{
-            backgroundColor: isFormValid ? '#2563EB' : '#E5E7EB',
-            shadowColor: isFormValid ? '#2563EB' : 'transparent',
+            backgroundColor: isValid ? '#7C3AED' : '#E5E7EB',
+            shadowColor: isValid ? '#7C3AED' : 'transparent',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.35,
             shadowRadius: 8,
-            elevation: isFormValid ? 6 : 0,
+            elevation: isValid ? 6 : 0,
           }}
-          activeOpacity={isFormValid ? 0.85 : 1}
-          onPress={isFormValid ? handleSubmit : undefined}
+          activeOpacity={isValid ? 0.85 : 1}
+          onPress={handleSubmit}
         >
-          <Text
-            className="font-bold text-base"
-            style={{ color: isFormValid ? '#fff' : '#9CA3AF' }}
-          >
-            Send Swap Offer
+          <Ionicons name={sent ? 'checkmark-circle' : 'swap-horizontal'} size={18} color={isValid ? '#fff' : '#9CA3AF'} />
+          <Text className="font-bold text-base ml-2" style={{ color: isValid ? '#fff' : '#9CA3AF' }}>
+            {sent ? 'Offer Sent!' : 'Send Swap Offer'}
           </Text>
         </TouchableOpacity>
       </View>

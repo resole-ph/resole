@@ -12,7 +12,7 @@ export default function MarketScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <Header branded showInbox={false} />
+      <Header branded showInbox onInboxPress={() => router.push('/inbox' as any)} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SearchBar />
         <CategoriesRow />
