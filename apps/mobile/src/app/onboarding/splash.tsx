@@ -35,7 +35,7 @@ export default function SplashScreen() {
   }, []);
 
   return (
-    <View className="flex-1 bg-primary items-center justify-center">
+    <View className="flex-1 bg-white items-center justify-center">
       <Animated.View style={animatedStyle}>
         <Image
           source={require('../../../assets/ReSoleLogo.png')}
