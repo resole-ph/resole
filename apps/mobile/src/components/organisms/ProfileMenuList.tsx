@@ -137,13 +137,7 @@ function QuickLink({
   );
 }
 
-function QuickLinksCard({
-  onTransactions,
-  onTracking,
-}: {
-  onTransactions: () => void;
-  onTracking: () => void;
-}) {
+function QuickLinksCard({ onTransactions }: { onTransactions: () => void }) {
   return (
     <View className="bg-white rounded-2xl mx-5 mb-3 px-4" style={CARD_SHADOW}>
       <QuickLink
@@ -151,13 +145,6 @@ function QuickLinksCard({
         label="Transactions"
         sub="Sales, swaps, donations"
         onPress={onTransactions}
-      />
-      <QuickLink
-        icon="navigate-outline"
-        label="Order tracking"
-        sub="2 shipments in progress"
-        badge="2"
-        onPress={onTracking}
       />
     </View>
   );
@@ -204,7 +191,7 @@ function SellerAnalyticsCard() {
 }
 
 /* ── Recycle & Donate ── */
-function RecycleDonateCard({ onTracking }: { onTracking: () => void }) {
+function RecycleDonateCard() {
   return (
     <View className="bg-white rounded-2xl mx-5 mb-3 p-4" style={CARD_SHADOW}>
       <CardHeader icon="sync-outline" title="Recycle & donate" />
@@ -218,7 +205,6 @@ function RecycleDonateCard({ onTracking }: { onTracking: () => void }) {
         <TouchableOpacity
           className="flex-1 bg-blue-600 rounded-xl py-2.5 items-center"
           activeOpacity={0.8}
-          onPress={onTracking}
         >
           <Text className="text-white font-semibold text-sm">Schedule pickup</Text>
         </TouchableOpacity>
@@ -243,10 +229,9 @@ export default function ProfileMenuList() {
       <SavedItemsCard onPress={() => router.push('/profile/favourites')} />
       <QuickLinksCard
         onTransactions={() => router.push('/profile/transactions')}
-        onTracking={() => router.push('/profile/tracking')}
       />
       <SellerAnalyticsCard />
-      <RecycleDonateCard onTracking={() => router.push('/profile/tracking')} />
+      <RecycleDonateCard />
     </View>
   );
 }

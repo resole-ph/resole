@@ -11,7 +11,7 @@ const CARD_SHADOW = {
   elevation: 2,
 };
 
-type NotifKey = 'orders' | 'messages' | 'offers' | 'promos' | 'recycleReminders';
+type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
 
 const ACCOUNT_FIELDS = [
   { id: 'name',     label: 'Full name',     value: 'Marc Andre Santos', icon: 'person-outline' as const },
@@ -102,7 +102,6 @@ function ActionRow({
 
 export default function SettingsScreen() {
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
-    orders: true,
     messages: true,
     offers: false,
     promos: false,
@@ -159,12 +158,6 @@ export default function SettingsScreen() {
         {/* Notifications */}
         <SectionTitle title="Notifications" />
         <View className="bg-white rounded-2xl mx-5" style={CARD_SHADOW}>
-          <ToggleRow
-            label="Orders & shipments"
-            sub="Status updates for your orders"
-            value={notifs.orders}
-            onChange={toggle('orders')}
-          />
           <ToggleRow
             label="Messages"
             sub="Buyer and seller chats"

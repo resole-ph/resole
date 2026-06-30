@@ -62,13 +62,10 @@ export default function UserInfoCard({
 
         {/* Details */}
         <View className="flex-1 ml-4">
-          {/* Name + verified badge */}
-          <View className="flex-row items-center mb-1">
-            <Text className="text-gray-900 font-semibold text-base mr-1.5">
-              {name}
-            </Text>
-            <Ionicons name="checkmark-circle" size={16} color="#2563EB" />
-          </View>
+          {/* Name */}
+          <Text className="text-gray-900 font-semibold text-base mb-1">
+            {name}
+          </Text>
 
           {/* Rating */}
           <View className="flex-row items-center mb-1">
