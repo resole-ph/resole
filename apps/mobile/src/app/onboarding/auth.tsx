@@ -49,69 +49,6 @@ export default function AuthScreen() {
             </Text>
           </View>
 
-          {/* Social auth buttons */}
-          <View className="gap-2">
-            <TouchableOpacity
-              onPress={goToDetails}
-              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full bg-surface-container-lowest border border-outline-variant"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.04,
-                shadowRadius: 12,
-                elevation: 2,
-              }}
-            >
-              <Ionicons name="logo-google" size={18} color="#424655" />
-              <Text className="font-body-md text-body-md text-on-surface">
-                Continue with Google
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={goToDetails}
-              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
-              style={{
-                backgroundColor: '#131b2e',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.04,
-                shadowRadius: 12,
-                elevation: 2,
-              }}
-            >
-              <Ionicons name="logo-apple" size={18} color="#ffffff" />
-              <Text className="font-body-md text-body-md text-on-primary">
-                Continue with Apple ID
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={goToDetails}
-              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
-              style={{
-                backgroundColor: '#1877F2',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.04,
-                shadowRadius: 12,
-                elevation: 2,
-              }}
-            >
-              <Ionicons name="logo-facebook" size={18} color="#ffffff" />
-              <Text className="font-body-md text-body-md text-on-primary">
-                Continue with Facebook
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Divider */}
-          <View className="flex-row items-center gap-3">
-            <View className="flex-1 h-px bg-outline-variant" />
-            <Text className="font-body-sm text-body-sm text-on-surface-variant">or</Text>
-            <View className="flex-1 h-px bg-outline-variant" />
-          </View>
-
           {/* Mode toggle */}
           <View
             className="flex-row rounded-full bg-surface-container-low p-1"
@@ -227,6 +164,69 @@ export default function AuthScreen() {
               {mode === 'signup' ? 'Create Account' : 'Log In'}
             </Text>
           </TouchableOpacity>
+
+          {/* Divider */}
+          <View className="flex-row items-center gap-3">
+            <View className="flex-1 h-px bg-outline-variant" />
+            <Text className="font-body-sm text-body-sm text-on-surface-variant">or</Text>
+            <View className="flex-1 h-px bg-outline-variant" />
+          </View>
+
+          {/* Social auth buttons */}
+          <View className="gap-2">
+            <TouchableOpacity
+              onPress={goToDetails}
+              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full bg-surface-container-lowest border border-outline-variant"
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.04,
+                shadowRadius: 12,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="logo-google" size={18} color="#424655" />
+              <Text className="font-body-md text-body-md text-on-surface">
+                Continue with Google
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={goToDetails}
+              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
+              style={{
+                backgroundColor: '#131b2e',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.04,
+                shadowRadius: 12,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="logo-apple" size={18} color="#ffffff" />
+              <Text className="font-body-md text-body-md text-on-primary">
+                Continue with Apple ID
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={goToDetails}
+              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
+              style={{
+                backgroundColor: '#1877F2',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.04,
+                shadowRadius: 12,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="logo-facebook" size={18} color="#ffffff" />
+              <Text className="font-body-md text-body-md text-on-primary">
+                Continue with Facebook
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
