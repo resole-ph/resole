@@ -8,15 +8,11 @@ import HeroBanner from '@/components/organisms/HeroBanner';
 import BottomNav from '@/components/organisms/BottomNav';
 import { MARKET_LISTINGS, SWAP_LISTINGS } from '@/data/MockListings';
 import { useCartStore } from '@/store/cart';
-import { useNotificationsStore } from '@/store/notifications';
 
 export default function MarketScreen() {
   const router = useRouter();
   const cartCount = useCartStore((s) =>
     s.items.reduce((sum, i) => sum + i.quantity, 0),
-  );
-  const unreadCount = useNotificationsStore((s) =>
-    s.notifications.filter((n) => !n.read).length,
   );
 
   return (
@@ -26,9 +22,7 @@ export default function MarketScreen() {
         showInbox={false}
         showCart
         cartCount={cartCount}
-        notificationCount={unreadCount}
         onCartPress={() => router.push('/cart')}
-        onNotificationPress={() => router.push('/notifications' as any)}
       />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SearchBar />
