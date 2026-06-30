@@ -1,4 +1,4 @@
-import { getAuthSession } from '@/features/auth/services/session';
+import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getShoeListingById } from '@/features/shoe/services/service';
 import {
   getFavouriteListingsByUserId,
@@ -24,7 +24,7 @@ async function getListingId(context: SaveListingContext) {
 }
 
 export async function POST(request: NextRequest, context: SaveListingContext) {
-  const authSession = await getAuthSession(request);
+  const authSession = await getAuthenticatedUser(request);
   if (!authSession) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest, context: SaveListingContext) {
 }
 
 export async function DELETE(request: NextRequest, context: SaveListingContext) {
-  const authSession = await getAuthSession(request);
+  const authSession = await getAuthenticatedUser(request);
   if (!authSession) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }

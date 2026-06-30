@@ -1,9 +1,9 @@
-import { getAuthSession } from '@/features/auth/services/session';
+import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getFavouriteListingsByUserId } from '@/features/user-action/services/service';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  const authSession = await getAuthSession(request);
+  const authSession = await getAuthenticatedUser(request);
   if (!authSession) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
