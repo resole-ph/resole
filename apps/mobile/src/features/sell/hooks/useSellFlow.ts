@@ -3,15 +3,12 @@ import type { ListingFormData, SellStep } from '../types/sell.types';
 
 const PHOTO_ANGLES = ['top', 'side', 'soles', 'insoles'] as const;
 
-const CONDITION_LABELS = ['Poor', 'Fair', 'Good', 'Excellent', 'Like New', 'Deadstock'] as const;
-
 function ratingToLabel(rating: number): ListingFormData['conditionLabel'] {
-  if (rating <= 2) return 'Poor';
-  if (rating <= 4) return 'Fair';
-  if (rating <= 6) return 'Good';
-  if (rating <= 7) return 'Excellent';
-  if (rating <= 9) return 'Like New';
-  return 'Deadstock';
+  if (rating >= 9.0) return 'Like New';
+  if (rating >= 8.0) return 'Excellent';
+  if (rating >= 6.5) return 'Good';
+  if (rating >= 4.0) return 'Fair';
+  return 'Poor';
 }
 
 function clamp(val: number, min: number, max: number) {

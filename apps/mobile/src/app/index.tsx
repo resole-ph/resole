@@ -5,11 +5,10 @@ import BottomNav from '@/components/organisms/BottomNav';
 import Header from '@/components/organisms/Header';
 import SearchBar from '@/components/organisms/SearchBar';
 import HeroBanner from '@/components/organisms/HeroBanner';
-import StatsRow from '@/components/organisms/StatsRow';
 import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
+import CharitiesSection from '@/components/organisms/CharitiesSection';
 import { useOnboardingStore } from '@/store/onboarding';
-import { useNotificationsStore } from '@/store/notifications';
 
 export default function HomeScreen() {
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
@@ -17,10 +16,6 @@ export default function HomeScreen() {
   const [hydrated, setHydrated] = useState(
     () => useOnboardingStore.persist.hasHydrated()
   );
-  const unreadCount = useNotificationsStore((s) =>
-    s.notifications.filter((n) => !n.read).length,
-  );
-
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -49,8 +44,6 @@ export default function HomeScreen() {
     <View className="flex-1 bg-gray-50">
       <Header
         onInboxPress={() => router.push('/inbox' as any)}
-        onNotificationPress={() => router.push('/notifications' as any)}
-        notificationCount={unreadCount}
       />
       {/* TEMP: dev shortcuts — remove before release */}
       <View className="flex-row gap-2 px-4 py-2 bg-yellow-100 border-b border-yellow-300">
@@ -74,8 +67,8 @@ export default function HomeScreen() {
         </View>
         <SearchBar />
         <HeroBanner />
-        <StatsRow />
-        <CategoriesRow />
+<CategoriesRow />
+        <CharitiesSection />
         <BrowseFeed />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />

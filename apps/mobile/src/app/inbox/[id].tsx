@@ -231,14 +231,6 @@ function ConvoHeader({ meta, onBack }: { meta: ConvoMeta; onBack: () => void }) 
         </View>
       </View>
 
-      {!meta.isSystem && (
-        <TouchableOpacity
-          className="w-9 h-9 rounded-full bg-gray-50 items-center justify-center"
-          activeOpacity={0.7}
-        >
-          <Ionicons name="call-outline" size={18} color="#6B7280" />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }

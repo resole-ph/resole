@@ -16,12 +16,12 @@ import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import { useOnboardingStore } from '@/store/onboarding';
 import { PHILIPPINE_CITIES } from '@/data/philippineCities';
 
-type Intent = 'buy' | 'sell' | 'explore';
+type Intent = 'buy' | 'sell' | 'donate';
 
 const INTENT_OPTIONS: { id: Intent; icon: string; title: string; subtitle: string }[] = [
   { id: 'buy', icon: 'shopping-bag', title: 'Browse & Buy', subtitle: 'Find your next grail.' },
   { id: 'sell', icon: 'add-a-photo', title: 'Sell a Pair', subtitle: 'Clear out your closet.' },
-  { id: 'explore', icon: 'explore', title: 'Just Exploring', subtitle: "See what's trending." },
+  { id: 'donate', icon: 'volunteer-activism', title: 'Donate', subtitle: 'Give your kicks a second life.' },
 ];
 
 export default function DetailsScreen() {
@@ -43,7 +43,9 @@ export default function DetailsScreen() {
     setLocation(city);
     storeSetPhone(phone);
     completeOnboarding();
-    router.replace('/');
+    if (intent === 'buy') router.replace('/market');
+    else if (intent === 'sell') router.replace('/sell');
+    else router.replace('/');
   };
 
   return (

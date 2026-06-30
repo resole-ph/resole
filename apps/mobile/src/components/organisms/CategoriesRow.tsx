@@ -9,6 +9,11 @@ interface Category {
   iconColor: string;
 }
 
+interface Brand {
+  id: string;
+  label: string;
+}
+
 const CATEGORIES: Category[] = [
   { id: 'running',    label: 'Running',    icon: 'walk',         iconColor: '#F59E0B' },
   { id: 'basketball', label: 'Basketball', icon: 'basketball',   iconColor: '#EF4444' },
@@ -18,17 +23,35 @@ const CATEGORIES: Category[] = [
   { id: 'casual',     label: 'Casual',     icon: 'shirt',        iconColor: '#EC4899' },
 ];
 
+const BRANDS: Brand[] = [
+  { id: 'nike',      label: 'Nike' },
+  { id: 'adidas',    label: 'Adidas' },
+  { id: 'jordan',    label: 'Jordan' },
+  { id: 'new-balance', label: 'New Balance' },
+  { id: 'puma',      label: 'Puma' },
+  { id: 'converse',  label: 'Converse' },
+  { id: 'vans',      label: 'Vans' },
+  { id: 'asics',     label: 'ASICS' },
+];
+
 interface CategoriesRowProps {
   onCategoryPress?: (categoryId: string) => void;
+  onBrandPress?: (brandId: string) => void;
   onSeeAll?: () => void;
 }
 
-export default function CategoriesRow({ onCategoryPress, onSeeAll }: CategoriesRowProps) {
-  const [activeId, setActiveId] = useState<string | null>(null);
+export default function CategoriesRow({ onCategoryPress, onBrandPress, onSeeAll }: CategoriesRowProps) {
+  const [activeCatId, setActiveCatId] = useState<string | null>(null);
+  const [activeBrandId, setActiveBrandId] = useState<string | null>(null);
 
-  const handlePress = (id: string) => {
-    setActiveId(prev => (prev === id ? null : id));
+  const handleCatPress = (id: string) => {
+    setActiveCatId(prev => (prev === id ? null : id));
     onCategoryPress?.(id);
+  };
+
+  const handleBrandPress = (id: string) => {
+    setActiveBrandId(prev => (prev === id ? null : id));
+    onBrandPress?.(id);
   };
 
   return (
@@ -41,21 +64,19 @@ export default function CategoriesRow({ onCategoryPress, onSeeAll }: CategoriesR
         </TouchableOpacity>
       </View>
 
-      {/* Chips */}
+      {/* Category chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
       >
         {CATEGORIES.map((cat) => {
-          const isActive = activeId === cat.id;
+          const isActive = activeCatId === cat.id;
           return (
             <TouchableOpacity
               key={cat.id}
               className={`flex-row items-center rounded-full px-4 py-2 border ${
-                isActive
-                  ? 'bg-blue-600 border-blue-600'
-                  : 'bg-white border-gray-200'
+                isActive ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
               }`}
               style={{
                 shadowColor: '#000',
@@ -65,19 +86,46 @@ export default function CategoriesRow({ onCategoryPress, onSeeAll }: CategoriesR
                 elevation: isActive ? 3 : 1,
               }}
               activeOpacity={0.75}
-              onPress={() => handlePress(cat.id)}
+              onPress={() => handleCatPress(cat.id)}
             >
-              <Ionicons
-                name={cat.icon}
-                size={14}
-                color={isActive ? '#fff' : cat.iconColor}
-              />
-              <Text
-                className={`ml-1.5 text-sm font-medium ${
-                  isActive ? 'text-white' : 'text-gray-700'
-                }`}
-              >
+              <Ionicons name={cat.icon} size={14} color={isActive ? '#fff' : cat.iconColor} />
+              <Text className={`ml-1.5 text-sm font-medium ${isActive ? 'text-white' : 'text-gray-700'}`}>
                 {cat.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Brand chips */}
+      <View className="flex-row items-center justify-between px-5 mt-4 mb-3">
+        <Text className="text-gray-900 font-bold text-base">Brands</Text>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+      >
+        {BRANDS.map((brand) => {
+          const isActive = activeBrandId === brand.id;
+          return (
+            <TouchableOpacity
+              key={brand.id}
+              className={`rounded-full px-4 py-2 border ${
+                isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200'
+              }`}
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: isActive ? 0.15 : 0.05,
+                shadowRadius: 4,
+                elevation: isActive ? 3 : 1,
+              }}
+              activeOpacity={0.75}
+              onPress={() => handleBrandPress(brand.id)}
+            >
+              <Text className={`text-sm font-semibold ${isActive ? 'text-white' : 'text-gray-700'}`}>
+                {brand.label}
               </Text>
             </TouchableOpacity>
           );

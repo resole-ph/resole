@@ -1,4 +1,6 @@
-import { View, Text, Image, ScrollView } from 'react-native';
+import { View, Text, Image, Dimensions } from 'react-native';
+
+const GRID_SIZE = Math.floor((Dimensions.get('window').width - 32 - 24 - 8) / 2);
 import type { ListingFormData, SellPhoto, PhotoAngle } from '../types/sell.types';
 
 const PHOTO_ANGLES: PhotoAngle[] = ['top', 'side', 'soles', 'insoles'];
@@ -31,31 +33,34 @@ export default function ListingPreviewCard({ photos, form }: ListingPreviewCardP
         elevation: 2,
       }}
     >
-      {/* Photo strip */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8, padding: 12 }}
-      >
+      {/* 2×2 photo grid */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 12 }}>
         {PHOTO_ANGLES.map((angle) => {
           const photo = photos[angle];
           return (
-            <View key={angle} className="rounded-xl overflow-hidden bg-surface-container">
+            <View
+              key={angle}
+              style={{ width: GRID_SIZE, height: GRID_SIZE, borderRadius: 12, overflow: 'hidden' }}
+              className="bg-surface-container"
+            >
               {photo ? (
                 <Image
                   source={{ uri: photo.uri }}
-                  style={{ width: 72, height: 72 }}
+                  style={{ width: GRID_SIZE, height: GRID_SIZE }}
                   resizeMode="cover"
                 />
               ) : (
-                <View style={{ width: 72, height: 72 }} className="items-center justify-center">
+                <View style={{ width: GRID_SIZE, height: GRID_SIZE }} className="items-center justify-center">
                   <Text className="font-label-md text-label-md text-on-surface-variant">—</Text>
                 </View>
               )}
+              <View className="absolute bottom-1.5 left-1.5 bg-black/50 rounded-full px-2 py-0.5">
+                <Text className="font-label-md text-label-md text-white capitalize">{angle}</Text>
+              </View>
             </View>
           );
         })}
-      </ScrollView>
+      </View>
 
       {/* Listing details */}
       <View className="px-4 pb-4">

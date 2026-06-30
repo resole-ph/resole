@@ -15,29 +15,17 @@ const ICON_BTN_SHADOW = {
 interface HeaderProps {
   title?: string;
   branded?: boolean;
-  hasNotifications?: boolean;
-  notificationCount?: number;
   hasMessages?: boolean;
   showInbox?: boolean;
-  showCart?: boolean;
-  cartCount?: number;
-  onNotificationPress?: () => void;
   onInboxPress?: () => void;
-  onCartPress?: () => void;
 }
 
 export default function Header({
   title,
   branded: brandedProp = false,
-  hasNotifications = true,
-  notificationCount,
   hasMessages = true,
   showInbox = true,
-  showCart = false,
-  cartCount,
-  onNotificationPress,
   onInboxPress,
-  onCartPress,
 }: HeaderProps) {
   const insets = useSafeAreaInsets();
   const branded = brandedProp || !!title;
@@ -67,34 +55,6 @@ export default function Header({
         </TouchableOpacity>
       )}
 
-      {/* Cart icon (market mode) */}
-      {showCart && (
-        <TouchableOpacity activeOpacity={0.7} onPress={onCartPress} style={{ marginRight: 16 }}>
-          <Ionicons name="cart-outline" size={23} color="#374151" />
-          {cartCount != null && cartCount > 0 && (
-            <View style={{ position: 'absolute', top: -3, right: -5, backgroundColor: '#2563EB', borderRadius: 8, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 8, fontWeight: '800' }}>{cartCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      )}
-
-      {/* Notification bell */}
-      <TouchableOpacity
-        className={branded ? '' : 'w-11 h-11 rounded-full bg-white items-center justify-center'}
-        activeOpacity={0.7}
-        onPress={onNotificationPress}
-        style={branded ? {} : ICON_BTN_SHADOW}
-      >
-        <Ionicons name="notifications-outline" size={22} color="#374151" />
-        {notificationCount != null && notificationCount > 0 ? (
-          <View style={{ position: 'absolute', top: -3, right: -4, backgroundColor: '#2563EB', borderRadius: 8, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: '#fff', fontSize: 8, fontWeight: '800' }}>{notificationCount}</Text>
-          </View>
-        ) : hasNotifications && !branded ? (
-          <View className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 border border-white" />
-        ) : null}
-      </TouchableOpacity>
     </View>
   );
 }
