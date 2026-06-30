@@ -82,17 +82,6 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
           resizeMode="cover"
         />
 
-        {/* AI Score badge */}
-        <View
-          className="absolute top-2 left-2 flex-row items-center rounded-full px-2 py-1"
-          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
-        >
-          <Ionicons name="sparkles" size={10} color="#FCD34D" />
-          <Text className="text-white text-xs font-semibold ml-1">
-            {listing.aiScore}% 
-          </Text>
-        </View>
-
         {/* Type badge */}
         {badge && (
           <View
@@ -181,7 +170,7 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
               )}
             </View>
 
-            <View className="flex-row items-center pt-2 border-t border-gray-100">
+            <View className="flex-row items-center mb-3">
               <View className="w-5 h-5 rounded-full bg-blue-100 items-center justify-center mr-1.5">
                 <Text className="text-blue-600 text-xs font-bold">
                   {listing.seller.name[0].toUpperCase()}
@@ -203,6 +192,18 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
                 )}
               </View>
             </View>
+
+            <TouchableOpacity
+              className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
+              style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
+              activeOpacity={0.75}
+              onPress={(e) => { e.stopPropagation(); }}
+            >
+              <Ionicons name="bag-handle-outline" size={13} color="#2563EB" />
+              <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
+                Buy Now
+              </Text>
+            </TouchableOpacity>
           </>
         )}
       </View>

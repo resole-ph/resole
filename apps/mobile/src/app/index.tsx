@@ -7,6 +7,7 @@ import SearchBar from '@/components/organisms/SearchBar';
 import HeroBanner from '@/components/organisms/HeroBanner';
 import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
+import CharitiesSection from '@/components/organisms/CharitiesSection';
 import { useOnboardingStore } from '@/store/onboarding';
 
 export default function HomeScreen() {
@@ -67,6 +68,7 @@ export default function HomeScreen() {
         <SearchBar />
         <HeroBanner />
 <CategoriesRow />
+        <CharitiesSection />
         <BrowseFeed />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
