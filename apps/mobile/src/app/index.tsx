@@ -21,6 +21,13 @@ export default function HomeScreen() {
     s.notifications.filter((n) => !n.read).length,
   );
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
   useEffect(() => {
     if (hydrated) return;
     return useOnboardingStore.persist.onFinishHydration(() => setHydrated(true));
@@ -29,20 +36,13 @@ export default function HomeScreen() {
   if (!hydrated) return null;
 
   if (!hasSeenOnboarding) {
-    return <Redirect href="/onboarding/step1" />;
+    return <Redirect href="/onboarding/splash" />;
   }
-
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }, []);
 
   const handleResetOnboarding = () => {
     useOnboardingStore.persist.clearStorage();
     useOnboardingStore.setState({ hasSeenOnboarding: false, intent: 'buy', location: '' });
-    router.replace('/onboarding/step1');
+    router.replace('/onboarding/splash');
   };
 
   return (
