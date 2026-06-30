@@ -59,11 +59,9 @@ function MyListingsCard({ onPress }: { onPress: () => void }) {
 
       <View className="flex-row items-center">
         <View className="w-2 h-2 rounded-full bg-green-400 mr-1.5" />
-        <Text className="text-gray-500 text-xs">14 active</Text>
+        <Text className="text-gray-500 text-xs">5 active</Text>
         <Text className="text-gray-300 mx-2">·</Text>
         <Text className="text-amber-500 text-xs">2 pending review</Text>
-        <Text className="text-gray-300 mx-2">·</Text>
-        <Text className="text-gray-400 text-xs">3 expired</Text>
       </View>
     </TouchableOpacity>
   );
@@ -137,13 +135,7 @@ function QuickLink({
   );
 }
 
-function QuickLinksCard({
-  onTransactions,
-  onTracking,
-}: {
-  onTransactions: () => void;
-  onTracking: () => void;
-}) {
+function QuickLinksCard({ onTransactions }: { onTransactions: () => void }) {
   return (
     <View className="bg-white rounded-2xl mx-5 mb-3 px-4" style={CARD_SHADOW}>
       <QuickLink
@@ -151,13 +143,6 @@ function QuickLinksCard({
         label="Transactions"
         sub="Sales, swaps, donations"
         onPress={onTransactions}
-      />
-      <QuickLink
-        icon="navigate-outline"
-        label="Order tracking"
-        sub="2 shipments in progress"
-        badge="2"
-        onPress={onTracking}
       />
     </View>
   );
@@ -203,36 +188,6 @@ function SellerAnalyticsCard() {
   );
 }
 
-/* ── Recycle & Donate ── */
-function RecycleDonateCard({ onTracking }: { onTracking: () => void }) {
-  return (
-    <View className="bg-white rounded-2xl mx-5 mb-3 p-4" style={CARD_SHADOW}>
-      <CardHeader icon="sync-outline" title="Recycle & donate" />
-
-      <Text className="text-gray-500 text-sm leading-relaxed mb-4">
-        Give your worn kicks a second life. We partner with local drop-off points
-        and charities to keep sneakers out of landfill.
-      </Text>
-
-      <View className="flex-row gap-2">
-        <TouchableOpacity
-          className="flex-1 bg-blue-600 rounded-xl py-2.5 items-center"
-          activeOpacity={0.8}
-          onPress={onTracking}
-        >
-          <Text className="text-white font-semibold text-sm">Schedule pickup</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 bg-gray-100 rounded-xl py-2.5 items-center"
-          activeOpacity={0.8}
-        >
-          <Text className="text-gray-600 font-semibold text-sm">Find drop-off</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
 /* ── Composed list ── */
 export default function ProfileMenuList() {
   const router = useRouter();
@@ -243,10 +198,8 @@ export default function ProfileMenuList() {
       <SavedItemsCard onPress={() => router.push('/profile/favourites')} />
       <QuickLinksCard
         onTransactions={() => router.push('/profile/transactions')}
-        onTracking={() => router.push('/profile/tracking')}
       />
       <SellerAnalyticsCard />
-      <RecycleDonateCard onTracking={() => router.push('/profile/tracking')} />
     </View>
   );
 }

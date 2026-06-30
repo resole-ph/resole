@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 
@@ -19,43 +19,37 @@ type Transaction = {
   counterpart: string;
   date: string;
   amount: string;
-  status: 'completed' | 'pending' | 'disputed';
+  status: 'completed' | 'pending' | 'donated';
   color: string;
 };
 
 const SALES: Transaction[] = [
-  { id: 's1', item: 'Jordan 1 Retro High', counterpart: 'Buyer: @jmendoza', date: 'May 28, 2026', amount: '₱18,000', status: 'completed', color: '#DBEAFE' },
-  { id: 's2', item: 'Nike SB Dunk Low', counterpart: 'Buyer: @kevinr', date: 'May 15, 2026', amount: '₱9,500', status: 'completed', color: '#EDE9FE' },
-  { id: 's3', item: 'Adidas Samba OG', counterpart: 'Buyer: @amirag', date: 'May 3, 2026', amount: '₱7,800', status: 'pending', color: '#D1FAE5' },
+  { id: 's1', item: 'Jordan 1 Retro High',  counterpart: 'Buyer: @jmendoza', date: 'May 28, 2026', amount: '₱18,000', status: 'completed', color: '#DBEAFE' },
+  { id: 's2', item: 'Nike SB Dunk Low',     counterpart: 'Buyer: @kevinr',   date: 'May 15, 2026', amount: '₱9,500',  status: 'completed', color: '#EDE9FE' },
+  { id: 's3', item: 'Adidas Samba OG',      counterpart: 'Buyer: @amirag',   date: 'May 3, 2026',  amount: '₱7,800',  status: 'pending',   color: '#D1FAE5' },
 ];
 
 const SWAPS: Transaction[] = [
-  { id: 'w1', item: 'Yeezy 350 v2 → Air Max 97', counterpart: 'Swapped with: @pdc', date: 'May 20, 2026', amount: 'Even swap', status: 'completed', color: '#FCE7F3' },
-  { id: 'w2', item: 'NB 550 → Panda Dunk', counterpart: 'Swapped with: @lramos', date: 'Apr 30, 2026', amount: '+₱2,000', status: 'completed', color: '#FEF3C7' },
+  { id: 'w1', item: 'Yeezy 350 v2 → Air Max 97', counterpart: 'Swapped with: @pdc',    date: 'May 20, 2026', amount: 'Even swap', status: 'completed', color: '#FCE7F3' },
+  { id: 'w2', item: 'NB 550 → Panda Dunk',       counterpart: 'Swapped with: @lramos', date: 'Apr 30, 2026', amount: '+₱2,000',   status: 'completed', color: '#FEF3C7' },
 ];
 
 const DONATIONS: Transaction[] = [
-  { id: 'd1', item: 'Vans Old Skool', counterpart: 'Caritas Manila', date: 'May 22, 2026', amount: '+120 coins', status: 'completed', color: '#D1FAE5' },
-  { id: 'd2', item: 'Converse Chuck 70', counterpart: 'Gawad Kalinga', date: 'Apr 18, 2026', amount: '+80 coins', status: 'completed', color: '#FEF3C7' },
+  { id: 'd1', item: 'Vans Old Skool',     counterpart: 'Caritas Manila', date: 'May 22, 2026', amount: '+120 coins', status: 'donated', color: '#D1FAE5' },
+  { id: 'd2', item: 'Converse Chuck 70',  counterpart: 'Gawad Kalinga',  date: 'Apr 18, 2026', amount: '+80 coins',  status: 'donated', color: '#FEF3C7' },
 ];
 
 const STATUS_STYLES: Record<Transaction['status'], { bg: string; text: string; label: string }> = {
-  completed: { bg: 'bg-green-50', text: 'text-green-600', label: 'Completed' },
-  pending:   { bg: 'bg-amber-50', text: 'text-amber-600', label: 'Pending' },
-  disputed:  { bg: 'bg-red-50',   text: 'text-red-500',   label: 'Disputed' },
+  completed: { bg: '#F0FDF4', text: '#16A34A', label: 'Completed' },
+  pending:   { bg: '#FFFBEB', text: '#D97706', label: 'Pending' },
+  donated:   { bg: '#ECFDF5', text: '#059669', label: 'Donated' },
 };
 
-type ModalType = 'dispute' | 'refund' | null;
-
-function TxCard({ tx, onDispute, onRefund }: {
-  tx: Transaction;
-  onDispute: (tx: Transaction) => void;
-  onRefund: (tx: Transaction) => void;
-}) {
+function TxCard({ tx }: { tx: Transaction }) {
   const s = STATUS_STYLES[tx.status];
   return (
     <View className="bg-white rounded-2xl p-4 mb-3 mx-5" style={CARD_SHADOW}>
-      <View className="flex-row items-center mb-3">
+      <View className="flex-row items-center">
         <View
           className="w-12 h-12 rounded-xl items-center justify-center mr-3"
           style={{ backgroundColor: tx.color }}
@@ -71,46 +65,23 @@ function TxCard({ tx, onDispute, onRefund }: {
         </View>
         <View className="items-end">
           <Text className="text-gray-900 font-bold text-sm">{tx.amount}</Text>
-          <View className={`${s.bg} rounded-full px-2 py-0.5 mt-1`}>
-            <Text className={`${s.text} text-xs font-semibold`}>{s.label}</Text>
+          <View
+            className="rounded-full px-2.5 py-0.5 mt-1"
+            style={{ backgroundColor: s.bg }}
+          >
+            <Text style={{ color: s.text, fontSize: 11, fontWeight: '600' }}>{s.label}</Text>
           </View>
         </View>
       </View>
-
-      {tx.status === 'completed' && (
-        <View className="flex-row gap-2 pt-3 border-t border-gray-50">
-          <TouchableOpacity
-            className="flex-1 bg-gray-50 rounded-xl py-2 items-center"
-            activeOpacity={0.7}
-            onPress={() => onDispute(tx)}
-          >
-            <Text className="text-gray-600 font-semibold text-xs">Dispute</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="flex-1 bg-blue-50 rounded-xl py-2 items-center"
-            activeOpacity={0.7}
-            onPress={() => onRefund(tx)}
-          >
-            <Text className="text-blue-600 font-semibold text-xs">Request Refund</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 }
 
 export default function TransactionsScreen() {
   const [tab, setTab] = useState<TxTab>('sales');
-  const [modalType, setModalType] = useState<ModalType>(null);
-  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   const DATA: Record<TxTab, Transaction[]> = { sales: SALES, swaps: SWAPS, donations: DONATIONS };
   const currentData = DATA[tab];
-
-  const openModal = (type: ModalType, tx: Transaction) => {
-    setSelectedTx(tx);
-    setModalType(type);
-  };
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -145,64 +116,9 @@ export default function TransactionsScreen() {
           </View>
         )}
         {currentData.map((tx) => (
-          <TxCard
-            key={tx.id}
-            tx={tx}
-            onDispute={(t) => openModal('dispute', t)}
-            onRefund={(t) => openModal('refund', t)}
-          />
+          <TxCard key={tx.id} tx={tx} />
         ))}
       </ScrollView>
-
-      {/* Dispute / Refund modal */}
-      <Modal visible={modalType !== null} transparent animationType="slide">
-        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-          <View className="bg-white rounded-t-3xl p-6">
-            <Text className="text-gray-900 font-bold text-lg mb-1">
-              {modalType === 'dispute' ? 'Open a dispute' : 'Request a refund'}
-            </Text>
-            <Text className="text-gray-500 text-sm mb-2">
-              {selectedTx?.item}
-            </Text>
-            <Text className="text-gray-400 text-sm mb-5 leading-relaxed">
-              {modalType === 'dispute'
-                ? 'Describe the issue with this transaction. Our team will review it within 2 business days.'
-                : 'Refund requests are reviewed within 3 business days. The seller will be notified.'}
-            </Text>
-
-            {/* Reason options */}
-            {(modalType === 'dispute'
-              ? ['Item not as described', 'Never received', 'Counterfeit item', 'Wrong size sent']
-              : ['Item damaged', 'Wrong item received', 'Changed my mind', 'Duplicate order']
-            ).map((reason) => (
-              <TouchableOpacity
-                key={reason}
-                className="flex-row items-center bg-gray-50 rounded-2xl p-4 mb-2"
-                activeOpacity={0.7}
-                onPress={() => setModalType(null)}
-              >
-                <View className="w-5 h-5 rounded-full border-2 border-gray-300 mr-3" />
-                <Text className="text-gray-700 font-medium text-sm flex-1">{reason}</Text>
-              </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity
-              className="bg-blue-600 rounded-2xl py-3.5 items-center mt-3"
-              activeOpacity={0.8}
-              onPress={() => setModalType(null)}
-            >
-              <Text className="text-white font-semibold text-sm">Submit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="py-3 items-center"
-              onPress={() => setModalType(null)}
-              activeOpacity={0.7}
-            >
-              <Text className="text-gray-400 font-semibold text-sm">Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

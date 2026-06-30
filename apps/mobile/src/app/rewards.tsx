@@ -73,50 +73,58 @@ function HistoryRow({ tx }: { tx: CoinTx }) {
 
 function RedeemCard({ option }: { option: RedeemOption }) {
   const canAfford = BALANCE >= option.cost;
+  const isHighlight = option.highlight;
   return (
     <View
-      className={`rounded-2xl p-4 mb-3 ${option.highlight ? 'bg-blue-600' : 'bg-white'}`}
-      style={CARD_SHADOW}
+      className="rounded-2xl p-4 mb-3"
+      style={[CARD_SHADOW, { backgroundColor: isHighlight ? '#059669' : '#fff' }]}
     >
-      <View className="flex-row items-center">
+      <View className="flex-row items-start">
         <View
-          className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-          style={{ backgroundColor: option.highlight ? 'rgba(255,255,255,0.2)' : '#EFF6FF' }}
+          className="w-10 h-10 rounded-xl items-center justify-center mr-3 mt-0.5"
+          style={{ backgroundColor: isHighlight ? 'rgba(255,255,255,0.2)' : '#D1FAE5' }}
         >
           <Ionicons
             name={option.icon}
             size={20}
-            color={option.highlight ? '#fff' : '#2563EB'}
+            color={isHighlight ? '#fff' : '#059669'}
           />
         </View>
         <View className="flex-1">
-          <Text className={`font-semibold text-sm ${option.highlight ? 'text-white' : 'text-gray-900'}`}>
+          <Text style={{ fontWeight: '600', fontSize: 14, color: isHighlight ? '#fff' : '#111827' }}>
             {option.title}
           </Text>
-          <Text className={`text-xs mt-0.5 ${option.highlight ? 'text-blue-200' : 'text-gray-400'}`}>
+          <Text style={{ fontSize: 12, marginTop: 2, color: isHighlight ? '#A7F3D0' : '#9CA3AF' }}>
             {option.description}
+          </Text>
+          {/* Point cost */}
+          <Text style={{ fontSize: 13, fontWeight: '700', marginTop: 6, color: isHighlight ? '#fff' : '#059669' }}>
+            {option.cost} pts
           </Text>
         </View>
         <TouchableOpacity
-          className={`rounded-xl px-3 py-1.5 items-center ${
-            canAfford
-              ? option.highlight
-                ? 'bg-white'
-                : 'bg-blue-600'
-              : 'bg-gray-100'
-          }`}
+          style={{
+            borderRadius: 10,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            marginLeft: 8,
+            alignSelf: 'center',
+            backgroundColor: canAfford
+              ? isHighlight ? '#fff' : '#059669'
+              : '#E5E7EB',
+          }}
           activeOpacity={canAfford ? 0.7 : 1}
         >
           <Text
-            className={`font-bold text-xs ${
-              canAfford
-                ? option.highlight
-                  ? 'text-blue-600'
-                  : 'text-white'
-                : 'text-gray-400'
-            }`}
+            style={{
+              fontWeight: '700',
+              fontSize: 13,
+              color: canAfford
+                ? isHighlight ? '#059669' : '#fff'
+                : '#9CA3AF',
+            }}
           >
-            {option.cost} pts
+            Redeem
           </Text>
         </TouchableOpacity>
       </View>
@@ -140,8 +148,8 @@ export default function RewardsScreen() {
         <View
           className="mx-5 mb-5 rounded-3xl p-6 overflow-hidden"
           style={{
-            backgroundColor: '#1D4ED8',
-            shadowColor: '#2563EB',
+            backgroundColor: '#059669',
+            shadowColor: '#059669',
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.35,
             shadowRadius: 16,
@@ -149,15 +157,15 @@ export default function RewardsScreen() {
           }}
         >
           <View className="flex-row items-center mb-1">
-            <Ionicons name="leaf-outline" size={14} color="#93C5FD" />
-            <Text className="text-blue-300 text-xs font-semibold ml-1 uppercase tracking-wide">
+            <Ionicons name="leaf-outline" size={14} color="#86EFAC" />
+            <Text className="text-green-200 text-xs font-semibold ml-1 uppercase tracking-wide">
               Recycle Coins Balance
             </Text>
           </View>
           <Text className="text-white text-5xl font-bold mt-1 mb-1">
             {BALANCE.toLocaleString()}
           </Text>
-          <Text className="text-blue-300 text-sm">
+          <Text className="text-green-200 text-sm">
             Earn more by donating or recycling your kicks
           </Text>
 
@@ -169,7 +177,7 @@ export default function RewardsScreen() {
             ].map((b) => (
               <View key={b.label} className="flex-1 rounded-2xl py-2.5 px-2 items-center" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
                 <Text className="text-white font-bold text-base">{b.value}</Text>
-                <Text className="text-blue-300 text-xs mt-0.5">{b.label}</Text>
+                <Text className="text-green-200 text-xs mt-0.5">{b.label}</Text>
               </View>
             ))}
           </View>
