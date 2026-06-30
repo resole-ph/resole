@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance } from 'drizzle-orm';
+import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user } from '@/db/schema';
 import { 
   Shoe, 
@@ -116,6 +116,27 @@ export async function getAllShoeListing() {
     return rows as ShoeListing[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe listings.", error);
+    return null;
+  }
+}
+
+export async function getShoeListingsByUserId(userId: string) {
+  try {
+    const rows = await db
+      .select({
+        user: getTableColumns(user),
+        shoe: getTableColumns(shoe),
+        ...getTableColumns(shoeListing)
+      })
+      .from(shoeListing)
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(and(eq(shoeListing.userId, userId), isNull(shoeListing.deletedAt)))
+      .orderBy(desc(shoeListing.updatedAt));
+
+    return rows as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching user shoe listings.", error);
     return null;
   }
 }
@@ -318,6 +339,25 @@ export async function deleteShoeListing(id: number) {
   } catch (error) {
     console.error("Error deleting shoe listing.", error);
     return null
+  }
+}
+
+export async function deleteUserShoeListing(userId: string, id: number) {
+  try {
+    const result = await db
+      .update(shoeListing)
+      .set({
+        isAvailable: false,
+        deletedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(eq(shoeListing.id, id), eq(shoeListing.userId, userId)))
+      .returning({ id: shoeListing.id });
+
+    return result[0] ? "Shoe listing successfully deleted." : null;
+  } catch (error) {
+    console.error("Error deleting user shoe listing.", error);
+    return null;
   }
 }
 

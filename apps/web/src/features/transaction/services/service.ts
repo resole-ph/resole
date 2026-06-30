@@ -475,3 +475,77 @@ export async function checkoutCart(userId: string, isBuyNow: boolean) {
     transactions: transactionResults,
   };
 }
+
+export async function donateShoeListing(userId: string, listingId: number, charityId: number) {
+  return db.transaction(async (tx) => {
+    const listings = await tx
+      .select()
+      .from(shoeListing)
+      .where(and(eq(shoeListing.id, listingId), eq(shoeListing.userId, userId)))
+      .limit(1);
+
+    const listing = listings[0];
+    if (!listing) {
+      throw new Error('Shoe listing not found');
+    }
+
+    if (listing.deletedAt) {
+      throw new Error('Shoe listing is deleted');
+    }
+
+    if (!listing.isAvailable) {
+      throw new Error('Shoe listing is not eligible for donation');
+    }
+
+    const charities = await tx
+      .select({ id: charity.id })
+      .from(charity)
+      .where(and(eq(charity.id, charityId), sql`${charity.deletedAt} IS NULL`))
+      .limit(1);
+
+    if (!charities[0]) {
+      throw new Error('Charity not found');
+    }
+
+    const existingDonations = await tx
+      .select({ id: donation.id })
+      .from(donation)
+      .innerJoin(transaction, eq(donation.transactionId, transaction.id))
+      .where(and(eq(transaction.listingId, listingId), eq(transaction.type, 'donate')))
+      .limit(1);
+
+    if (existingDonations[0]) {
+      throw new Error('Shoe listing has already been donated');
+    }
+
+    const [transactionRecord] = await tx
+      .insert(transaction)
+      .values({
+        listingId,
+        type: 'donate',
+        isCompleted: false
+      })
+      .returning();
+
+    const [donationRecord] = await tx
+      .insert(donation)
+      .values({
+        transactionId: transactionRecord.id,
+        charityId
+      })
+      .returning();
+
+    await tx
+      .update(shoeListing)
+      .set({
+        isAvailable: false,
+        updatedAt: new Date()
+      })
+      .where(eq(shoeListing.id, listingId));
+
+    return {
+      transaction: transactionRecord,
+      donation: donationRecord
+    };
+  });
+}
