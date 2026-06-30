@@ -25,7 +25,7 @@ export default function ConditionSlider({ value, min, max, onChange }: Condition
   function xToValue(x: number, width: number) {
     if (width === 0) return min;
     const raw = (x / width) * (max - min) + min;
-    return Math.round(Math.max(min, Math.min(max, raw)));
+    return Math.round(Math.max(min, Math.min(max, raw)) * 10) / 10;
   }
 
   function onLayout(e: LayoutChangeEvent) {

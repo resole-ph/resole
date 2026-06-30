@@ -1,16 +1,10 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SellStepHeader from '../components/SellStepHeader';
 import ConditionSlider from '../components/ConditionSlider';
 import PriceInput from '../components/PriceInput';
 import { useSellFlow } from '../hooks/useSellFlow';
-import type { ListingMode } from '../types/sell.types';
-
-const MODE_OPTIONS: { id: ListingMode; label: string }[] = [
-  { id: 'sell', label: 'Sell' },
-  { id: 'swap', label: 'Swap' },
-  { id: 'both', label: 'Both' },
-];
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -191,25 +185,52 @@ export default function EditListingContainer() {
           }}
         >
           <SectionLabel>Listing Type</SectionLabel>
-          <View
-            className="flex-row rounded-full bg-surface-container-low p-1"
-            style={{ borderWidth: 1, borderColor: '#e0e2ec' }}
-          >
-            {MODE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.id}
-                onPress={() => updateFormField('mode', opt.id)}
-                className="flex-1 py-2 rounded-full items-center"
-                style={{ backgroundColor: form.mode === opt.id ? '#ffffff' : 'transparent' }}
-              >
-                <Text
-                  className="font-body-md text-body-md"
-                  style={{ color: form.mode === opt.id ? '#1a1c20' : '#727687' }}
+          <View className="gap-3">
+            {(['sell', 'swap'] as const).map((type) => {
+              const checked = form.mode === type || form.mode === 'both';
+              const label = type === 'sell' ? 'Sell' : 'Swap';
+              const subtitle = type === 'sell' ? 'List for a fixed price' : 'Trade for another pair';
+              function toggle() {
+                const otherChecked = type === 'sell'
+                  ? (form.mode === 'swap' || form.mode === 'both')
+                  : (form.mode === 'sell' || form.mode === 'both');
+                if (checked && !otherChecked) return;
+                if (checked) updateFormField('mode', type === 'sell' ? 'swap' : 'sell');
+                else updateFormField('mode', otherChecked ? 'both' : type);
+              }
+              return (
+                <TouchableOpacity
+                  key={type}
+                  onPress={toggle}
+                  activeOpacity={0.7}
+                  className="flex-row items-center gap-3 p-3 rounded-2xl"
+                  style={{
+                    backgroundColor: checked ? '#f2f3ff' : '#ffffff',
+                    borderWidth: 1,
+                    borderColor: checked ? '#0054d3' : '#e0e2ec',
+                  }}
                 >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 6,
+                      borderWidth: 2,
+                      borderColor: checked ? '#0054d3' : '#c2c6d8',
+                      backgroundColor: checked ? '#0054d3' : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-body-md text-body-md text-on-surface">{label}</Text>
+                    <Text className="font-label-md text-label-md text-on-surface-variant">{subtitle}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 

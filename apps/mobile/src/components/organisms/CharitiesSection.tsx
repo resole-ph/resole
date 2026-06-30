@@ -39,7 +39,7 @@ const CHARITIES: Charity[] = [
   {
     id: 'unicef',
     name: 'UNICEF Philippines',
-    cause: 'Children's welfare',
+    cause: "Children's welfare",
     icon: 'happy-outline',
     iconColor: '#3B82F6',
     iconBg: '#DBEAFE',

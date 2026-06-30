@@ -8,7 +8,7 @@ export interface Listing {
   brand: string;
   price: number;
   originalPrice?: number;
-  condition: 'New' | 'Like New' | 'Good' | 'Fair'; 
+  condition: 'Like New' | 'Excellent' | 'Good' | 'Fair' | 'Poor';
   imageUrl: string;
   aiScore: number;
   badgeType?: 'Swap' | 'Sale' | 'Hot' | 'Flash Deal';
@@ -42,10 +42,11 @@ const BADGE_STYLES: Record<
 };
 
 const CONDITION_COLORS: Record<Listing['condition'], string> = {
-  'New':      '#10B981',
-  'Like New': '#3B82F6',
+  'Like New': '#10B981',
+  'Excellent': '#3B82F6',
   'Good':     '#F59E0B',
   'Fair':     '#9CA3AF',
+  'Poor':     '#EF4444',
 };
 
 export default function ListingCard({ listing, onSave }: ListingCardProps) {

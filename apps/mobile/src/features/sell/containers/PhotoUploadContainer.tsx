@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import SellStepHeader from '../components/SellStepHeader';
 import PhotoGrid from '../components/PhotoGrid';
+import { Ionicons } from '@expo/vector-icons';
 import { useSellFlow } from '../hooks/useSellFlow';
 import type { PhotoAngle } from '../types/sell.types';
 
@@ -200,18 +201,28 @@ export default function PhotoUploadContainer() {
 
           <TouchableOpacity
             onPress={handleCameraPress}
-            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, gap: 12 }}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, gap: 14 }}
           >
-            <Text style={{ fontSize: 22 }}>📷</Text>
-            <Text style={{ fontSize: 16, color: '#1a1c23', fontWeight: '500' }}>Take Photo</Text>
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="camera" size={20} color="#2563EB" />
+            </View>
+            <View>
+              <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600' }}>Take Photo</Text>
+              <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>Use your camera</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleLibraryPress}
-            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, gap: 12 }}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, gap: 14 }}
           >
-            <Text style={{ fontSize: 22 }}>🖼️</Text>
-            <Text style={{ fontSize: 16, color: '#1a1c23', fontWeight: '500' }}>Choose from Library</Text>
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#F5F3FF', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="images" size={20} color="#7C3AED" />
+            </View>
+            <View>
+              <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600' }}>Choose from Library</Text>
+              <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>Pick from your photos</Text>
+            </View>
           </TouchableOpacity>
 
           <View style={{ height: 1, backgroundColor: '#e8eaf0', marginHorizontal: 24, marginVertical: 4 }} />

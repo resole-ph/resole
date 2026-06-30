@@ -17,10 +17,7 @@ interface HeaderProps {
   branded?: boolean;
   hasMessages?: boolean;
   showInbox?: boolean;
-  showCart?: boolean;
-  cartCount?: number;
   onInboxPress?: () => void;
-  onCartPress?: () => void;
 }
 
 export default function Header({
@@ -28,10 +25,7 @@ export default function Header({
   branded: brandedProp = false,
   hasMessages = true,
   showInbox = true,
-  showCart = false,
-  cartCount,
   onInboxPress,
-  onCartPress,
 }: HeaderProps) {
   const insets = useSafeAreaInsets();
   const branded = brandedProp || !!title;
@@ -57,18 +51,6 @@ export default function Header({
           <Ionicons name="mail-outline" size={22} color="#111827" />
           {hasMessages && (
             <View className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 border border-white" />
-          )}
-        </TouchableOpacity>
-      )}
-
-      {/* Cart icon (market mode) */}
-      {showCart && (
-        <TouchableOpacity activeOpacity={0.7} onPress={onCartPress} style={{ marginRight: 16 }}>
-          <Ionicons name="cart-outline" size={23} color="#374151" />
-          {cartCount != null && cartCount > 0 && (
-            <View style={{ position: 'absolute', top: -3, right: -5, backgroundColor: '#2563EB', borderRadius: 8, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 8, fontWeight: '800' }}>{cartCount}</Text>
-            </View>
           )}
         </TouchableOpacity>
       )}
