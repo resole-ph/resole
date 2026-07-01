@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
+import { authService } from '@/features/auth/services/auth.service';
 
 type AuthMode = 'login' | 'signup';
 
@@ -23,8 +24,33 @@ export default function AuthScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const goToDetails = () => router.push('/onboarding/details');
+  const handleSubmit = async () => {
+    setError(null);
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    setLoading(true);
+    try {
+      if (mode === 'signup') {
+        const result = await authService.signUp(email, password);
+        router.push({
+          pathname: '/onboarding/details',
+          params: { userId: result.user?.id ?? '', email: result.user?.email ?? '' },
+        });
+      } else {
+        await authService.signIn(email, password);
+        router.replace('/market');
+      }
+    } catch (e: any) {
+      setError(e?.message ?? 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -36,7 +62,11 @@ export default function AuthScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        <OnboardingHeader showBack onBack={() => router.back()} logo />
+        <OnboardingHeader
+          showBack={router.canGoBack()}
+          onBack={() => router.back()}
+          logo
+        />
 
         <View className="px-8 gap-8 mt-2">
           {/* Welcome section */}
@@ -146,13 +176,21 @@ export default function AuthScreen() {
                 </Text>
               </TouchableOpacity>
             )}
+
+            {error && (
+              <Text className="font-body-sm text-body-sm text-error text-center">
+                {error}
+              </Text>
+            )}
           </View>
 
           {/* Submit */}
           <TouchableOpacity
-            onPress={goToDetails}
+            onPress={handleSubmit}
+            disabled={loading}
             className="bg-primary rounded-full py-3 items-center"
             style={{
+              opacity: loading ? 0.6 : 1,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.08,
@@ -161,7 +199,7 @@ export default function AuthScreen() {
             }}
           >
             <Text className="font-body-md text-body-md text-on-primary">
-              {mode === 'signup' ? 'Create Account' : 'Log In'}
+              {loading ? 'Please wait…' : mode === 'signup' ? 'Create Account' : 'Log In'}
             </Text>
           </TouchableOpacity>
 
@@ -175,7 +213,6 @@ export default function AuthScreen() {
           {/* Social auth buttons */}
           <View className="gap-2">
             <TouchableOpacity
-              onPress={goToDetails}
               className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full bg-surface-container-lowest border border-outline-variant"
               style={{
                 shadowColor: '#000',
@@ -192,7 +229,6 @@ export default function AuthScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={goToDetails}
               className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
               style={{
                 backgroundColor: '#131b2e',
@@ -210,7 +246,6 @@ export default function AuthScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={goToDetails}
               className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
               style={{
                 backgroundColor: '#1877F2',
