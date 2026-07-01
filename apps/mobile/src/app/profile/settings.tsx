@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
+import { authService } from '@/features/auth/services/auth.service';
+import { useOnboardingStore } from '@/store/onboarding';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -101,6 +104,7 @@ function ActionRow({
 }
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
     messages: true,
     offers: false,
@@ -114,8 +118,21 @@ export default function SettingsScreen() {
   const handleLogout = () => {
     Alert.alert('Log out?', 'You will need to sign in again.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: () => {} },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          await authService.signOut();
+          router.replace('/onboarding/auth' as any);
+        },
+      },
     ]);
+  };
+
+  const handleResetOnboarding = () => {
+    useOnboardingStore.persist.clearStorage();
+    useOnboardingStore.setState({ hasSeenOnboarding: false, intent: 'buy', location: '' });
+    router.replace('/onboarding/splash' as any);
   };
 
   const handleDeleteAccount = () => {
@@ -201,6 +218,12 @@ export default function SettingsScreen() {
             icon="log-out-outline"
             color="#F59E0B"
             onPress={handleLogout}
+          />
+          <ActionRow
+            label="Reset Onboarding (Dev)"
+            icon="refresh-outline"
+            color="#8B5CF6"
+            onPress={handleResetOnboarding}
           />
           <ActionRow
             label="Delete account"

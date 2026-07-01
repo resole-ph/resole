@@ -10,11 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import { useOnboardingStore } from '@/store/onboarding';
 import { PHILIPPINE_CITIES } from '@/data/philippineCities';
+import { authService } from '@/features/auth/services/auth.service';
 
 type Intent = 'buy' | 'sell' | 'donate';
 
@@ -26,6 +27,7 @@ const INTENT_OPTIONS: { id: Intent; icon: string; title: string; subtitle: strin
 
 export default function DetailsScreen() {
   const router = useRouter();
+  const { userId: paramUserId, email: paramEmail } = useLocalSearchParams<{ userId: string; email: string }>();
   const { completeOnboarding, setIntent: storeSetIntent, setLocation, setPhoneNumber: storeSetPhone } = useOnboardingStore();
 
   const [intent, setIntent] = useState<Intent>('buy');
@@ -33,19 +35,41 @@ export default function DetailsScreen() {
   const [city, setCity] = useState('');
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [citySearch, setCitySearch] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const filteredCities = citySearch.trim()
     ? PHILIPPINE_CITIES.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase()))
     : PHILIPPINE_CITIES;
 
-  const handleGetStarted = () => {
-    storeSetIntent(intent);
-    setLocation(city);
-    storeSetPhone(phone);
-    completeOnboarding();
-    if (intent === 'buy') router.replace('/market');
-    else if (intent === 'sell') router.replace('/sell');
-    else router.replace('/');
+  const handleGetStarted = async () => {
+    if (!paramUserId || !paramEmail) {
+      setError('Session expired. Please sign in again.');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      storeSetIntent(intent);
+      setLocation(city);
+      storeSetPhone(phone);
+      await authService.saveProfile({
+        id: paramUserId,
+        name: paramEmail.split('@')[0],
+        email: paramEmail,
+        intent,
+        contact_no: phone,
+        city,
+      });
+      completeOnboarding();
+      if (intent === 'buy') router.replace('/market');
+      else if (intent === 'sell') router.replace('/sell');
+      else router.replace('/');
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to save your details. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,7 +79,11 @@ export default function DetailsScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        <OnboardingHeader showBack onBack={() => router.back()} logo />
+        <OnboardingHeader
+          showBack={router.canGoBack()}
+          onBack={() => router.back()}
+          logo
+        />
 
         <View className="px-8 gap-8 mt-2">
           {/* Header */}
@@ -154,11 +182,19 @@ export default function DetailsScreen() {
             </TouchableOpacity>
           </View>
 
+          {error && (
+            <Text className="font-body-sm text-body-sm text-error text-center">
+              {error}
+            </Text>
+          )}
+
           {/* Get Started CTA */}
           <TouchableOpacity
             onPress={handleGetStarted}
+            disabled={loading}
             className="self-center bg-primary rounded-full py-3 px-12 items-center"
             style={{
+              opacity: loading ? 0.6 : 1,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.08,
@@ -166,7 +202,9 @@ export default function DetailsScreen() {
               elevation: 6,
             }}
           >
-            <Text className="font-body-md text-body-md text-on-primary">Get Started</Text>
+            <Text className="font-body-md text-body-md text-on-primary">
+              {loading ? 'Saving…' : 'Get Started'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
