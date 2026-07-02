@@ -20,7 +20,8 @@
     "onnxruntime-node": "^1.27.0",
     "postgres": "^3.4.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "resole": "file:../.."
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
