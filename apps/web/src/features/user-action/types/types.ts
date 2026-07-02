@@ -1,6 +1,6 @@
 import { referal, rating, save } from '@/db/schema';
 import { User } from '@/features/auth/types/types';
-import { Shoe } from '@/features/shoe/types/types';
+import { Shoe, ShoeListing } from '@/features/shoe/types/types';
 
 type InferReferal = typeof referal.$inferSelect;
 export type Referal = Omit<InferReferal, 'referedById' | 'referedToId'> & { referedBy: User, referedTo: User };
@@ -13,6 +13,6 @@ export type CreateRating = typeof rating.$inferInsert;
 export type UpdateRating = Partial<InferReferal>;
 
 type InferSave = typeof save.$inferSelect;
-export type Save = Omit<InferSave, 'shoeId' | 'userId'> & { shoe: Shoe, user: User };
+export type Save = Omit<InferSave, 'listingId' | 'userId'> & { listing: ShoeListing, user: User };
 export type CreateSave = typeof save.$inferInsert;
 export type UpdateSave = Partial<InferReferal>;
