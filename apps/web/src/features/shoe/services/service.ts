@@ -13,6 +13,7 @@ import {
   UpdateShoeListing 
 } from '@/features/shoe/types/types';
 import { GoogleGenAI } from "@google/genai";
+import { detectIfShoe } from '@/features/shoe/services/detector';
 
 export async function generateEmbedding(context: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -381,6 +382,12 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
       throw new Error(`Failed to download ${key} image from URL`);
     }
     const buffer = Buffer.from(await res.arrayBuffer());
+
+    const isShoe = await detectIfShoe(buffer);
+    if (!isShoe) {
+      throw new Error(`Image for ${key} does not appear to be a shoe`);
+    }
+
     const base64 = buffer.toString('base64');
     const contentType = res.headers.get('content-type') || 'image/jpeg';
 
