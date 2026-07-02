@@ -6,8 +6,8 @@ import type {
   PublishListingPayload,
   PublishListingResult,
 } from '../types/sell.types';
-import { MOCK_AI_RESULT, MOCK_AI_ANALYSIS_ID, MOCK_ANALYSIS_DELAY_MS } from '../data/sell.mock';
 import { apiFetch } from '@/lib/api-client';
+import { ratingToLabel } from '../utils/condition';
 
 /** Web /api/listings/photos expects singular field names; mobile uses plural angles. */
 const ANGLE_TO_FIELD: Record<PhotoAngle, 'top' | 'side' | 'sole' | 'insole'> = {
@@ -25,6 +25,29 @@ const FIELD_TO_URL_KEY = {
   insole: 'imageUrlInsole',
 } as const;
 
+/** Shape of the `analysis` payload returned by POST /api/listings/analyze. */
+interface AnalyzeResponse {
+  analysis: {
+    brand: string;
+    model: string;
+    colorway: string;
+    size: string;
+    year: number;
+    conditionScore: number;
+    description: string;
+    defects: string[];
+    estimatedPrice: number;
+    pricing: {
+      baselinePrice: number | null;
+      matchedShoeId: number | null;
+      similarity: number | null;
+      conditionScore: number;
+      suggestedPrice: number;
+      priceSource: 'catalog' | 'ai-estimate';
+    };
+  };
+}
+
 export interface SellService {
   /**
    * Uploads all four shoe photos to blob storage.
@@ -33,11 +56,10 @@ export interface SellService {
   uploadPhotos(photos: SellPhoto[]): Promise<UploadPhotosResult>;
 
   /**
-   * Sends photo references to the AI analysis endpoint.
-   * Returns structured valuation + identification data.
-   * TODO(backend): POST /listings/analyze { photoUrls: string[] }
+   * Sends the four uploaded photo URLs (keyed by angle) to the AI analysis
+   * endpoint and returns structured valuation + identification data.
    */
-  analyzePhotos(remoteUrls: string[]): Promise<{
+  analyzePhotos(remoteUrls: Record<PhotoAngle, string>): Promise<{
     result: AiAnalysisResult;
     analysisId: string;
   }>;
@@ -47,10 +69,6 @@ export interface SellService {
    * TODO(backend): POST /listings
    */
   publishListing(payload: PublishListingPayload): Promise<PublishListingResult>;
-}
-
-function delay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
 export const sellService: SellService = {
@@ -79,10 +97,38 @@ export const sellService: SellService = {
     };
   },
 
-  async analyzePhotos(_remoteUrls) {
-    // Mock: simulate AI processing latency, then return static fixture
-    await delay(MOCK_ANALYSIS_DELAY_MS);
-    return { result: MOCK_AI_RESULT, analysisId: MOCK_AI_ANALYSIS_ID };
+  async analyzePhotos(remoteUrls) {
+    const { analysis } = await apiFetch<AnalyzeResponse>('/api/listings/analyze', {
+      method: 'POST',
+      body: {
+        imageUrlTop: remoteUrls.top,
+        imageUrlSide: remoteUrls.side,
+        imageUrlSole: remoteUrls.soles,
+        imageUrlInsole: remoteUrls.insoles,
+      },
+    });
+
+    const suggestedPrice = analysis.pricing.suggestedPrice;
+
+    const result: AiAnalysisResult = {
+      brand: analysis.brand,
+      model: analysis.model,
+      colorway: analysis.colorway,
+      size: analysis.size,
+      year: analysis.year,
+      conditionRating: analysis.conditionScore,
+      conditionLabel: ratingToLabel(analysis.conditionScore),
+      suggestedPrice,
+      suggestedPriceLow: Math.round(suggestedPrice * 0.85),
+      suggestedPriceHigh: Math.round(suggestedPrice * 1.15),
+      currency: 'PHP',
+    };
+
+    // The backend doesn't persist an analysis record yet; a client-generated id
+    // keeps the publish step's `aiAnalysisId` guard satisfied downstream.
+    const analysisId = `analysis-${Date.now()}`;
+
+    return { result, analysisId };
   },
 
   async publishListing(_payload) {
