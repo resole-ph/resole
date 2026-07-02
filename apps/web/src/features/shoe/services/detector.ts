@@ -1,49 +1,59 @@
-import * as tf from '@tensorflow/tfjs-core';
-import '@tensorflow/tfjs-backend-cpu';
-import fs from 'fs';
+import * as ort from 'onnxruntime-node';
+import { Jimp } from 'jimp';
 import path from 'path';
 
-let model: any = null;
-let tflite: any = null;
+let session: ort.InferenceSession | null = null;
 
 export async function loadModel() {
-  if (model) return model;
+  if (session) return session;
 
-  if (typeof self === 'undefined') {
-    (global as any).self = global;
-  }
-
-  if (!tflite) {
-    tflite = require('@tensorflow/tfjs-tflite');
-  }
-
-  const modelPath = path.join(process.cwd(), 'src/features/shoe/models/best_float16.tflite');
-  const modelBuffer = fs.readFileSync(modelPath);
-  
-  model = await tflite.loadTFLiteModel(modelBuffer.buffer.slice(modelBuffer.byteOffset, modelBuffer.byteOffset + modelBuffer.byteLength));
-  return model;
+  const modelPath = path.join(process.cwd(), 'src/features/shoe/models/best.onnx');
+  session = await ort.InferenceSession.create(modelPath);
+  return session;
 }
 
 export async function detectIfShoe(imageBuffer: Buffer): Promise<boolean> {
-  const loadedModel = await loadModel();
-  const tfnode = require('@tensorflow/tfjs-node');
+  const loadedSession = await loadModel();
 
-  let tensor;
-  try {
-    tensor = tfnode.node.decodeImage(imageBuffer);
-  } catch (error) {
-    throw new Error('Failed to decode image');
+  const image = await Jimp.read(imageBuffer);
+  image.resize({ w: 768, h: 768 });
+
+  const dims = [1, 3, 768, 768];
+  const size = 3 * 768 * 768;
+  const float32Data = new Float32Array(size);
+
+  let rOffset = 0;
+  let gOffset = 768 * 768;
+  let bOffset = 2 * 768 * 768;
+
+  for (let y = 0; y < 768; y++) {
+    for (let x = 0; x < 768; x++) {
+      const idx = (image.bitmap.width * y + x) << 2;
+      float32Data[rOffset++] = image.bitmap.data[idx] / 255.0;
+      float32Data[gOffset++] = image.bitmap.data[idx + 1] / 255.0;
+      float32Data[bOffset++] = image.bitmap.data[idx + 2] / 255.0;
+    }
   }
 
-  const resized = tf.image.resizeBilinear(tensor, [224, 224]);
-  const expanded = resized.expandDims(0);
-  const normalized = expanded.div(255.0);
+  const tensor = new ort.Tensor('float32', float32Data, dims);
+  const inputName = loadedSession.inputNames[0];
+  const feeds: Record<string, ort.Tensor> = {};
+  feeds[inputName] = tensor;
 
-  const prediction = loadedModel.predict(normalized) as tf.Tensor;
-  const scores = await prediction.data();
+  const results = await loadedSession.run(feeds);
+  const outputName = loadedSession.outputNames[0];
+  const outputData = results[outputName].data as Float32Array;
 
-  tf.dispose([tensor, resized, expanded, normalized, prediction]);
+  let maxScore = 0;
+  const scoreStartIndex = 4 * 12096;
+  const scoreEndIndex = 5 * 12096;
+  
+  for (let i = scoreStartIndex; i < scoreEndIndex; i++) {
+    if (outputData[i] > maxScore) {
+      maxScore = outputData[i];
+    }
+  }
 
-  const shoeScore = scores[0]; 
-  return shoeScore > 0.5;
+  console.log(`[ONNX] Highest shoe confidence detected: ${(maxScore * 100).toFixed(2)}%`);
+  return maxScore > 0.6;
 }

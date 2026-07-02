@@ -383,9 +383,11 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
     }
     const buffer = Buffer.from(await res.arrayBuffer());
 
-    const isShoe = await detectIfShoe(buffer);
-    if (!isShoe) {
-      throw new Error(`Image for ${key} does not appear to be a shoe`);
+    if (key === 'side') {
+      const isShoe = await detectIfShoe(buffer);
+      if (!isShoe) {
+        throw new Error(`Image for ${key} does not appear to be a shoe`);
+      }
     }
 
     const base64 = buffer.toString('base64');
