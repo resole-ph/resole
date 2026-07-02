@@ -12,11 +12,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import { authService } from '@/features/auth/services/auth.service';
+import { isStrongPassword, PASSWORD_REQUIREMENT_MESSAGE } from '@/features/auth/validation';
+import { useOnboardingStore } from '@/store/onboarding';
 
 type AuthMode = 'login' | 'signup';
 
 export default function AuthScreen() {
   const router = useRouter();
+  const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
 
   const [mode, setMode] = useState<AuthMode>('signup');
   const [email, setEmail] = useState('');
@@ -29,20 +32,24 @@ export default function AuthScreen() {
 
   const handleSubmit = async () => {
     setError(null);
-    if (mode === 'signup' && password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+    if (mode === 'signup') {
+      if (!isStrongPassword(password)) {
+        setError(PASSWORD_REQUIREMENT_MESSAGE);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
     }
     setLoading(true);
     try {
       if (mode === 'signup') {
-        const result = await authService.signUp(email, password);
-        router.push({
-          pathname: '/onboarding/details',
-          params: { userId: result.user?.id ?? '', email: result.user?.email ?? '' },
-        });
+        await authService.signUp(email, password);
+        router.push('/onboarding/details');
       } else {
         await authService.signIn(email, password);
+        completeOnboarding();
         router.replace('/market');
       }
     } catch (e: any) {

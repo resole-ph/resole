@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import { useOnboardingStore } from '@/store/onboarding';
@@ -27,7 +27,6 @@ const INTENT_OPTIONS: { id: Intent; icon: string; title: string; subtitle: strin
 
 export default function DetailsScreen() {
   const router = useRouter();
-  const { userId: paramUserId, email: paramEmail } = useLocalSearchParams<{ userId: string; email: string }>();
   const { completeOnboarding, setIntent: storeSetIntent, setLocation, setPhoneNumber: storeSetPhone } = useOnboardingStore();
 
   const [intent, setIntent] = useState<Intent>('buy');
@@ -43,28 +42,21 @@ export default function DetailsScreen() {
     : PHILIPPINE_CITIES;
 
   const handleGetStarted = async () => {
-    if (!paramUserId || !paramEmail) {
-      setError('Session expired. Please sign in again.');
-      return;
-    }
     setError(null);
     setLoading(true);
     try {
       storeSetIntent(intent);
       setLocation(city);
       storeSetPhone(phone);
-      await authService.saveProfile({
-        id: paramUserId,
-        name: paramEmail.split('@')[0],
-        email: paramEmail,
+      await authService.updateProfile({
         intent,
-        contact_no: phone,
+        contactNo: phone,
         city,
       });
       completeOnboarding();
-      if (intent === 'buy') router.replace('/market');
+      if (intent === 'buy') router.replace('/');
       else if (intent === 'sell') router.replace('/sell');
-      else router.replace('/');
+      else router.replace('/rewards');
     } catch (e: any) {
       setError(e?.message ?? 'Failed to save your details. Please try again.');
     } finally {

@@ -1,36 +1,50 @@
-import { supabase } from '@/lib/supabase';
-import type { UserProfile } from '../types/auth.types';
+import { apiFetch } from '@/lib/api-client';
+import { clearSessionToken, saveSessionToken } from '@/lib/session';
+import type { AuthResponse, UpdateProfileInput, User } from '../types/auth.types';
 
 export const authService = {
-  async signUp(email: string, password: string) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
-    return data;
+  async signUp(email: string, password: string): Promise<AuthResponse> {
+    const res = await apiFetch<AuthResponse>('/api/auth/sign-up', {
+      method: 'POST',
+      auth: false,
+      body: { email, password },
+    });
+    await saveSessionToken(res.sessionToken);
+    return res;
   },
 
-  async signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
+  async signIn(email: string, password: string): Promise<AuthResponse> {
+    const res = await apiFetch<AuthResponse>('/api/auth/sign-in', {
+      method: 'POST',
+      auth: false,
+      body: { email, password },
+    });
+    await saveSessionToken(res.sessionToken);
+    return res;
   },
 
-  async signOut() {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+  async signOut(): Promise<void> {
+    try {
+      await apiFetch('/api/auth/sign-out', { method: 'POST' });
+    } finally {
+      await clearSessionToken();
+    }
   },
 
-  async saveProfile(profile: UserProfile) {
-    const { error } = await supabase.from('user').upsert(profile);
-    if (error) throw error;
+  async updateProfile(input: UpdateProfileInput): Promise<User> {
+    const res = await apiFetch<{ user: User }>('/api/users/me', {
+      method: 'PATCH',
+      body: input,
+    });
+    return res.user;
   },
 
-  async getProfile(userId: string): Promise<UserProfile | null> {
-    const { data, error } = await supabase
-      .from('user')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
+  async getProfile(): Promise<User | null> {
+    try {
+      const res = await apiFetch<{ user: User }>('/api/users/me');
+      return res.user;
+    } catch {
+      return null;
+    }
   },
 };

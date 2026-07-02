@@ -19,7 +19,7 @@ export type UpdateUserProfileInput = {
   address?: string;
   city?: string;
   contactNo?: string;
-  intent?: 'buy' | 'sell' | 'explore';
+  intent?: 'buy' | 'sell' | 'donate';
 };
 
 export interface CreateCredentialsInput {

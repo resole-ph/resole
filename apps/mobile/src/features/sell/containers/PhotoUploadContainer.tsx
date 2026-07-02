@@ -111,7 +111,7 @@ export default function PhotoUploadContainer() {
       <SellStepHeader
         title="Upload Photos"
         stepLabel="Step 1 of 4"
-        onClose={() => router.back()}
+        onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       />
 
       <ScrollView
