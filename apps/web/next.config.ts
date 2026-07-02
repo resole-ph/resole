@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: [
+    '@tensorflow/tfjs-core',
+    '@tensorflow/tfjs-node',
+    '@tensorflow/tfjs-tflite',
+    '@tensorflow/tfjs-backend-wasm',
+    '@mapbox/node-pre-gyp',
+    'aws-sdk',
+    'mock-aws-s3',
+    'nock'
+  ],
 };
 
 export default nextConfig;
