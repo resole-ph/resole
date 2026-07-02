@@ -71,6 +71,13 @@
       "when": 1782671328208,
       "tag": "0009_nappy_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782960898938,
+      "tag": "0010_groovy_iron_monger",
+      "breakpoints": true
     }
   ]
 }

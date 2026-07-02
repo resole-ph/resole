@@ -1,0 +1,57 @@
+import { getSessionToken } from './session';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+type ApiFetchOptions = {
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+  body?: unknown;
+  /** Attach the stored session token as a Bearer header. Defaults to true. */
+  auth?: boolean;
+};
+
+/**
+ * Thin fetch wrapper around the web API routes. Attaches the persisted session
+ * token as `Authorization: Bearer <token>` and surfaces the server's `{ error }`
+ * message as a thrown Error on non-2xx responses.
+ */
+export async function apiFetch<T = unknown>(
+  path: string,
+  { method = 'GET', body, auth = true }: ApiFetchOptions = {},
+): Promise<T> {
+  if (!API_BASE_URL) {
+    throw new Error('EXPO_PUBLIC_API_URL is not configured.');
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (auth) {
+    const token = await getSessionToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  const text = await response.text();
+  let data: any = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.error ?? `Request failed with status ${response.status}`);
+  }
+
+  return data as T;
+}

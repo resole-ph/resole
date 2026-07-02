@@ -37,7 +37,8 @@
           "photosPermission": "Allow Resole to access your photos to upload shoe images."
         }
       ],
-      "./plugins/withCropUIColors"
+      "./plugins/withCropUIColors",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

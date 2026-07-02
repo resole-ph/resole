@@ -9,7 +9,7 @@ import {
     uniqueIndex
 } from 'drizzle-orm/pg-core';
 
-export const intentEnum = pgEnum('intent_enum', ['buy', 'sell', 'explore']);
+export const intentEnum = pgEnum('intent_enum', ['buy', 'sell', 'donate']);
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -22,7 +22,7 @@ export const user = pgTable('user', {
   contactNo: text('contact_no'),
   description: text('description').default('I love shoes!'),
   coins: integer('coins').default(0).notNull(),
-  intent: intentEnum('intent').default('explore').notNull(),
+  intent: intentEnum('intent').default('buy').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()

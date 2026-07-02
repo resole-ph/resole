@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { authService } from '../services/auth.service';
 import type { AuthMode } from '../types/auth.types';
+import { isStrongPassword, PASSWORD_REQUIREMENT_MESSAGE } from '../validation';
 
 export function useAuthForm() {
   const [mode, setMode] = useState<AuthMode>('signup');
@@ -21,8 +22,8 @@ export function useAuthForm() {
     }
 
     if (mode === 'signup') {
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters.');
+      if (!isStrongPassword(password)) {
+        setError(PASSWORD_REQUIREMENT_MESSAGE);
         return null;
       }
       if (password !== confirmPassword) {

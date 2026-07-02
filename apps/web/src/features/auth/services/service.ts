@@ -173,7 +173,7 @@ export async function createCredentialsUser(input: CreateCredentialsInput): Prom
         contactNo: input.contactNo ?? null,
         description: 'I love shoes!',
         coins: 0,
-        intent: 'explore',
+        intent: 'buy',
       });
 
       await tx.insert(account).values({
@@ -206,7 +206,7 @@ export async function createGoogleUser(input: CreateGoogleUserInput): Promise<Us
         contactNo: input.contactNo ?? null,
         description: 'I love shoes!',
         coins: 0,
-        intent: 'explore',
+        intent: 'buy',
       });
 
       await tx.insert(account).values({

@@ -55,8 +55,8 @@ export async function PATCH(request: Request) {
     updates.address = body.address.trim();
   }
 
-  if (typeof body?.intent === 'string' && ['buy', 'sell', 'explore'].includes(body.intent)) {
-    updates.intent = body.intent as 'buy' | 'sell' | 'explore';
+  if (typeof body?.intent === 'string' && ['buy', 'sell', 'donate'].includes(body.intent)) {
+    updates.intent = body.intent as 'buy' | 'sell' | 'donate';
   }
 
   const cityValue = typeof body?.city === 'string'
