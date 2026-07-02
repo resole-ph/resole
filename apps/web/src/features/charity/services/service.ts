@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 import { charity } from '@/db/schema';
 import { Charity, CreateCharity, UpdateCharity } from '@/features/charity/types/types';
 
@@ -21,7 +21,8 @@ export async function getAllCharity() {
   try {
     const rows = await db
       .select()
-      .from(charity);
+      .from(charity)
+      .where(isNull(charity.deletedAt));
     
     return rows as Charity[] ?? null;
   } catch (error) {
