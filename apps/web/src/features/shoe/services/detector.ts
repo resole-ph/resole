@@ -1,13 +1,21 @@
 import * as tf from '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-cpu';
-import * as tflite from '@tensorflow/tfjs-tflite';
 import fs from 'fs';
 import path from 'path';
 
-let model: tflite.TFLiteModel | null = null;
+let model: any = null;
+let tflite: any = null;
 
 export async function loadModel() {
   if (model) return model;
+
+  if (typeof self === 'undefined') {
+    (global as any).self = global;
+  }
+
+  if (!tflite) {
+    tflite = require('@tensorflow/tfjs-tflite');
+  }
 
   const modelPath = path.join(process.cwd(), 'src/features/shoe/models/best_float16.tflite');
   const modelBuffer = fs.readFileSync(modelPath);
