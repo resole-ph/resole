@@ -1,11 +1,29 @@
 import type {
   SellPhoto,
+  PhotoAngle,
   AiAnalysisResult,
   UploadPhotosResult,
   PublishListingPayload,
   PublishListingResult,
 } from '../types/sell.types';
 import { MOCK_AI_RESULT, MOCK_AI_ANALYSIS_ID, MOCK_ANALYSIS_DELAY_MS } from '../data/sell.mock';
+import { apiFetch } from '@/lib/api-client';
+
+/** Web /api/listings/photos expects singular field names; mobile uses plural angles. */
+const ANGLE_TO_FIELD: Record<PhotoAngle, 'top' | 'side' | 'sole' | 'insole'> = {
+  top: 'top',
+  side: 'side',
+  soles: 'sole',
+  insoles: 'insole',
+};
+
+/** Response key the web route returns for each field. */
+const FIELD_TO_URL_KEY = {
+  top: 'imageUrlTop',
+  side: 'imageUrlSide',
+  sole: 'imageUrlSole',
+  insole: 'imageUrlInsole',
+} as const;
 
 export interface SellService {
   /**
@@ -36,9 +54,29 @@ function delay(ms: number) {
 }
 
 export const sellService: SellService = {
-  async uploadPhotos(_photos) {
-    // TODO(backend): replace with real multipart upload
-    throw new Error('uploadPhotos: Not implemented');
+  async uploadPhotos(photos) {
+    const form = new FormData();
+
+    for (const photo of photos) {
+      const field = ANGLE_TO_FIELD[photo.angle];
+      const ext = (photo.uri.split('.').pop() || 'jpg').toLowerCase();
+      const type = ext === 'png' ? 'image/png' : 'image/jpeg';
+
+      // React Native multipart file part: { uri, name, type }.
+      form.append(field, { uri: photo.uri, name: `${field}.${ext}`, type } as unknown as Blob);
+    }
+
+    const res = await apiFetch<Record<string, string>>('/api/listings/photos', {
+      method: 'POST',
+      body: form,
+    });
+
+    return {
+      photos: photos.map((photo) => ({
+        angle: photo.angle,
+        remoteUrl: res[FIELD_TO_URL_KEY[ANGLE_TO_FIELD[photo.angle]]],
+      })),
+    };
   },
 
   async analyzePhotos(_remoteUrls) {

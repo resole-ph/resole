@@ -1,6 +1,4 @@
-import { View, Text, Image, Dimensions } from 'react-native';
-
-const GRID_SIZE = Math.floor((Dimensions.get('window').width - 32 - 24 - 8) / 2);
+import { View, Text, Image } from 'react-native';
 import type { ListingFormData, SellPhoto, PhotoAngle } from '../types/sell.types';
 
 const PHOTO_ANGLES: PhotoAngle[] = ['top', 'side', 'soles', 'insoles'];
@@ -34,23 +32,23 @@ export default function ListingPreviewCard({ photos, form }: ListingPreviewCardP
       }}
     >
       {/* 2×2 photo grid */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 12 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, padding: 12 }}>
         {PHOTO_ANGLES.map((angle) => {
           const photo = photos[angle];
           return (
             <View
               key={angle}
-              style={{ width: GRID_SIZE, height: GRID_SIZE, borderRadius: 12, overflow: 'hidden' }}
+              style={{ width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden' }}
               className="bg-surface-container"
             >
               {photo ? (
                 <Image
                   source={{ uri: photo.uri }}
-                  style={{ width: GRID_SIZE, height: GRID_SIZE }}
+                  style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
                 />
               ) : (
-                <View style={{ width: GRID_SIZE, height: GRID_SIZE }} className="items-center justify-center">
+                <View style={{ width: '100%', height: '100%' }} className="items-center justify-center">
                   <Text className="font-label-md text-label-md text-on-surface-variant">—</Text>
                 </View>
               )}

@@ -22,9 +22,14 @@ export async function apiFetch<T = unknown>(
     throw new Error('EXPO_PUBLIC_API_URL is not configured.');
   }
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  // For FormData bodies, let the runtime set `Content-Type` (incl. the multipart
+  // boundary) and send the body as-is instead of JSON-encoding it.
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+
+  const headers: Record<string, string> = {};
+  if (!isForm) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (auth) {
     const token = await getSessionToken();
@@ -36,7 +41,7 @@ export async function apiFetch<T = unknown>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
   });
 
   const text = await response.text();
