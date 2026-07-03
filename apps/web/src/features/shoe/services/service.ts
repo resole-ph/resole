@@ -17,16 +17,9 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import { detectIfShoe } from '@/features/shoe/services/detector';
 
-// gemini-embedding-001 supports configurable output dimensionality; 1536 matches
-// the `shoe.embedding vector(1536)` column. (text-embedding-004 maxes out at 768
-// and would violate that column, so it can't be used here.)
-const EMBEDDING_MODEL = 'gemini-embedding-001';
-const EMBEDDING_DIMENSIONS = 1536;
-
-// Minimum cosine similarity for a catalog price match. Calibrated for
-// gemini-embedding-001, whose short-text embeddings are similar (~0.6) even for
-// unrelated shoes; genuine brand+model matches score ~0.79+.
-const BASELINE_MATCH_THRESHOLD = 0.75;
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-2";
+const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1536", 10);
+const BASELINE_MATCH_THRESHOLD = parseFloat(process.env.BASELINE_MATCH_THRESHOLD || "0.75");
 
 export async function generateEmbedding(context: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
