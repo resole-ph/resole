@@ -34,7 +34,7 @@ export const shoe = pgTable('shoe', {
   model: text('model').notNull(),
   brand: text('brand').notNull(),
   category: categoryEnum('category').default('other').notNull(),
-  co2Footprint: numeric('co2_footprint').notNull(),
+  co2Footprint: numeric('co2_footprint'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
