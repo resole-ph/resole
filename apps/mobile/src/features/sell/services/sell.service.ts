@@ -5,6 +5,7 @@ import type {
   UploadPhotosResult,
   PublishListingPayload,
   PublishListingResult,
+  ListingFormData,
 } from '../types/sell.types';
 import { apiFetch } from '@/lib/api-client';
 import { ratingToLabel } from '../utils/condition';
@@ -27,6 +28,7 @@ const FIELD_TO_URL_KEY = {
 
 /** Shape of the `analysis` payload returned by POST /api/listings/analyze. */
 interface AnalyzeResponse {
+  analysisId: number,
   analysis: {
     brand: string;
     model: string;
@@ -61,7 +63,7 @@ export interface SellService {
    */
   analyzePhotos(remoteUrls: Record<PhotoAngle, string>): Promise<{
     result: AiAnalysisResult;
-    analysisId: string;
+    analysisId: number;
   }>;
 
   /**
@@ -98,7 +100,7 @@ export const sellService: SellService = {
   },
 
   async analyzePhotos(remoteUrls) {
-    const { analysis } = await apiFetch<AnalyzeResponse>('/api/listings/analyze', {
+    const { analysis, analysisId } = await apiFetch<AnalyzeResponse>('/api/listings/analyze', {
       method: 'POST',
       body: {
         imageUrlTop: remoteUrls.top,
@@ -124,15 +126,15 @@ export const sellService: SellService = {
       currency: 'PHP',
     };
 
-    // The backend doesn't persist an analysis record yet; a client-generated id
-    // keeps the publish step's `aiAnalysisId` guard satisfied downstream.
-    const analysisId = `analysis-${Date.now()}`;
-
     return { result, analysisId };
   },
 
   async publishListing(_payload) {
-    // TODO(backend): replace with real POST /listings
-    throw new Error('publishListing: Not implemented');
+    const listing = await apiFetch<PublishListingResult>('/api/listings', {
+      method: 'POST',
+      body: _payload,
+    });
+
+    return listing
   },
 };
