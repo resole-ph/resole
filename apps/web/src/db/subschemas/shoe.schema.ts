@@ -10,7 +10,8 @@ import {
   check,
   unique,
   vector,
-  index
+  index,
+  jsonb
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
@@ -27,6 +28,11 @@ export const listingEnum = pgEnum('listing_enum', [
   'sale',
   'swap',
   'both'
+]);
+
+export const priceSourceEnum = pgEnum('price_source_enum', [
+  'catalog', 
+  'ai-estimate'
 ]);
 
 export const shoe = pgTable('shoe', {
@@ -94,3 +100,27 @@ export const shoeListing = pgTable('shoe_listing', {
   check('size_check', sql`${table.size} > 0`),
   check('condition_score_check', sql`${table.conditionScore} > 0`),
 ]);
+
+type PricingData = {
+  baselinePrice: number | null;
+  matchedShoeId: number | null;
+  similarity: number | null;
+  conditionScore: number;
+  suggestedPrice: number;
+  priceSource: 'catalog' | 'ai-estimate';
+};
+
+export const shoeAnalysis = pgTable('shoe_analysis', {
+  id: serial('id').primaryKey(),
+  brand: text('brand').notNull(),
+  model: text('model').notNull(),
+  colorway: text('colorway').notNull(),
+  size: text('size').notNull(),
+  year: integer('year').notNull(),
+  conditionScore: integer('condition_score').notNull(),
+  description: text('description').notNull(),
+  defects: text('defects').array().notNull().default([]), 
+  estimatedPrice: numeric('estimated_price').notNull(),
+  pricing: jsonb('pricing').$type<PricingData>().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});

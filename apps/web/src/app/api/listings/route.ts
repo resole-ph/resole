@@ -44,13 +44,14 @@ export async function POST(request: Request) {
   if (!currentUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  try {
-    const body = await request.json();
-    const newListing = await publishShoeListing(currentUser.user.id, body);
-    return NextResponse.json({ listing: newListing });
-  } catch (error: any) {
-    console.error('Error creating shoe listing:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  const body = await request.json();
+  const newListing = await publishShoeListing(currentUser.user.id, body);
+  if (!newListing) {
+    return NextResponse.json({ error: "Failed to create new listing" }, { status: 400 });
   }
+  
+  return NextResponse.json({ 
+    listingId: newListing.id,
+    listingUrl: `/listing/${newListing.id}` 
+  });
 }

@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
 import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull } from 'drizzle-orm';
-import { shoe, shoePrice, shoeListing, user } from '@/db/schema';
+import { shoe, shoePrice, shoeListing, user, shoeAnalysis } from '@/db/schema';
 import {
   Shoe,
   CreateShoe,
@@ -17,7 +17,7 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import { detectIfShoe } from '@/features/shoe/services/detector';
 
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-2";
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemiwni-embedding-2";
 const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1536", 10);
 const BASELINE_MATCH_THRESHOLD = parseFloat(process.env.BASELINE_MATCH_THRESHOLD || "0.75");
 
@@ -85,6 +85,28 @@ export async function createShoeListing(data: CreateShoeListing) {
   }
 }
 
+export async function createShoeAnalysis(data: ShoeAnalysisResult) {
+  try {
+    const result = await db.insert(shoeAnalysis).values({
+      brand: data.brand,
+      model: data.model,
+      colorway: data.colorway,
+      size: data.size,
+      year: data.year,
+      conditionScore: data.conditionScore,
+      description: data.description,
+      estimatedPrice: data.estimatedPrice.toString(), 
+      defects: data.defects, 
+      pricing: data.pricing, 
+  }).returning();
+
+  return result[0];
+  } catch (error) {
+    console.error("Error creating shoe analysis.", error);
+    return null;
+  }
+}
+
 export async function getAllShoe() {
   try {
     const rows = await db
@@ -133,6 +155,20 @@ export async function getAllShoeListing() {
     return rows as ShoeListing[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe listings.", error);
+    return null;
+  }
+}
+
+export async function getShoeAnalysisById(id: number) {
+  try {
+    const result = await db
+      .select()
+      .from(shoeAnalysis)
+      .where(eq(shoeAnalysis.id, id))
+
+    return result[0] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe prices.", error);
     return null;
   }
 }
