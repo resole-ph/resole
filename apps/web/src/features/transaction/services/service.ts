@@ -549,3 +549,90 @@ export async function donateShoeListing(userId: string, listingId: number, chari
     };
   });
 }
+
+type DonationPickupInput = {
+  listingId: number;
+  charityId: number;
+  pickupAddress: string;
+  pickupDate: Date;
+  contactNo?: string;
+  notes?: string;
+};
+
+export async function scheduleDonationPickup(userId: string, data: DonationPickupInput) {
+  return db.transaction(async (tx) => {
+    const listings = await tx
+      .select()
+      .from(shoeListing)
+      .where(and(eq(shoeListing.id, data.listingId), eq(shoeListing.userId, userId)))
+      .limit(1);
+
+    const listing = listings[0];
+    if (!listing) {
+      throw new Error('Shoe listing not found');
+    }
+
+    if (listing.deletedAt) {
+      throw new Error('Shoe listing is deleted');
+    }
+
+    if (!listing.isAvailable) {
+      throw new Error('Shoe listing is not eligible for donation pickup');
+    }
+
+    const charities = await tx
+      .select({ id: charity.id })
+      .from(charity)
+      .where(and(eq(charity.id, data.charityId), sql`${charity.deletedAt} IS NULL`))
+      .limit(1);
+
+    if (!charities[0]) {
+      throw new Error('Charity not found');
+    }
+
+    const [transactionRecord] = await tx
+      .insert(transaction)
+      .values({
+        listingId: data.listingId,
+        type: 'donate',
+        isCompleted: false,
+      })
+      .returning();
+
+    const [donationRecord] = await tx
+      .insert(donation)
+      .values({
+        transactionId: transactionRecord.id,
+        charityId: data.charityId,
+      })
+      .returning();
+
+    const [pickupEvent] = await tx
+      .insert(trackingEvent)
+      .values({
+        transactionId: transactionRecord.id,
+        status: 'pickup_scheduled',
+        message: JSON.stringify({
+          pickupAddress: data.pickupAddress,
+          pickupDate: data.pickupDate.toISOString(),
+          contactNo: data.contactNo ?? null,
+          notes: data.notes ?? null,
+        }),
+      })
+      .returning();
+
+    await tx
+      .update(shoeListing)
+      .set({
+        isAvailable: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(shoeListing.id, data.listingId));
+
+    return {
+      transaction: transactionRecord,
+      donation: donationRecord,
+      pickup: pickupEvent,
+    };
+  });
+}
