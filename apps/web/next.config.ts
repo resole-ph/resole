@@ -9,7 +9,10 @@ const nextConfig: NextConfig = {
     '@mapbox/node-pre-gyp',
     'aws-sdk',
     'mock-aws-s3',
-    'nock'
+    'nock',
+    'puppeteer',
+    'puppeteer-extra',
+    'puppeteer-extra-plugin-stealth'
   ],
 };
 

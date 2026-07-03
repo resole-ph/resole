@@ -43,11 +43,15 @@ export async function generateEmbedding(context: string): Promise<number[]> {
     throw new Error('Failed to generate embedding');
   }
 
-  return values;
+  return values as number[];
 }
 
 export async function createShoe(data: CreateShoe) {
   try {
+    if (data.embedding.length === 0) {
+      data.embedding = await generateEmbedding(data.model);
+    }
+
     const result = await db
       .insert(shoe)
       .values(data)
@@ -136,6 +140,20 @@ export async function getAllShoeListing() {
     return rows as ShoeListing[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe listings.", error);
+    return null;
+  }
+}
+
+export async function getShoeByModelName(name: string) {
+  try {
+    const result = await db
+      .select()
+      .from(shoe)
+      .where(eq(shoe.model, name));
+    
+    return result[0] as Shoe ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe.", error);
     return null;
   }
 }
@@ -311,8 +329,8 @@ export async function updateShoePrice(data: UpdateShoePrice, id: number) {
     const result = await db 
       .update(shoePrice)
       .set(data)
-      .where(eq(shoe.id, id))
-      .returning({ id: shoe.id });
+      .where(eq(shoePrice.shoeId, id))
+      .returning({ id: shoePrice.shoeId });
 
     return getShoePriceByShoeId(result[0].id);
   } catch (error) {
