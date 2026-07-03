@@ -22,12 +22,17 @@ export async function POST(request: Request) {
     const files = { top, side, sole, insole };
     const urls: Record<string, string> = {};
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!rawSupabaseUrl || !serviceRoleKey) {
       return NextResponse.json({ error: 'Supabase storage configuration is missing' }, { status: 500 });
     }
+
+    // Storage endpoints hang off the project origin; strip any trailing slash so
+    // string-concatenated paths don't produce a `//storage/...` (which routes to
+    // PostgREST and fails with PGRST125).
+    const supabaseUrl = rawSupabaseUrl.replace(/\/+$/, '');
 
     for (const [key, file] of Object.entries(files)) {
       const ext = file.name.split('.').pop() || 'jpg';
@@ -40,6 +45,7 @@ export async function POST(request: Request) {
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
+          'apikey': serviceRoleKey,
           'Authorization': `Bearer ${serviceRoleKey}`,
           'Content-Type': file.type,
         },

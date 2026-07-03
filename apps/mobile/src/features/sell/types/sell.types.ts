@@ -2,7 +2,7 @@ export type PhotoAngle = 'top' | 'side' | 'soles' | 'insoles';
 
 export type SellStep = 'photos' | 'aiResults' | 'editListing' | 'review' | 'confirmation';
 
-export type ConditionLabel = 'Like New' | 'Excellent' | 'Good' | 'Fair' | 'Poor';
+export type ConditionLabel = 'Like New' | 'Worn' | 'Good' | 'Fair' | 'Poor';
 
 export type ListingMode = 'sell' | 'swap' | 'both';
 

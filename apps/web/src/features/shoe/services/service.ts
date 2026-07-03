@@ -1,33 +1,49 @@
 import { db } from '@/config/db';
 import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user } from '@/db/schema';
-import { 
-  Shoe, 
-  CreateShoe, 
+import {
+  Shoe,
+  CreateShoe,
   UpdateShoe,
   ShoePrice,
   CreateShoePrice,
   UpdateShoePrice,
   ShoeListing,
   CreateShoeListing,
-  UpdateShoeListing 
+  UpdateShoeListing,
+  ShoeAnalysis,
+  ShoeAnalysisResult
 } from '@/features/shoe/types/types';
 import { GoogleGenAI } from "@google/genai";
 import { detectIfShoe } from '@/features/shoe/services/detector';
+
+// gemini-embedding-001 supports configurable output dimensionality; 1536 matches
+// the `shoe.embedding vector(1536)` column. (text-embedding-004 maxes out at 768
+// and would violate that column, so it can't be used here.)
+const EMBEDDING_MODEL = 'gemini-embedding-001';
+const EMBEDDING_DIMENSIONS = 1536;
+
+// Minimum cosine similarity for a catalog price match. Calibrated for
+// gemini-embedding-001, whose short-text embeddings are similar (~0.6) even for
+// unrelated shoes; genuine brand+model matches score ~0.79+.
+const BASELINE_MATCH_THRESHOLD = 0.75;
 
 export async function generateEmbedding(context: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
 
   const response = await ai.models.embedContent({
-    model: 'gemini-embedding-2',
+    model: EMBEDDING_MODEL,
     contents: context,
-    config: { outputDimensionality: 1536 }
+    config: { outputDimensionality: EMBEDDING_DIMENSIONS },
   });
 
-  const embeddings = response.embeddings?.[0]?.values || [];
+  const values = response.embeddings?.[0]?.values;
+  if (!values) {
+    throw new Error('Failed to generate embedding');
+  }
 
-  return embeddings as number[];
+  return values as number[];
 }
 
 export async function createShoe(data: CreateShoe) {
@@ -383,7 +399,7 @@ export async function deleteUserShoeListing(userId: string, id: number) {
   }
 }
 
-export async function analyzeShoePhotos(photoUrls: { top: string; side: string; sole: string; insole: string }) {
+export async function analyzeShoePhotos(photoUrls: { top: string; side: string; sole: string; insole: string }): Promise<ShoeAnalysis> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     throw new Error('Google API key is not configured');
@@ -423,7 +439,18 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const prompt = 'Analyze these four photos of a shoe representing its top, side, sole, and insole. Accurately identify the brand, model, provide a description outlining its wear, condition, and visible defects, estimate a condition score from 1 to 10 (where 10 is brand new), and suggest a fair resale pricing value in PHP (Philippine Peso) based on its current condition.';
+  const prompt = [
+    'Analyze these four photos of a shoe representing its top, side, sole, and insole.',
+    'Accurately identify:',
+    '- brand and model',
+    '- colorway (the common name for the color scheme, e.g. "Chicago", "Bred", or a plain description)',
+    '- size: the US size, read from any label on the insole or tongue, as a plain number string (e.g. "10" or "10.5"). If unreadable, give your best visual estimate.',
+    '- year: the approximate release or production year as a number.',
+    '- conditionScore: a condition score from 0 to 10 (10 = brand new, unworn).',
+    '- description: a short paragraph outlining wear, condition, and visible defects.',
+    '- defects: an array of short strings, one per distinct visible defect (empty array if none).',
+    '- estimatedPrice: the typical BRAND-NEW / retail market price in PHP (Philippine Peso) for this model, NOT adjusted for condition.',
+  ].join('\n');
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
@@ -435,11 +462,15 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
         properties: {
           brand: { type: 'STRING' },
           model: { type: 'STRING' },
+          colorway: { type: 'STRING' },
+          size: { type: 'STRING' },
+          year: { type: 'NUMBER' },
           conditionScore: { type: 'NUMBER' },
           description: { type: 'STRING' },
+          defects: { type: 'ARRAY', items: { type: 'STRING' } },
           estimatedPrice: { type: 'NUMBER' },
         },
-        required: ['brand', 'model', 'conditionScore', 'description', 'estimatedPrice'],
+        required: ['brand', 'model', 'colorway', 'size', 'year', 'conditionScore', 'description', 'defects', 'estimatedPrice'],
       },
     },
   });
@@ -449,7 +480,83 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
     throw new Error('Failed to generate content from AI model');
   }
 
-  return JSON.parse(resultText);
+  return JSON.parse(resultText) as ShoeAnalysis;
+}
+
+/**
+ * Pricing engine: find the closest catalog shoe to `${brand} ${model}` via pgvector
+ * cosine similarity and return its baseline market price from shoe_price. Returns
+ * null fields when there is no confident match (e.g. an empty/sparse catalog).
+ */
+export async function getBaselinePriceByShoe(brand: string, model: string) {
+  try {
+    const embedding = await generateEmbedding(`${brand} ${model}`);
+
+    // cosine distance is `<=>`; similarity = 1 - distance.
+    const similarity = sql<number>`1 - (${cosineDistance(shoe.embedding, embedding)})`;
+
+    const rows = await db
+      .select({
+        shoeId: shoe.id,
+        price: shoePrice.price,
+        similarity,
+      })
+      .from(shoe)
+      .innerJoin(shoePrice, eq(shoePrice.shoeId, shoe.id))
+      // gemini-embedding-001 keeps even unrelated short phrases in the ~0.6 range,
+      // so require a high similarity to accept a catalog match; below this we fall
+      // back to the AI's own price estimate.
+      .where(gt(similarity, BASELINE_MATCH_THRESHOLD))
+      .orderBy(desc(similarity))
+      .limit(1);
+
+    const top = rows[0];
+    if (!top) {
+      return { baselinePrice: null, matchedShoeId: null, similarity: null };
+    }
+
+    return {
+      baselinePrice: Number(top.price),
+      matchedShoeId: top.shoeId,
+      similarity: Number(top.similarity),
+    };
+  } catch (error) {
+    console.error('Error fetching baseline price.', error);
+    return { baselinePrice: null, matchedShoeId: null, similarity: null };
+  }
+}
+
+/** Depreciation math: baseline price scaled by condition (score / 10), clamped to 0–10. */
+export function calculateSuggestedPrice(baselinePrice: number, conditionScore: number): number {
+  const score = Math.min(Math.max(conditionScore, 0), 10);
+  return Math.round(baselinePrice * (score / 10));
+}
+
+/**
+ * Full analyze pipeline: Gemini vision → pgvector baseline lookup → depreciation.
+ * When no catalog baseline is found, falls back to Gemini's own estimatedPrice so a
+ * suggested price is always produced.
+ */
+export async function analyzeAndPriceShoe(photoUrls: { top: string; side: string; sole: string; insole: string }): Promise<ShoeAnalysisResult> {
+  const analysis = await analyzeShoePhotos(photoUrls);
+
+  const { baselinePrice, matchedShoeId, similarity } = await getBaselinePriceByShoe(analysis.brand, analysis.model);
+
+  const catalogHit = baselinePrice !== null;
+  const baseline = catalogHit ? baselinePrice : analysis.estimatedPrice;
+  const suggestedPrice = calculateSuggestedPrice(baseline, analysis.conditionScore);
+
+  return {
+    ...analysis,
+    pricing: {
+      baselinePrice,
+      matchedShoeId,
+      similarity,
+      conditionScore: analysis.conditionScore,
+      suggestedPrice,
+      priceSource: catalogHit ? 'catalog' : 'ai-estimate',
+    },
+  };
 }
 
 export async function getShoeByModelAndBrand(brand: string, model: string) {

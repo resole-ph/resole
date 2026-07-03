@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions, Alert, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions, Alert, Linking, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import SellStepHeader from '../components/SellStepHeader';
 import PhotoGrid from '../components/PhotoGrid';
 import { Ionicons } from '@expo/vector-icons';
 import { useSellFlow } from '../hooks/useSellFlow';
-import type { PhotoAngle } from '../types/sell.types';
+import { sellService } from '../services/sell.service';
+import type { PhotoAngle, SellPhoto } from '../types/sell.types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+const PHOTO_ANGLES: PhotoAngle[] = ['top', 'side', 'soles', 'insoles'];
 
 const ANGLE_LABELS: Record<PhotoAngle, string> = {
   top: 'Top View',
@@ -23,17 +26,13 @@ export default function PhotoUploadContainer() {
   const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
   const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle } | null>(null);
   const [queuedAction, setQueuedAction] = useState<{ type: 'camera' | 'library'; angle: PhotoAngle } | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   function handlePhotoPress(angle: PhotoAngle) {
     setPendingAngle(angle);
   }
 
-  // Called by the Modal's onDismiss (iOS) — fires only after the modal is fully gone
-  async function handlePickerModalDismiss() {
-    if (!queuedAction) return;
-    const { type, angle } = queuedAction;
-    setQueuedAction(null);
-
+  async function runPicker(type: 'camera' | 'library', angle: PhotoAngle) {
     try {
       if (type === 'camera') {
         const { granted, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
@@ -79,18 +78,35 @@ export default function PhotoUploadContainer() {
     }
   }
 
-  function handleCameraPress() {
-    const angle = pendingAngle;
-    if (!angle) return;
-    setQueuedAction({ type: 'camera', angle });
+  // iOS-only: fires after the modal is fully gone, so the picker isn't presented
+  // over a still-visible modal. Android's Modal never calls onDismiss, so there we
+  // launch the picker directly from the button handlers instead.
+  function handlePickerModalDismiss() {
+    if (!queuedAction) return;
+    const { type, angle } = queuedAction;
+    setQueuedAction(null);
+    runPicker(type, angle);
+  }
+
+  function launchOrQueue(type: 'camera' | 'library', angle: PhotoAngle) {
     setPendingAngle(null);
+    if (Platform.OS === 'ios') {
+      // Defer until the modal's onDismiss fires.
+      setQueuedAction({ type, angle });
+    } else {
+      // Android: the picker is a separate activity, launch it right away.
+      runPicker(type, angle);
+    }
+  }
+
+  function handleCameraPress() {
+    if (!pendingAngle) return;
+    launchOrQueue('camera', pendingAngle);
   }
 
   function handleLibraryPress() {
-    const angle = pendingAngle;
-    if (!angle) return;
-    setQueuedAction({ type: 'library', angle });
-    setPendingAngle(null);
+    if (!pendingAngle) return;
+    launchOrQueue('library', pendingAngle);
   }
 
   function handleConfirmPhoto() {
@@ -101,6 +117,31 @@ export default function PhotoUploadContainer() {
 
   function handleRetakePhoto() {
     setPreviewPhoto(null);
+  }
+
+  async function handleAnalyze() {
+    if (uploading) return;
+
+    const list = PHOTO_ANGLES.map((angle) => photos[angle]).filter(Boolean) as SellPhoto[];
+    if (list.length < PHOTO_ANGLES.length) return;
+
+    setUploading(true);
+    try {
+      const { photos: uploaded } = await sellService.uploadPhotos(list);
+      uploaded.forEach((u) =>
+        setPhoto(u.angle, {
+          angle: u.angle,
+          uri: photos[u.angle]!.uri,
+          uploaded: true,
+          remoteUrl: u.remoteUrl,
+        })
+      );
+      setStep('aiResults');
+    } catch (e) {
+      Alert.alert('Upload failed', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setUploading(false);
+    }
   }
 
   const uploadedCount = Object.values(photos).filter(Boolean).length;
@@ -146,8 +187,8 @@ export default function PhotoUploadContainer() {
 
       <View className="px-4 pb-8 pt-2">
         <TouchableOpacity
-          onPress={() => setStep('aiResults')}
-          disabled={!allPhotosUploaded}
+          onPress={handleAnalyze}
+          disabled={!allPhotosUploaded || uploading}
           className="rounded-full py-4 items-center"
           style={{
             backgroundColor: allPhotosUploaded ? '#0054d3' : '#c2c6d8',
@@ -158,12 +199,21 @@ export default function PhotoUploadContainer() {
             elevation: allPhotosUploaded ? 6 : 0,
           }}
         >
-          <Text
-            className="font-body-md text-body-md"
-            style={{ color: allPhotosUploaded ? '#ffffff' : '#727687' }}
-          >
-            Analyze with AI
-          </Text>
+          {uploading ? (
+            <View className="flex-row items-center gap-2">
+              <ActivityIndicator size="small" color="#ffffff" />
+              <Text className="font-body-md text-body-md" style={{ color: '#ffffff' }}>
+                Uploading…
+              </Text>
+            </View>
+          ) : (
+            <Text
+              className="font-body-md text-body-md"
+              style={{ color: allPhotosUploaded ? '#ffffff' : '#727687' }}
+            >
+              Analyze with AI
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
