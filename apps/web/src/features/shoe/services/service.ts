@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull } from 'drizzle-orm';
+import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user, shoeAnalysis } from '@/db/schema';
 import {
   Shoe,
@@ -204,6 +204,32 @@ export async function getShoeListingsByUserId(userId: string) {
     return rows as ShoeListing[] ?? null;
   } catch (error) {
     console.error("Error fetching user shoe listings.", error);
+    return null;
+  }
+}
+
+export async function getShoeListingSummaryByUserId(userId: string) {
+  try {
+    const rows = await db
+      .select({
+        total: count(shoeListing.id),
+        active: sql<number>`count(*) filter (where ${shoeListing.isAvailable} = true and ${shoeListing.deletedAt} is null)`,
+        unavailable: sql<number>`count(*) filter (where ${shoeListing.isAvailable} = false and ${shoeListing.deletedAt} is null)`,
+        deleted: sql<number>`count(*) filter (where ${shoeListing.deletedAt} is not null)`,
+      })
+      .from(shoeListing)
+      .where(eq(shoeListing.userId, userId));
+
+    const summary = rows[0];
+
+    return {
+      total: Number(summary?.total ?? 0),
+      active: Number(summary?.active ?? 0),
+      unavailable: Number(summary?.unavailable ?? 0),
+      deleted: Number(summary?.deleted ?? 0),
+    };
+  } catch (error) {
+    console.error("Error fetching user shoe listing summary.", error);
     return null;
   }
 }
