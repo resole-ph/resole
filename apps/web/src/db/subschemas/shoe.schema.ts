@@ -25,9 +25,9 @@ export const categoryEnum = pgEnum('caetgory_enum', [
 ]);
 
 export const listingEnum = pgEnum('listing_enum', [
-  'sale',
-  'swap',
-  'both'
+  'Sale',
+  'Swap',
+  'Both'
 ]);
 
 export const priceSourceEnum = pgEnum('price_source_enum', [
@@ -83,7 +83,7 @@ export const shoeListing = pgTable('shoe_listing', {
   conditionScore: numeric('condition_score').notNull(),
   defects: text('defects').array(),
   isRefurbished: boolean('is_refurbished').default(false).notNull(),
-  listingMode: listingEnum('listing_mode').default('both').notNull(),
+  listingMode: listingEnum('listing_mode').default('Both').notNull(),
   isAvailable: boolean('is_available').default(true).notNull(),
   imageUrlTop: text('image_url_top').notNull(),
   imageUrlSide: text('image_url_side').notNull(),

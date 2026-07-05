@@ -11,7 +11,7 @@ export type CreateShoePrice = typeof shoePrice.$inferInsert;
 export type UpdateShoePrice = Partial<InferShoePrice>;
 
 type InferShoeListing = typeof shoeListing.$inferSelect;
-export type ShoeListing = Omit<InferShoeListing, 'shoeId' | 'userId'> & { shoe: Shoe, user: User };
+export type ShoeListing = Omit<InferShoeListing, 'shoeId' | 'userId'> & { shoe: Shoe, seller: User };
 export type CreateShoeListing = typeof shoeListing.$inferInsert;
 export type UpdateShoeListing = Partial<InferShoeListing>;
 

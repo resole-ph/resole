@@ -141,7 +141,7 @@ export async function getAllShoeListing() {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
@@ -191,7 +191,7 @@ export async function getShoeListingsByUserId(userId: string) {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
@@ -251,14 +251,14 @@ export async function getAllShoeListingForSale() {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(or(eq(shoeListing.listingMode, 'sale'), eq(shoeListing.listingMode, 'both')));
+      .where(or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')));
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
@@ -271,14 +271,14 @@ export async function getAllShoeListingForSwap() {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(or(eq(shoeListing.listingMode, 'swap'), eq(shoeListing.listingMode, 'both')));
+      .where(or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')));
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
@@ -308,6 +308,28 @@ export async function getShoeBySearch(query: string) {
     return searchResults as Shoe[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe search results.", error);
+    return null;
+  }
+}
+
+export async function getShoeListingsBySearch(query: string) {
+  try {
+    const shoes = await getShoeBySearch(query) || [];
+    const shoeNames = shoes.map(item => item.model);
+    const listingResults: ShoeListing[] = [];
+
+    for (const shoeName of shoeNames) {
+      const fetchedListings = await getShoeListingByModelName(shoeName) || [];
+      listingResults.push(...fetchedListings);
+      if (listingResults.length >= 20) {
+        listingResults.length = 20;
+        break;
+      }
+    }
+
+    return listingResults as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe listing search results.", error);
     return null;
   }
 }
@@ -348,7 +370,7 @@ export async function getShoeListingById(id: number) {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
@@ -359,7 +381,27 @@ export async function getShoeListingById(id: number) {
     
     return rows[0] as ShoeListing ?? null;
   } catch (error) {
-    console.error("Error fetching shoe listings.", error);
+    console.error("Error fetching shoe listing.", error);
+    return null;
+  }
+}
+
+export async function getShoeListingByModelName(model: string) {
+  try {
+    const rows = await db
+      .select({
+        seller: getTableColumns(user),
+        shoe: getTableColumns(shoe),
+        ...getTableColumns(shoeListing)
+      })
+      .from(shoeListing)
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(eq(shoe.model, model));
+    
+    return rows as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe listing.", error);
     return null;
   }
 }

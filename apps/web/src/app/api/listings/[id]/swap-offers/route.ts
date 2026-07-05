@@ -26,7 +26,7 @@ export async function POST(
   const { id } = await context.params;
   const shoeListingId = parseShoeListingId(id);
   if (!shoeListingId) {
-    return NextResponse.json({ error: 'Invalid notification id' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
 
   const shoeListing = await getShoeListingById(shoeListingId);
