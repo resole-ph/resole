@@ -1,9 +1,8 @@
 const NAV_ITEMS = [
   { icon: 'person', label: 'Profile', active: true },
-  { icon: 'receipt_long', label: 'Transactions', active: false },
   { icon: 'list_alt', label: 'My Listings', active: false },
-  { icon: 'stars', label: 'Rewards', active: false },
   { icon: 'favorite', label: 'Favourites', active: false },
+  { icon: 'receipt_long', label: 'Transactions', active: false },
 ];
 
 export default function ProfileSidebar() {
@@ -32,18 +31,6 @@ export default function ProfileSidebar() {
             <span className="material-symbols-outlined">settings</span>
             <span className="text-[14px] font-semibold tracking-[0.05em]">Settings</span>
           </button>
-        </div>
-      </div>
-
-      {/* Eco impact card */}
-      <div className="bg-secondary-container text-on-secondary-container p-6 rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col gap-4">
-        <h4 className="text-[24px] leading-8 font-bold">Impact</h4>
-        <p className="text-[14px] leading-5 opacity-90">
-          You saved 45kg of CO2 this month through circular swaps.
-        </p>
-        <div className="flex items-center gap-2 bg-on-secondary-container/10 p-2 rounded-lg">
-          <span className="material-symbols-outlined text-[20px]">eco</span>
-          <span className="text-[14px] font-semibold tracking-[0.05em]">Eco-Level 4</span>
         </div>
       </div>
     </aside>

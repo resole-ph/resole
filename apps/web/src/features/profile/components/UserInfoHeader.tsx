@@ -15,32 +15,25 @@ export default function UserInfoHeader() {
           </div>
         </div>
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[24px] leading-8 font-semibold text-on-surface">Miguel Rodriguez</h1>
-            <span
-              className="material-symbols-outlined text-primary"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              verified
-            </span>
-          </div>
+          <h1 className="text-[24px] leading-8 font-semibold text-on-surface">Miguel Rodriguez</h1>
           <div className="flex items-center gap-1 mt-1">
             <span
-              className="material-symbols-outlined text-[18px] text-tertiary"
+              className="material-symbols-outlined text-[16px] text-tertiary"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
               star
             </span>
             <span className="text-[14px] font-semibold text-on-surface">4.9</span>
-            <span className="text-on-surface-variant text-[14px] ml-1">(156 reviews)</span>
+            <span className="text-on-surface-variant text-[14px]">&middot; 156 reviews</span>
           </div>
+          <p className="text-[14px] text-on-surface-variant mt-0.5">Quezon City &middot; Joined 2024</p>
         </div>
       </div>
 
       <div className="flex gap-4">
         {STATS.map(({ value, label }) => (
           <div key={label} className="bg-surface-container p-4 rounded-xl text-center min-w-[80px]">
-            <p className="text-[24px] leading-8 font-bold text-primary">{value}</p>
+            <p className="text-[24px] leading-8 font-bold text-on-surface">{value}</p>
             <p className="text-[14px] font-semibold text-on-surface-variant">{label}</p>
           </div>
         ))}
