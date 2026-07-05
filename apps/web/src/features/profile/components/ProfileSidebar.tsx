@@ -46,10 +46,18 @@ export default function ProfileSidebar() {
 
           <hr className="my-2 border-surface-variant" />
 
-          <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all text-left">
+          <Link
+            href="/profile/settings"
+            className={[
+              'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200',
+              pathname === '/profile/settings'
+                ? 'bg-primary-container text-on-primary-container'
+                : 'text-on-surface-variant hover:bg-surface-container',
+            ].join(' ')}
+          >
             <span className="material-symbols-outlined">settings</span>
             <span className="text-[14px] font-semibold tracking-[0.05em]">Settings</span>
-          </button>
+          </Link>
         </div>
       </div>
     </aside>
