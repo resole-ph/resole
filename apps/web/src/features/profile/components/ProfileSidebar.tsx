@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { icon: 'person', label: 'Profile', href: '/profile' },
   { icon: 'list_alt', label: 'My Listings', href: null },
   { icon: 'eco', label: 'Rewards', href: null },
-  { icon: 'favorite', label: 'Favourites', href: null },
+  { icon: 'favorite', label: 'Favourites', href: '/profile/favourites' },
   { icon: 'receipt_long', label: 'Transactions', href: '/profile/transactions' },
 ];
 

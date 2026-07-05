@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const PREVIEW_COUNT = 4;
 
 export default function FavouritesPreviewCard() {
@@ -8,9 +10,9 @@ export default function FavouritesPreviewCard() {
           <span className="material-symbols-outlined text-[20px]">favorite</span>
         </div>
         <h4 className="flex-1 text-[14px] font-semibold text-on-surface">Favourites</h4>
-        <a href="#" className="text-primary text-[13px] font-semibold hover:underline">
+        <Link href="/profile/favourites" className="text-primary text-[13px] font-semibold hover:underline">
           View all
-        </a>
+        </Link>
       </div>
 
       <div className="flex gap-2 mb-3">
