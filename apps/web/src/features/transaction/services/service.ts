@@ -89,7 +89,7 @@ export async function createSale(transactionId: number, price: number) {
   }
 }
 
-export async function createSwap(transactionId: number, listings: ShoeListing[]) {
+export async function createSwap(transactionId: number, listings: number[]) {
   try {
     const result = await db
       .insert(swap)
@@ -103,7 +103,7 @@ export async function createSwap(transactionId: number, listings: ShoeListing[])
         .insert(swapItem)
         .values({
           swapId: result[0].id,
-          itemId: listing.id
+          itemId: listing
         })
     }
 

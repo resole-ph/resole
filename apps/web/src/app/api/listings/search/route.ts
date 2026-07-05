@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { getShoeBySearch } from '@/features/shoe/services/service';
+import { getShoeListingsBySearch } from '@/features/shoe/services/service';
 
 export async function GET(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Search query must be at least 3 characters long.'}, { status: 400 } );
   }
 
-  const shoeSearch = await getShoeBySearch(query);
+  const shoeSearch = await getShoeListingsBySearch(query);
 
   if (!shoeSearch) {
     return NextResponse.json({ error: 'Unable to fetch shoe search.' }, { status: 500 });

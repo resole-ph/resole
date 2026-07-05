@@ -4,8 +4,7 @@ import type {
   AiAnalysisResult,
   UploadPhotosResult,
   PublishListingPayload,
-  PublishListingResult,
-  ListingFormData,
+  PublishListingResult
 } from '../types/sell.types';
 import { apiFetch } from '@/lib/api-client';
 import { ratingToLabel } from '../utils/condition';
