@@ -1,6 +1,7 @@
 const NAV_ITEMS = [
   { icon: 'person', label: 'Profile', active: true },
   { icon: 'list_alt', label: 'My Listings', active: false },
+  { icon: 'eco', label: 'Rewards', active: false },
   { icon: 'favorite', label: 'Favourites', active: false },
   { icon: 'receipt_long', label: 'Transactions', active: false },
 ];
