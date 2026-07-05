@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const PREVIEW_COUNT = 3;
 
 export default function MyListingsPreviewCard() {
@@ -8,9 +10,9 @@ export default function MyListingsPreviewCard() {
           <span className="material-symbols-outlined text-[20px]">inventory_2</span>
         </div>
         <h4 className="flex-1 text-[14px] font-semibold text-on-surface">My Listings</h4>
-        <a href="#" className="text-primary text-[13px] font-semibold hover:underline">
+        <Link href="/profile/listings" className="text-primary text-[13px] font-semibold hover:underline">
           View all
-        </a>
+        </Link>
       </div>
 
       <div className="flex gap-2 mb-3">

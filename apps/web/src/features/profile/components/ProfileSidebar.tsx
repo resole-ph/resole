@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
   { icon: 'person', label: 'Profile', href: '/profile' },
-  { icon: 'list_alt', label: 'My Listings', href: null },
+  { icon: 'list_alt', label: 'My Listings', href: '/profile/listings' },
   { icon: 'eco', label: 'Rewards', href: '/profile/rewards' },
   { icon: 'favorite', label: 'Favourites', href: '/profile/favourites' },
   { icon: 'receipt_long', label: 'Transactions', href: '/profile/transactions' },
