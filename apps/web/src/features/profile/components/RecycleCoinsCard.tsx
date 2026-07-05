@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function RecycleCoinsCard() {
   return (
     <div className="bg-secondary text-on-secondary p-8 rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col justify-between">
@@ -18,12 +20,18 @@ export default function RecycleCoinsCard() {
         </p>
       </div>
       <div className="mt-8 flex gap-3">
-        <button className="bg-white text-secondary px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-surface-bright transition-colors">
+        <Link
+          href="/profile/rewards"
+          className="bg-white text-secondary px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-surface-bright transition-colors"
+        >
           Redeem Now
-        </button>
-        <button className="bg-white/15 border border-white/30 text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white/25 transition-colors">
+        </Link>
+        <Link
+          href="/profile/rewards"
+          className="bg-white/15 border border-white/30 text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white/25 transition-colors"
+        >
           View Perks
-        </button>
+        </Link>
       </div>
     </div>
   );
