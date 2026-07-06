@@ -1,370 +1,341 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-/* ---------------------------------------------------------
-   Resole Design Tokens
---------------------------------------------------------- */
 const COLORS = {
-  primary: "#2563EB", 
-  primaryDark: "#004AC6",
+  primary: "#2563EB",
   background: "#F9FAFB",
   surface: "#FFFFFF",
-  surfaceContainerLow: "#f3f4f5",
   green: "#10B981",
-  greenTint: "rgba(16, 185, 129, 0.1)",
   amber: "#F59E0B",
-  amberTint: "rgba(245, 158, 11, 0.1)",
   red: "#EF4444",
   textMain: "#191C1D",
   textMuted: "#6B7280",
   textFaint: "#9CA3AF",
   border: "#E5E7EB",
-};
+  inputBg: "#F3F4F6",
+} as const;
 
-const SHADOW = {
-  base: "0px 4px 20px rgba(0, 0, 0, 0.05)",
-  hover: "0px 12px 28px rgba(0, 0, 0, 0.10)",
-};
+const CARD_SHADOW = "0px 4px 20px rgba(0,0,0,0.05)";
 
-/* ---------------------------------------------------------
-   Mock Data
---------------------------------------------------------- */
-const FLASH_SALES = [
-  {
-    id: 1,
-    name: "Nike Dunk Low 'Tiffany'",
-    condition: "9/10",
-    timeLeft: "00:59:50",
-    price: "14,500",
-    oldPrice: "18,200",
-    image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=500&auto=format&fit=crop",
-  },
-  {
-    id: 2,
-    name: "Yeezy Boost 350 'Cream'",
-    condition: "BRAND NEW",
-    timeLeft: "01:29:50",
-    price: "12,200",
-    oldPrice: "15,000",
-    image: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?q=80&w=500&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    name: "Jordan 1 Retro High",
-    condition: "8.5/10",
-    timeLeft: "03:15:20",
-    price: "28,000",
-    oldPrice: null,
-    image: "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?q=80&w=500&auto=format&fit=crop",
-  },
-  {
-    id: 4,
-    name: "NB 2002R 'Protection Pack'",
-    condition: "VNDS",
-    timeLeft: "05:40:10",
-    price: "9,800",
-    oldPrice: null,
-    image: "https://images.unsplash.com/photo-1539185441755-769473a23570?q=80&w=500&auto=format&fit=crop",
-  },
+/* ---------------- Types ---------------- */
+interface FlashSaleItem {
+  id: number;
+  brand: string;
+  name: string;
+  condition: string;
+  price: string;
+  was: string | null;
+  image: string;
+}
+
+interface SwapItem {
+  id: number;
+  user: string;
+  time: string;
+  avatarColor: string;
+  offering: { name: string; size: string };
+  lookingFor: { name: string; note: string };
+  image: string;
+}
+
+interface MarketplaceItem {
+  id: number;
+  brand: string;
+  name: string;
+  price: string;
+  score: string;
+  condition: string;
+  conditionColor: string;
+  image: string;
+}
+
+/* ---------------- Mock data ---------------- */
+const FLASH_SALES: FlashSaleItem[] = [
+  { id: 1, brand: "Nike", name: "Dunk Low 'Tiffany'", condition: "Condition: 9/10", price: "14,500", was: "18,200", image: "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=500&auto=format&fit=crop" },
+  { id: 2, brand: "Adidas", name: "Yeezy Boost 350 'Cream'", condition: "Brand New", price: "12,200", was: "16,000", image: "https://images.unsplash.com/photo-1587563871167-1ee9c731aefb?q=80&w=500&auto=format&fit=crop" },
+  { id: 3, brand: "Jordan Brand", name: "Jordan 1 Retro High", condition: "Excellent", price: "28,000", was: null, image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?q=80&w=500&auto=format&fit=crop" },
+  { id: 4, brand: "New Balance", name: "NB 2002R 'Protection Pack'", condition: "Brand New", price: "9,800", was: null, image: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?q=80&w=500&auto=format&fit=crop" },
 ];
 
-const SWAP_BOARD = [
-  {
-    id: 1,
-    user: "John D.",
-    initials: "JD",
-    timeAgo: "2 mins ago",
-    offering: { name: "Jordan 4 'Midnight Navy'", size: "10 US", image: "https://images.unsplash.com/photo-1597045566677-8cf032ed6634?q=80&w=200&auto=format&fit=crop" },
-    lookingFor: { desc: "Any Yeezy 700 V3", condition: "Condition: 8.5+ only" },
-  },
-  {
-    id: 2,
-    user: "Maya S.",
-    initials: "MS",
-    initialsColor: COLORS.green,
-    timeAgo: "15 mins ago",
-    offering: { name: "AF1 'Valentine's'", size: "7W US", image: "https://images.unsplash.com/photo-1514989940723-e8e51635b782?q=80&w=200&auto=format&fit=crop" },
-    lookingFor: { desc: "Dunk Low 'Panda'", condition: "Size 7W / Brand New" },
-  },
-  {
-    id: 3,
-    user: "Kevin C.",
-    initials: "KC",
-    initialsColor: COLORS.amber,
-    timeAgo: "1 hour ago",
-    offering: { name: "Salomon XT-6 Phantom", size: "11 US", image: "https://images.unsplash.com/photo-1605340537584-f6fb6a182bdc?q=80&w=200&auto=format&fit=crop" },
-    lookingFor: { desc: "Hoka Clifton 9", condition: "Open to other trail runners" },
-  },
+const SWAP_BOARD: SwapItem[] = [
+  { id: 1, user: "John D.", time: "2 mins ago", avatarColor: "#2563EB", offering: { name: "Jordan 4 'Midnight Navy'", size: "US 10" }, lookingFor: { name: "Any Yeezy 700 V3", note: "Condition: 8.5+ only" }, image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=300&auto=format&fit=crop" },
+  { id: 2, user: "Maya S.", time: "15 mins ago", avatarColor: "#10B981", offering: { name: "AF1 'Valentine's'", size: "US 7W" }, lookingFor: { name: "Dunk Low 'Panda'", note: "Size 7W / Brand New" }, image: "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?q=80&w=300&auto=format&fit=crop" },
+  { id: 3, user: "Kevin C.", time: "1 hour ago", avatarColor: "#F59E0B", offering: { name: "Salomon XT-6 Phantom", size: "US 11" }, lookingFor: { name: "Hoka Clifton 9", note: "Open to other trail runners" }, image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=300&auto=format&fit=crop" },
 ];
 
-const EXPLORE = [
-  { id: 1, name: "Jordan 1 High 'Lost & Found'", price: "24,500", condition: "9.5/10", aiScore: "98%", image: "https://images.unsplash.com/photo-1620012253295-c15ce331c19b?q=80&w=500&auto=format&fit=crop" },
-  { id: 2, name: "Yeezy 700 'Wave Runner'", price: "18,200", condition: "9/10", aiScore: "92%", image: "https://images.unsplash.com/photo-1610444585141-8f537b03b22b?q=80&w=500&auto=format&fit=crop" },
-  { id: 3, name: "Dunk Low 'Panda'", price: "6,500", condition: "BRAND NEW", aiScore: "100%", image: "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=500&auto=format&fit=crop" },
-  { id: 4, name: "Travis Scott x AJ1 Low", price: "65,000", condition: "BRAND NEW", aiScore: "100%", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=500&auto=format&fit=crop" },
+const MARKETPLACE: MarketplaceItem[] = [
+  { id: 1, brand: "Jordan Brand", name: "Jordan 1 High 'Lost & Found'", price: "24,500", score: "97%", condition: "Excellent", conditionColor: COLORS.green, image: "https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=500&auto=format&fit=crop" },
+  { id: 2, brand: "Adidas", name: "Yeezy 700 'Wave Runner'", price: "18,200", score: "89%", condition: "Good", conditionColor: COLORS.amber, image: "https://images.unsplash.com/photo-1608379743498-3c98d4c5aa1a?q=80&w=500&auto=format&fit=crop" },
+  { id: 3, brand: "Nike", name: "Dunk Low 'Panda'", price: "6,500", score: "100%", condition: "Brand New", conditionColor: COLORS.green, image: "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?q=80&w=500&auto=format&fit=crop" },
+  { id: 4, brand: "Travis Scott x Jordan", name: "Travis Scott x AJ1 Low", price: "65,000", score: "100%", condition: "Brand New", conditionColor: COLORS.green, image: "https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?q=80&w=500&auto=format&fit=crop" },
+  { id: 5, brand: "New Balance", name: "990v5 'Grey Day'", price: "8,900", score: "93%", condition: "Excellent", conditionColor: COLORS.green, image: "https://images.unsplash.com/photo-1539185441755-769473a23570?q=80&w=500&auto=format&fit=crop" },
+  { id: 6, brand: "Nike", name: "Air Max 97 'Silver Bullet'", price: "11,300", score: "85%", condition: "Good", conditionColor: COLORS.amber, image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=500&auto=format&fit=crop" },
+  { id: 7, brand: "Adidas", name: "Samba OG 'Cloud White'", price: "5,200", score: "96%", condition: "Excellent", conditionColor: COLORS.green, image: "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?q=80&w=500&auto=format&fit=crop" },
+  { id: 8, brand: "Jordan Brand", name: "Jordan 4 'Bred Reimagined'", price: "22,800", score: "91%", condition: "VNDS", conditionColor: COLORS.amber, image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=500&auto=format&fit=crop" },
 ];
 
-/* ---------------------------------------------------------
-   Reusable Components
---------------------------------------------------------- */
-function FilterPill({ label, icon, active = false }) {
+/* ---------------- Small components ---------------- */
+function FilterDropdown({ label }: { label: string }) {
   return (
     <button
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "8px 16px",
-        borderRadius: 9999,
-        border: active ? "none" : `1px solid ${COLORS.border}`,
-        background: active ? COLORS.primary : COLORS.background,
-        color: active ? "#fff" : COLORS.textMain,
-        fontSize: 14,
-        fontWeight: 600,
-        fontFamily: "Inter, sans-serif",
-        cursor: "pointer",
+        display: "flex", alignItems: "center", gap: 6, borderRadius: 9999,
+        padding: "8px 14px", background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+        fontSize: 13, fontWeight: 500, color: COLORS.textMain, cursor: "pointer",
       }}
     >
-      {label}
-      {icon && <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{icon}</span>}
+      {label} <span className="material-symbols-outlined" style={{ fontSize: 13, color: COLORS.textFaint }}>expand_more</span>
     </button>
   );
 }
 
-function Badge({ children, type = "default" }) {
-  const getStyles = () => {
-    switch (type) {
-      case "amber": return { color: COLORS.amber, bg: COLORS.amberTint };
-      case "green": return { color: COLORS.green, bg: COLORS.greenTint };
-      default: return { color: COLORS.textMain, bg: COLORS.border };
-    }
-  };
-  const styles = getStyles();
-
+function CountdownBadge({ hours = 3, minutes = 12, seconds = 45 }: { hours?: number; minutes?: number; seconds?: number }) {
+  const [t, setT] = useState({ h: hours, m: minutes, s: seconds });
+  useEffect(() => {
+    const id = setInterval(() => {
+      setT((prev) => {
+        let { h, m, s } = prev;
+        s -= 1;
+        if (s < 0) { s = 59; m -= 1; }
+        if (m < 0) { m = 59; h -= 1; }
+        if (h < 0) return { h: 0, m: 0, s: 0 };
+        return { h, m, s };
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+  const pad = (n: number) => String(n).padStart(2, "0");
   return (
-    <span style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 4,
-      padding: "4px 8px",
-      borderRadius: 9999,
-      background: styles.bg,
-      color: styles.color,
-      fontSize: 10,
-      fontWeight: 700,
-      textTransform: "uppercase",
-      letterSpacing: "0.05em",
-      fontFamily: "Inter, sans-serif"
-    }}>
-      {children}
+    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.55)", borderRadius: 6, padding: "2px 6px" }}>
+      {pad(t.h)}:{pad(t.m)}:{pad(t.s)}
     </span>
   );
 }
 
-/* ---------------------------------------------------------
-   Page
---------------------------------------------------------- */
-export default function MarketTab() {
-  return (
-    <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif", paddingBottom: 100 }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        * { box-sizing: border-box; }
-        .hover-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .hover-card:hover { transform: translateY(-4px); box-shadow: ${SHADOW.hover} !important; }
-      `}</style>
+function FlashSaleCard({ item }: { item: FlashSaleItem }) {
+  const [saved, setSaved] = useState(false);
+  const router = useRouter();
 
-      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px" }}>
-        
-        {/* Filters Row */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 40, flexWrap: "wrap" }}>
-          <FilterPill label="Brand" icon="expand_more" />
-          <FilterPill label="Size" icon="expand_more" />
-          <FilterPill label="Condition" icon="expand_more" />
-          <FilterPill label="Price Range" icon="expand_more" />
-          <div style={{ width: 1, background: COLORS.border, margin: "0 8px" }} />
-          <FilterPill label="All Filters" icon="tune" active />
+  return (
+    <div style={{ background: COLORS.surface, borderRadius: 16, overflow: "hidden", boxShadow: CARD_SHADOW }}>
+      <div style={{ position: "relative", aspectRatio: "4/3", background: "#F3F4F6" }}>
+        <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div style={{ position: "absolute", top: 8, left: 8, display: "flex", alignItems: "center", gap: 4, background: COLORS.amber, borderRadius: 9999, padding: "3px 8px" }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 10, color: "#fff", fontVariationSettings: "'FILL' 1" }}>bolt</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>Flash Deal</span>
+        </div>
+        <div style={{ position: "absolute", top: 8, right: 8 }}>
+          <button onClick={() => setSaved((s) => !s)} style={{ width: 26, height: 26, borderRadius: 9999, background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 13, color: saved ? COLORS.red : "#6B7280", fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+          </button>
+        </div>
+        <div style={{ position: "absolute", bottom: 8, left: 8 }}>
+          <CountdownBadge hours={2 + item.id} minutes={9 * item.id} seconds={0} />
+        </div>
+      </div>
+      <div style={{ padding: "10px 12px 12px" }}>
+        <div style={{ fontSize: 10.5, color: COLORS.textFaint, fontWeight: 600, textTransform: "uppercase" }}>{item.brand}</div>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.textMain, margin: "2px 0 4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
+        <div style={{ fontSize: 11.5, color: COLORS.textMuted, marginBottom: 8 }}>{item.condition}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <span style={{ fontSize: 15.5, fontWeight: 700, color: COLORS.textMain }}>₱{item.price}</span>
+            {item.was && <span style={{ fontSize: 11, color: COLORS.textFaint, textDecoration: "line-through", marginLeft: 6 }}>₱{item.was}</span>}
+          </div>
+          <button 
+            onClick={() => router.push(`/listing/${item.id}`)}
+            style={{ background: COLORS.primary, color: "#fff", border: "none", borderRadius: 9999, padding: "6px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+          >
+            Buy
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SwapCard({ swap }: { swap: SwapItem }) {
+  const router = useRouter();
+
+  return (
+    <div style={{ background: COLORS.surface, borderRadius: 16, padding: 16, boxShadow: CARD_SHADOW, minWidth: 300 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 9999, background: swap.avatarColor, color: "#fff", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {swap.user[0]}
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.textMain }}>{swap.user}</div>
+        <div style={{ fontSize: 11, color: COLORS.textFaint, marginLeft: "auto" }}>{swap.time}</div>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+        <img src={swap.image} alt={swap.offering.name} style={{ width: 52, height: 52, borderRadius: 10, objectFit: "cover", background: "#F3F4F6" }} />
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.green, textTransform: "uppercase", letterSpacing: "0.03em" }}>Offering</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.textMain }}>{swap.offering.name}</div>
+          <div style={{ fontSize: 11.5, color: COLORS.textFaint }}>Size {swap.offering.size}</div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "center", margin: "4px 0" }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 13, color: COLORS.textFaint }}>swap_horiz</span>
+      </div>
+
+      <div style={{ background: COLORS.inputBg, borderRadius: 10, padding: 10, marginBottom: 12 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.primary, textTransform: "uppercase", letterSpacing: "0.03em" }}>Looking for</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.textMain }}>{swap.lookingFor.name}</div>
+        <div style={{ fontSize: 11.5, color: COLORS.textFaint }}>{swap.lookingFor.note}</div>
+      </div>
+
+      <button 
+        onClick={() => router.push(`/propose-swap/${swap.id}`)}
+        style={{ width: "100%", background: "#fff", border: `1.5px solid ${COLORS.primary}`, color: COLORS.primary, borderRadius: 9999, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+      >
+        Propose Swap
+      </button>
+    </div>
+  );
+}
+
+function ListingCard({ item }: { item: MarketplaceItem }) {
+  const [saved, setSaved] = useState(false);
+  const router = useRouter();
+
+  return (
+    <div
+      onClick={() => router.push(`/listing/${item.id}`)}
+      style={{ background: COLORS.surface, borderRadius: 16, overflow: "hidden", boxShadow: CARD_SHADOW, cursor: "pointer", transition: "transform 0.18s ease, box-shadow 0.18s ease" }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0px 12px 28px rgba(0,0,0,0.10)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = CARD_SHADOW; }}
+    >
+      <div style={{ position: "relative", aspectRatio: "1/1", background: "#F3F4F6" }}>
+        <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div style={{ position: "absolute", top: 8, left: 8, background: `${COLORS.amber}1A`, color: COLORS.amber, fontSize: 10, fontWeight: 700, borderRadius: 9999, padding: "3px 8px" }}>
+          AI {item.score}
+        </div>
+        <button onClick={(e) => { e.stopPropagation(); setSaved((s) => !s); }} style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 9999, background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 13, color: saved ? COLORS.red : "#6B7280", fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+        </button>
+        <div style={{ position: "absolute", bottom: 8, left: 8, background: item.conditionColor, color: "#fff", fontSize: 9.5, fontWeight: 700, borderRadius: 9999, padding: "2px 8px" }}>
+          {item.condition}
+        </div>
+      </div>
+      <div style={{ padding: "10px 12px 12px" }}>
+        <div style={{ fontSize: 10.5, color: COLORS.textFaint, fontWeight: 600, textTransform: "uppercase" }}>{item.brand}</div>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.textMain, margin: "2px 0 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
+        <div style={{ fontSize: 15.5, fontWeight: 700, color: COLORS.textMain }}>₱{item.price}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Page ---------------- */
+export default function MarketPage() {
+  const [sort, setSort] = useState("Latest Arrivals");
+  const router = useRouter();
+
+  return (
+    <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'); @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined'); * { box-sizing: border-box; }`}</style>
+
+      {/* Header */}
+      <header style={{ position: "sticky", top: 0, zIndex: 20, background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "14px 24px", display: "flex", alignItems: "center", gap: 32 }}>
+          <span onClick={() => router.push('/')} style={{ fontWeight: 800, fontSize: 20, color: COLORS.primary, letterSpacing: "-0.02em", cursor: "pointer" }}>Resole</span>
+          <nav style={{ display: "flex", gap: 24, flex: 1 }}>
+            {["Home", "Market", "Sell", "Rewards"].map((item) => (
+              <span 
+                key={item} 
+                onClick={() => router.push(item === "Home" ? "/" : `/${item.toLowerCase()}`)}
+                style={{ fontSize: 14.5, fontWeight: item === "Market" ? 700 : 500, color: item === "Market" ? COLORS.primary : COLORS.textMuted, cursor: "pointer" }}
+              >
+                {item}
+              </span>
+            ))}
+          </nav>
+          <div style={{ flex: 1, maxWidth: 420, display: "flex", alignItems: "center", gap: 8, background: COLORS.inputBg, borderRadius: 9999, padding: "9px 16px" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 15, color: COLORS.textFaint }}>search</span>
+            <input 
+              type="text"
+              placeholder="Search sneakers..."
+              style={{ border: "none", background: "transparent", outline: "none", width: "100%", fontSize: 13.5, color: COLORS.textMain }}
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {["notifications","person"].map((icon, i) => (
+              <button 
+                key={i} 
+                onClick={() => router.push(icon === "person" ? "/profile" : "/notifications")}
+                style={{ width: 34, height: 34, borderRadius: 9999, border: `1px solid ${COLORS.border}`, background: COLORS.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16, color: COLORS.textMuted }}>{icon}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 24px 64px" }}>
+        {/* Filter bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 32, flexWrap: "wrap" }}>
+          <FilterDropdown label="Brand" />
+          <FilterDropdown label="Size" />
+          <FilterDropdown label="Condition" />
+          <FilterDropdown label="Price Range" />
+          <button style={{ display: "flex", alignItems: "center", gap: 6, background: COLORS.primary, color: "#fff", border: "none", borderRadius: 9999, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>tune</span> All Filters
+          </button>
         </div>
 
-        {/* ---------------- Flash Sales ---------------- */}
-        <section style={{ marginBottom: 56 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 20 }}>
-            <div>
-              <h2 style={{ fontSize: 24, fontWeight: 700, color: COLORS.textMain, margin: "0 0 4px" }}>Flash Sales</h2>
-              <p style={{ fontSize: 14, color: COLORS.textMuted, margin: 0 }}>Ends soon — Up to 40% off authenticated kicks</p>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button style={{ width: 32, height: 32, borderRadius: 9999, border: "none", background: COLORS.border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 18, color: COLORS.textMain }}>chevron_left</span>
-              </button>
-              <button style={{ width: 32, height: 32, borderRadius: 9999, border: "none", background: COLORS.border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 18, color: COLORS.textMain }}>chevron_right</span>
-              </button>
+        {/* Flash sales */}
+        <section style={{ marginBottom: 40 }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: 0 }}>Flash Sales</h2>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button style={{ width: 28, height: 28, borderRadius: 9999, border: `1px solid ${COLORS.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><span className="material-symbols-outlined" style={{ fontSize: 14, color: COLORS.textMuted }}>chevron_left</span></button>
+              <button style={{ width: 28, height: 28, borderRadius: 9999, border: `1px solid ${COLORS.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><span className="material-symbols-outlined" style={{ fontSize: 14, color: COLORS.textMuted }}>chevron_right</span></button>
             </div>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
-            {FLASH_SALES.map((item) => (
-              <div key={item.id} className="hover-card" style={{ background: COLORS.surface, borderRadius: 16, padding: 16, boxShadow: SHADOW.base, position: "relative" }}>
-                
-                {/* Image & Badges */}
-                <div style={{ background: COLORS.surfaceContainerLow, borderRadius: 12, aspectRatio: "1/1", marginBottom: 16, position: "relative", overflow: "hidden" }}>
-                  <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  <div style={{ position: "absolute", top: 12, left: 12 }}>
-                    <Badge type="amber"><span className="material-symbols-outlined" style={{ fontSize: 12 }}>bolt</span> Flash Deal</Badge>
-                  </div>
-                  <button style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: 9999, background: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: COLORS.textMuted }}>favorite</span>
-                  </button>
-                </div>
-
-                {/* Info */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                   <Badge type="green">Condition: {item.condition}</Badge>
-                   <span style={{ fontSize: 11, fontWeight: 600, color: COLORS.textMuted, display: "flex", alignItems: "center", gap: 4 }}>
-                     <span className="material-symbols-outlined" style={{ fontSize: 14 }}>schedule</span> {item.timeLeft}
-                   </span>
-                </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: COLORS.textMain, margin: "0 0 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</h3>
-                
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 20, fontWeight: 700, color: COLORS.primary }}>₱{item.price}</span>
-                    {item.oldPrice && <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.textFaint, textDecoration: "line-through" }}>₱{item.oldPrice}</span>}
-                  </div>
-                  <button style={{ background: COLORS.primary, color: "#fff", border: "none", borderRadius: 9999, padding: "8px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Buy</button>
-                </div>
-              </div>
-            ))}
+          <p style={{ fontSize: 13, color: COLORS.textFaint, margin: "0 0 16px" }}>Ends soon — up to 40% off authenticated kicks</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+            {FLASH_SALES.map((item) => <FlashSaleCard key={item.id} item={item} />)}
           </div>
         </section>
 
-        {/* ---------------- Swap Board ---------------- */}
-        <section style={{ marginBottom: 56 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <span className="material-symbols-outlined" style={{ color: COLORS.primary, fontSize: 28 }}>swap_horiz</span>
-            <div>
-              <h2 style={{ fontSize: 24, fontWeight: 700, color: COLORS.textMain, margin: "0 0 4px" }}>Swap Board</h2>
-              <p style={{ fontSize: 14, color: COLORS.textMuted, margin: 0 }}>Trade your kicks — Circular commerce at its best</p>
-            </div>
+        {/* Swap board */}
+        <section style={{ marginBottom: 40 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16, color: COLORS.primary }}>swap_horiz</span>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: 0 }}>Swap Board</h2>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
-            {SWAP_BOARD.map((swap) => (
-              <div key={swap.id} style={{ background: COLORS.surface, borderRadius: 16, padding: 20, border: `1px dashed ${COLORS.border}`, boxShadow: SHADOW.base }}>
-                
-                {/* User Info */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 9999, background: swap.initialsColor || COLORS.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>
-                      {swap.initials}
-                    </div>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.textMain }}>{swap.user}</span>
-                  </div>
-                  <span style={{ fontSize: 12, color: COLORS.textFaint }}>{swap.timeAgo}</span>
-                </div>
-
-                {/* Offering */}
-                <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-                  <img src={swap.offering.image} alt={swap.offering.name} style={{ width: 80, height: 80, borderRadius: 12, objectFit: "cover", background: COLORS.surfaceContainerLow }} />
-                  <div>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.green, textTransform: "uppercase", letterSpacing: "0.05em" }}>Offering</span>
-                    <h4 style={{ fontSize: 15, fontWeight: 700, color: COLORS.textMain, margin: "4px 0" }}>{swap.offering.name}</h4>
-                    <span style={{ fontSize: 13, color: COLORS.textMuted }}>Size: {swap.offering.size}</span>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "center", margin: "-8px 0", position: "relative", zIndex: 2 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 9999, background: COLORS.background, border: `1px solid ${COLORS.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: COLORS.textFaint, transform: "rotate(90deg)" }}>swap_horiz</span>
-                  </div>
-                </div>
-
-                {/* Looking For */}
-                <div style={{ background: COLORS.background, borderRadius: 12, padding: 16, marginBottom: 20, marginTop: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.primary, textTransform: "uppercase", letterSpacing: "0.05em" }}>Looking For</span>
-                  <h4 style={{ fontSize: 15, fontWeight: 700, color: COLORS.textMain, margin: "4px 0" }}>{swap.lookingFor.desc}</h4>
-                  <span style={{ fontSize: 13, color: COLORS.textMuted }}>{swap.lookingFor.condition}</span>
-                </div>
-
-                <button style={{ width: "100%", padding: "12px 0", borderRadius: 9999, background: COLORS.surface, border: `1px solid ${COLORS.border}`, color: COLORS.primary, fontSize: 14, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
-                  Propose Swap
-                </button>
-              </div>
-            ))}
+          <p style={{ fontSize: 13, color: COLORS.textFaint, margin: "0 0 16px" }}>Trade your kicks — circular commerce at its best</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            {SWAP_BOARD.map((swap) => <SwapCard key={swap.id} swap={swap} />)}
           </div>
         </section>
 
-        {/* ---------------- Explore Marketplace ---------------- */}
+        {/* Explore marketplace */}
         <section>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 20 }}>
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: COLORS.textMain, margin: 0 }}>Explore Marketplace</h2>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: COLORS.textMuted, cursor: "pointer" }}>
-              Sort by: <span style={{ fontWeight: 600, color: COLORS.textMain }}>Latest Arrivals</span>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>expand_more</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: 0 }}>Explore Marketplace</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.textMuted }}>
+              Sort by: <span style={{ fontWeight: 700, color: COLORS.textMain, display: "flex", alignItems: "center", gap: 3 }}>{sort} <span className="material-symbols-outlined" style={{ fontSize: 13 }}>expand_more</span></span>
             </div>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
-            {EXPLORE.map((item) => (
-              <div key={item.id} className="hover-card" style={{ background: COLORS.surface, borderRadius: 16, padding: 16, boxShadow: SHADOW.base, position: "relative" }}>
-                
-                {/* Image */}
-                <div style={{ background: COLORS.surfaceContainerLow, borderRadius: 12, aspectRatio: "1/1", marginBottom: 16, position: "relative", overflow: "hidden" }}>
-                  <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  <button style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: 9999, background: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: COLORS.textMuted }}>favorite</span>
-                  </button>
-                  <div style={{ position: "absolute", bottom: 12, left: 12 }}>
-                    <Badge type="amber">AI {item.aiScore}</Badge>
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div style={{ marginBottom: 8 }}>
-                   <Badge type="green">{item.condition}</Badge>
-                </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: COLORS.textMain, margin: "0 0 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</h3>
-                
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: COLORS.textMain }}>₱{item.price}</span>
-                  <button style={{ width: 32, height: 32, borderRadius: 9999, background: COLORS.surface, border: `1px solid ${COLORS.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: COLORS.textMuted }}>add</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
+            {MARKETPLACE.map((item) => <ListingCard key={item.id} item={item} />)}
           </div>
         </section>
       </main>
 
-      {/* Floating Action Button */}
+      {/* Floating sell button */}
       <button 
-        style={{ 
-          position: "fixed", 
-          bottom: 32, 
-          right: 32, 
-          background: COLORS.primary, 
-          color: "#fff", 
-          border: "none", 
-          borderRadius: 9999, 
-          padding: "16px 24px", 
-          fontSize: 16, 
-          fontWeight: 700, 
-          fontFamily: "Inter, sans-serif",
-          display: "flex", 
-          alignItems: "center", 
-          gap: 8, 
-          cursor: "pointer", 
-          boxShadow: "0px 8px 24px rgba(37, 99, 235, 0.4)",
-          zIndex: 100
-        }}
+        onClick={() => router.push("/sell")}
+        style={{ position: "fixed", bottom: 28, right: 28, display: "flex", alignItems: "center", gap: 8, background: COLORS.primary, color: "#fff", border: "none", borderRadius: 9999, padding: "14px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0px 8px 20px rgba(37,99,235,0.35)" }}
       >
-        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>add_circle</span>
-        Sell Your Kicks
+        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span> Sell Your Kicks
       </button>
-
     </div>
   );
 }
