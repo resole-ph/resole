@@ -65,4 +65,10 @@ export const ListingService = {
       method: 'DELETE'
     });
   },
+
+  async deleteListing(id: number): Promise<undefined> {
+    await apiFetch<undefined>(`/api/listings/${id}`, {
+      method: 'DELETE'
+    });
+  }
 }

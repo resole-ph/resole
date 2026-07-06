@@ -136,13 +136,16 @@ export default function ListingsScreen() {
     fetchPendingListings();
   }, []);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     Alert.alert('Remove listing?', 'This will take it off the market.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
         style: 'destructive',
-        onPress: () => setActive((prev) => prev.filter((l) => l.id !== id)),
+        onPress: async () => {
+          setActive((prev) => prev.filter((l) => l.id !== id));
+          await ListingService.deleteListing(Number(id));
+        }
       },
     ]);
   };
