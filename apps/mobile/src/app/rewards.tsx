@@ -12,7 +12,7 @@ const CARD_SHADOW = {
   elevation: 2,
 };
 
-const BALANCE = 1_240;
+const BALANCE = 0;
 
 type CoinTx = {
   id: string;
@@ -23,13 +23,7 @@ type CoinTx = {
   icon: 'heart-outline' | 'sync-outline' | 'star-outline' | 'gift-outline';
 };
 
-const COIN_HISTORY: CoinTx[] = [
-  { id: '1', label: 'Donated Converse Chuck 70', sub: 'Gawad Kalinga', amount: +80, date: 'May 22', icon: 'heart-outline' },
-  { id: '2', label: 'Recycled Vans Old Skool', sub: 'Drop-off verified', amount: +120, date: 'May 18', icon: 'sync-outline' },
-  { id: '3', label: 'Listing milestone', sub: '10th listing bonus', amount: +50, date: 'May 10', icon: 'star-outline' },
-  { id: '4', label: 'Redeemed discount', sub: '₱200 off on purchase', amount: -200, date: 'May 5', icon: 'gift-outline' },
-  { id: '5', label: 'Donated Puma RS-X', sub: 'Caritas Manila', amount: +100, date: 'Apr 30', icon: 'heart-outline' },
-];
+const COIN_HISTORY: CoinTx[] = [];
 
 type RedeemOption = {
   id: string;
@@ -171,9 +165,9 @@ export default function RewardsScreen() {
 
           <View className="flex-row mt-5 gap-2">
             {[
-              { label: 'Donations', value: '800' },
-              { label: 'Recycling', value: '390' },
-              { label: 'Bonuses',   value: '50' },
+              { label: 'Donations', value: '0' },
+              { label: 'Recycling', value: '0' },
+              { label: 'Bonuses',   value: '0' },
             ].map((b) => (
               <View key={b.label} className="flex-1 rounded-2xl py-2.5 px-2 items-center" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
                 <Text className="text-white font-bold text-base">{b.value}</Text>
