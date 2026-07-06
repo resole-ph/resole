@@ -2,6 +2,7 @@
 
 import StepHeader from './StepHeader';
 import type { ListingFormData, PhotoAngle, SellPhoto } from '../types/sell.types';
+import { getConditionLabel } from '../utils/condition';
 
 const ANGLES: PhotoAngle[] = ['top', 'side', 'sole', 'insole'];
 const MODE_LABELS: Record<ListingFormData['listingMode'], string> = {
@@ -68,7 +69,10 @@ export default function ReviewStep({
           <FieldRow label="Colorway" value={form.colorway} />
           <FieldRow label="Size" value={`US ${form.size}`} />
           <FieldRow label="Category" value={form.category} />
-          <FieldRow label="Condition" value={`${form.conditionScore} / 10`} />
+          <FieldRow
+            label="Condition"
+            value={`${getConditionLabel(form.conditionScore)} (${form.conditionScore}/10)`}
+          />
           <FieldRow label="Price" value={`₱${Number(form.price || 0).toLocaleString()}`} />
           <FieldRow label="Listing type" value={MODE_LABELS[form.listingMode]} />
           {form.description ? (

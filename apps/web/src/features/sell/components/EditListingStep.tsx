@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import StepHeader from './StepHeader';
 import type { ListingFormData, ShoeCategory, ListingMode } from '../types/sell.types';
+import { getConditionLabel } from '../utils/condition';
 
 const CATEGORIES: ShoeCategory[] = ['running', 'basketball', 'football', 'casual', 'other'];
 
@@ -98,7 +99,12 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
       </Card>
 
       <Card>
-        <CardLabel>Condition</CardLabel>
+        <div className="flex items-center justify-between mb-3">
+          <CardLabel>Condition</CardLabel>
+          <span className="bg-secondary-container/30 text-primary text-[12px] font-semibold rounded-full px-3 py-1">
+            {getConditionLabel(form.conditionScore)}
+          </span>
+        </div>
         <div className="flex items-center gap-4">
           <input
             type="range"

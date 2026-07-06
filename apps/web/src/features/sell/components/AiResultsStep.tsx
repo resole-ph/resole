@@ -2,6 +2,7 @@
 
 import StepHeader from './StepHeader';
 import type { AiAnalysisResult } from '../types/sell.types';
+import { getConditionLabel } from '../utils/condition';
 
 interface AiResultsStepProps {
   isAnalyzing: boolean;
@@ -77,7 +78,16 @@ export default function AiResultsStep({
 
             <DetailRow label="Brand" value={result.brand} />
             <DetailRow label="Model" value={result.model} />
-            <DetailRow label="Condition" value={`${Math.round(result.conditionScore)} / 10`} />
+
+            <div className="flex items-center justify-between py-2.5 border-b border-outline-variant last:border-0">
+              <span className="text-[13px] font-semibold text-on-surface-variant">Condition</span>
+              <div className="flex items-center gap-2">
+                <span className="bg-secondary-container/30 text-primary text-[12px] font-semibold rounded-full px-3 py-1">
+                  {getConditionLabel(result.conditionScore)}
+                </span>
+                <span className="text-[14px] text-on-surface">{Math.round(result.conditionScore)} / 10</span>
+              </div>
+            </div>
 
             {result.description && (
               <div className="pt-2">
