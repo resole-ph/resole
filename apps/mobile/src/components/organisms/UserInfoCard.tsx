@@ -7,9 +7,9 @@ interface UserStat {
 }
 
 const DEFAULT_STATS: UserStat[] = [
-  { value: '14', label: 'LISTINGS' },
-  { value: '28', label: 'SOLD' },
-  { value: '6',  label: 'SWAPS' },
+  { value: '0', label: 'LISTINGS' },
+  { value: '0', label: 'SOLD' },
+  { value: '0', label: 'SWAPS' },
 ];
 
 interface UserInfoCardProps {
@@ -34,12 +34,12 @@ function StatBox({ value, label }: UserStat) {
 }
 
 export default function UserInfoCard({
-  name = 'Miguel R.',
-  initials = 'M',
-  rating = 4.9,
-  reviewCount = 32,
-  location = 'Quezon City',
-  joinYear = 2024,
+  name = '',
+  initials = '',
+  rating = 0,
+  reviewCount = 0,
+  location = '',
+  joinYear,
   stats = DEFAULT_STATS,
 }: UserInfoCardProps) {
   return (
@@ -77,7 +77,7 @@ export default function UserInfoCard({
 
           {/* Location · join date */}
           <Text className="text-gray-400 text-xs">
-            {location} · Joined {joinYear}
+            {location}{location && joinYear ? ' · ' : ''}{joinYear ? `Joined ${joinYear}` : ''}
           </Text>
         </View>
       </View>
