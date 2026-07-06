@@ -9,6 +9,9 @@ export const authService = {
       auth: false,
       body: { email, password },
     });
+    if (!res?.sessionToken) {
+      throw new Error('Sign up did not return a session token. Please try again.');
+    }
     await saveSessionToken(res.sessionToken);
     return res;
   },
@@ -19,6 +22,9 @@ export const authService = {
       auth: false,
       body: { email, password },
     });
+    if (!res?.sessionToken) {
+      throw new Error('Sign in did not return a session token. Please try again.');
+    }
     await saveSessionToken(res.sessionToken);
     return res;
   },
