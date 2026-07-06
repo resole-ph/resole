@@ -46,16 +46,25 @@ export async function apiFetch<T = unknown>(
 
   const text = await response.text();
   let data: any = null;
+  let parseFailed = false;
   if (text) {
     try {
       data = JSON.parse(text);
     } catch {
-      data = null;
+      parseFailed = true;
     }
   }
 
   if (!response.ok) {
     throw new Error(data?.error ?? `Request failed with status ${response.status}`);
+  }
+
+  if (data === null) {
+    throw new Error(
+      parseFailed
+        ? 'Received an unreadable response from the server. Please try again.'
+        : 'Received an empty response from the server. Please try again.',
+    );
   }
 
   return data as T;
