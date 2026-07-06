@@ -25,7 +25,7 @@ export default function ReviewContainer() {
           .filter(Boolean)
           .map((p) => ({ angle: p!.angle, remoteUrl: p!.remoteUrl ?? '' })),
         form,
-        aiAnalysisId,
+        aiAnalysisId: String(aiAnalysisId),
       });
       setPublishedListing(result);
       setStep('confirmation');
