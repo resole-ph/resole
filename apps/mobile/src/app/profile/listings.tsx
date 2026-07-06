@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { useSellStore } from '@/store/sell';
+import { Listing } from '@/components/molecules/ListingCard';
+import { ListingService } from '@/features/listing/services/listing.service';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -14,28 +16,6 @@ const CARD_SHADOW = {
 };
 
 type Tab = 'active' | 'pending';
-
-type Listing = {
-  id: string;
-  name: string;
-  size: string;
-  price: string;
-  color: string;
-  daysLeft?: number;
-};
-
-const INITIAL_ACTIVE: Listing[] = [
-  { id: '1', name: 'Nike Air Max 90',       size: 'US 10',  price: '₱4,500',  color: '#DBEAFE', daysLeft: 12 },
-  { id: '2', name: 'Adidas Ultraboost 22',  size: 'US 9.5', price: '₱6,200',  color: '#EDE9FE', daysLeft: 7 },
-  { id: '3', name: 'Jordan 1 Retro High',   size: 'US 11',  price: '₱18,000', color: '#FCE7F3', daysLeft: 3 },
-  { id: '4', name: 'New Balance 550',       size: 'US 8',   price: '₱3,800',  color: '#D1FAE5', daysLeft: 21 },
-  { id: '5', name: 'Converse Chuck 70',     size: 'US 9',   price: '₱2,800',  color: '#FEF3C7', daysLeft: 14 },
-];
-
-const PENDING_LISTINGS: Listing[] = [
-  { id: 'p1', name: 'Nike Dunk Low Panda',      size: 'US 9',  price: '₱7,500', color: '#DBEAFE' },
-  { id: 'p2', name: 'Jordan 1 Mid Chicago',     size: 'US 10', price: '₱9,000', color: '#FEE2E2' },
-];
 
 function ActiveCard({
   item,
@@ -50,14 +30,14 @@ function ActiveCard({
     <View className="bg-white rounded-2xl p-4 mb-3 mx-5 flex-row items-center" style={CARD_SHADOW}>
       <View
         className="w-16 h-16 rounded-xl items-center justify-center mr-3"
-        style={{ backgroundColor: item.color }}
+        // style={{ backgroundColor: item.colorway }}
       >
         <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
       </View>
 
       <View className="flex-1 mr-2">
         <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
-          {item.name}
+          {item.model}
         </Text>
         <Text className="text-gray-400 text-xs mt-0.5">{item.size}</Text>
         <Text className="text-blue-600 font-bold text-sm mt-1">{item.price}</Text>
@@ -92,14 +72,14 @@ function PendingCard({ item }: { item: Listing }) {
     <View className="bg-white rounded-2xl p-4 mb-3 mx-5 flex-row items-center" style={CARD_SHADOW}>
       <View
         className="w-16 h-16 rounded-xl items-center justify-center mr-3"
-        style={{ backgroundColor: item.color }}
+        // style={{ backgroundColor: item.colorway }}
       >
         <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
       </View>
 
       <View className="flex-1 mr-2">
         <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
-          {item.name}
+          {item.model}
         </Text>
         <Text className="text-gray-400 text-xs mt-0.5">{item.size}</Text>
         <Text className="text-blue-600 font-bold text-sm mt-1">{item.price}</Text>
@@ -128,8 +108,33 @@ function EmptyState({ label }: { label: string }) {
 export default function ListingsScreen() {
   const router = useRouter();
   const resetSell = useSellStore((s) => s.reset);
+
   const [tab, setTab] = useState<Tab>('active');
-  const [active, setActive] = useState<Listing[]>(INITIAL_ACTIVE);
+  const [active, setActive] = useState<Listing[]>([]);
+  const [pending, setPending] = useState<Listing[]>([]);
+
+  useEffect(() => {
+    const fetchUserListings = async () => {
+      const now = new Date();
+      const data = (await ListingService.getUserListings()) || [];
+      const activeItems = data.filter((item) => {
+        const itemTime = new Date(item.createdAt).getTime();
+        return (now.getTime() - itemTime) / (1000 * 60 * 60 * 24) <= 30;
+      });
+
+      setActive(activeItems);
+    };
+
+    const fetchPendingListings = async () => {
+      const data = localStorage.getItem('pending');
+      const pendingItems = data ? JSON.parse(data) : [];
+
+      setPending(pendingItems);
+    }
+
+    fetchUserListings();
+    fetchPendingListings();
+  }, []);
 
   const handleDelete = (id: string) => {
     Alert.alert('Remove listing?', 'This will take it off the market.', [
@@ -149,7 +154,7 @@ export default function ListingsScreen() {
 
   const counts: Record<Tab, number> = {
     active: active.length,
-    pending: PENDING_LISTINGS.length,
+    pending: pending.length,
   };
 
   return (
@@ -194,11 +199,11 @@ export default function ListingsScreen() {
             />
           ))}
 
-        {tab === 'pending' && PENDING_LISTINGS.length === 0 && (
+        {tab === 'pending' && pending.length === 0 && (
           <EmptyState label="No listings pending review" />
         )}
         {tab === 'pending' &&
-          PENDING_LISTINGS.map((item) => <PendingCard key={item.id} item={item} />)}
+          pending.map((item) => <PendingCard key={item.id} item={item} />)}
       </ScrollView>
     </View>
   );
