@@ -17,10 +17,10 @@ const CARD_SHADOW = {
 type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
 
 const ACCOUNT_FIELDS = [
-  { id: 'name',     label: 'Full name',     value: 'Marc Andre Santos', icon: 'person-outline' as const },
-  { id: 'email',    label: 'Email',         value: 'marc@example.com',  icon: 'mail-outline' as const },
-  { id: 'phone',    label: 'Phone',         value: '+63 917 123 4567',  icon: 'call-outline' as const },
-  { id: 'location', label: 'Location',      value: 'Quezon City, PH',   icon: 'location-outline' as const },
+  { id: 'name',     label: 'Full name', value: '', icon: 'person-outline' as const },
+  { id: 'email',    label: 'Email',     value: '', icon: 'mail-outline' as const },
+  { id: 'phone',    label: 'Phone',     value: '', icon: 'call-outline' as const },
+  { id: 'location', label: 'Location',  value: '', icon: 'location-outline' as const },
 ];
 
 function SectionTitle({ title }: { title: string }) {
