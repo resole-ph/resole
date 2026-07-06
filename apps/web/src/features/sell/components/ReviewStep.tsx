@@ -45,8 +45,8 @@ export default function ReviewStep({
         Review your listing before it goes live.
       </p>
 
-      <div className="rounded-2xl bg-surface-container-lowest border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
-        <div className="grid grid-cols-2 gap-2 p-3">
+      <div className="rounded-2xl bg-surface-container-lowest border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)] md:grid md:grid-cols-2 md:gap-6">
+        <div className="grid grid-cols-2 gap-2 md:gap-3 p-3 md:p-5">
           {ANGLES.map((angle) => {
             const photo = photos[angle];
             return (
@@ -63,7 +63,7 @@ export default function ReviewStep({
           })}
         </div>
 
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 md:pl-0 md:pr-5 md:pt-5">
           <FieldRow label="Brand" value={form.brand} />
           <FieldRow label="Model" value={form.model} />
           <FieldRow label="Colorway" value={form.colorway} />
@@ -91,18 +91,18 @@ export default function ReviewStep({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 mt-6">
+      <div className="flex flex-col md:flex-row-reverse gap-3 mt-6">
         <button
           onClick={onPublish}
           disabled={isPublishing}
-          className="w-full py-3.5 rounded-full font-semibold text-[15px] text-white bg-primary disabled:bg-outline-variant disabled:text-on-surface-variant transition-colors"
+          className="w-full md:flex-1 py-3.5 rounded-full font-semibold text-[15px] text-white bg-primary disabled:bg-outline-variant disabled:text-on-surface-variant transition-colors"
         >
           {isPublishing ? 'Publishing...' : 'Publish Listing'}
         </button>
         <button
           onClick={onBack}
           disabled={isPublishing}
-          className="w-full py-3.5 rounded-full font-semibold text-[15px] text-on-surface-variant border border-outline-variant"
+          className="w-full md:flex-1 py-3.5 rounded-full font-semibold text-[15px] text-on-surface-variant border border-outline-variant"
         >
           Edit
         </button>

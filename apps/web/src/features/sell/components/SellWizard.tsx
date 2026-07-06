@@ -141,7 +141,7 @@ export default function SellWizard() {
   }
 
   return (
-    <div className="max-w-xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-10 md:px-10 md:py-12">
       {step === 'photos' && (
         <PhotoUploadStep
           photos={photos}

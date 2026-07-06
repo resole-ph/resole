@@ -34,7 +34,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function Card({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-4 mb-4 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+    <div className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-4 md:p-6 mb-4 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
       {children}
     </div>
   );
@@ -53,134 +53,150 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
     <div>
       <StepHeader title="Edit Listing" stepLabel="Step 3 of 4" onBack={onBack} />
 
-      <Card>
-        <CardLabel>Shoe Details</CardLabel>
-        <div className="flex flex-col gap-3">
-          <Field label="Brand">
-            <input className={inputClass} value={form.brand} onChange={(e) => onChange('brand', e.target.value)} />
-          </Field>
-          <Field label="Model">
-            <input className={inputClass} value={form.model} onChange={(e) => onChange('model', e.target.value)} />
-          </Field>
-          <Field label="Colorway *">
-            <input
-              className={inputClass}
-              value={form.colorway}
-              onChange={(e) => onChange('colorway', e.target.value)}
-              placeholder="e.g. Chicago"
-            />
-          </Field>
+      <div className="md:grid md:grid-cols-2 md:gap-6 md:items-start">
+        <div>
+          <Card>
+            <CardLabel>Shoe Details</CardLabel>
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Brand">
+                  <input
+                    className={inputClass}
+                    value={form.brand}
+                    onChange={(e) => onChange('brand', e.target.value)}
+                  />
+                </Field>
+                <Field label="Model">
+                  <input
+                    className={inputClass}
+                    value={form.model}
+                    onChange={(e) => onChange('model', e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Field label="Colorway *">
+                <input
+                  className={inputClass}
+                  value={form.colorway}
+                  onChange={(e) => onChange('colorway', e.target.value)}
+                  placeholder="e.g. Chicago"
+                />
+              </Field>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Size (US) *">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Size (US) *">
+                  <input
+                    className={inputClass}
+                    value={form.size}
+                    onChange={(e) => onChange('size', e.target.value)}
+                    placeholder="10"
+                    inputMode="decimal"
+                  />
+                </Field>
+                <Field label="Category">
+                  <select
+                    className={inputClass}
+                    value={form.category}
+                    onChange={(e) => onChange('category', e.target.value as ShoeCategory)}
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c} className="capitalize">
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex items-center justify-between mb-3">
+              <CardLabel>Condition</CardLabel>
+              <span className="bg-secondary-container/30 text-primary text-[12px] font-semibold rounded-full px-3 py-1">
+                {getConditionLabel(form.conditionScore)}
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
               <input
-                className={inputClass}
-                value={form.size}
-                onChange={(e) => onChange('size', e.target.value)}
-                placeholder="10"
-                inputMode="decimal"
+                type="range"
+                min={1}
+                max={10}
+                step={1}
+                value={form.conditionScore}
+                onChange={(e) => onChange('conditionScore', Number(e.target.value))}
+                className="flex-1 accent-primary"
               />
-            </Field>
-            <Field label="Category">
-              <select
-                className={inputClass}
-                value={form.category}
-                onChange={(e) => onChange('category', e.target.value as ShoeCategory)}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c} className="capitalize">
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-        </div>
-      </Card>
+              <span className="bg-secondary-container/30 text-primary text-[13px] font-semibold rounded-full px-3 py-1">
+                {form.conditionScore} / 10
+              </span>
+            </div>
 
-      <Card>
-        <div className="flex items-center justify-between mb-3">
-          <CardLabel>Condition</CardLabel>
-          <span className="bg-secondary-container/30 text-primary text-[12px] font-semibold rounded-full px-3 py-1">
-            {getConditionLabel(form.conditionScore)}
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <input
-            type="range"
-            min={1}
-            max={10}
-            step={1}
-            value={form.conditionScore}
-            onChange={(e) => onChange('conditionScore', Number(e.target.value))}
-            className="flex-1 accent-primary"
-          />
-          <span className="bg-secondary-container/30 text-primary text-[13px] font-semibold rounded-full px-3 py-1">
-            {form.conditionScore} / 10
-          </span>
+            <label className="flex items-center gap-2 mt-4">
+              <input
+                type="checkbox"
+                checked={form.isRefurbished}
+                onChange={(e) => onChange('isRefurbished', e.target.checked)}
+                className="w-4 h-4 accent-primary"
+              />
+              <span className="text-[13px] text-on-surface">This pair has been refurbished/restored</span>
+            </label>
+          </Card>
         </div>
 
-        <label className="flex items-center gap-2 mt-4">
-          <input
-            type="checkbox"
-            checked={form.isRefurbished}
-            onChange={(e) => onChange('isRefurbished', e.target.checked)}
-            className="w-4 h-4 accent-primary"
-          />
-          <span className="text-[13px] text-on-surface">This pair has been refurbished/restored</span>
-        </label>
-      </Card>
+        <div>
+          <Card>
+            <CardLabel>Asking Price</CardLabel>
+            <div className="flex items-center rounded-lg border border-outline-variant overflow-hidden">
+              <span className="px-3 py-2.5 border-r border-outline-variant text-on-surface-variant text-[14px]">
+                ₱
+              </span>
+              <input
+                className="flex-1 px-3 py-2.5 text-[14px] text-on-surface outline-none"
+                value={form.price}
+                onChange={(e) => onChange('price', e.target.value.replace(/[^0-9]/g, ''))}
+                inputMode="numeric"
+              />
+            </div>
+          </Card>
 
-      <Card>
-        <CardLabel>Asking Price</CardLabel>
-        <div className="flex items-center rounded-lg border border-outline-variant overflow-hidden">
-          <span className="px-3 py-2.5 border-r border-outline-variant text-on-surface-variant text-[14px]">
-            ₱
-          </span>
-          <input
-            className="flex-1 px-3 py-2.5 text-[14px] text-on-surface outline-none"
-            value={form.price}
-            onChange={(e) => onChange('price', e.target.value.replace(/[^0-9]/g, ''))}
-            inputMode="numeric"
-          />
+          <Card>
+            <CardLabel>Listing Type</CardLabel>
+            <div className="flex gap-3">
+              {LISTING_MODES.map((opt) => {
+                const checked = form.listingMode === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => onChange('listingMode', opt.value)}
+                    className={[
+                      'flex-1 rounded-xl border p-3 text-left transition-colors',
+                      checked ? 'border-primary bg-primary/5' : 'border-outline-variant',
+                    ].join(' ')}
+                  >
+                    <p className={`text-[13px] font-semibold ${checked ? 'text-primary' : 'text-on-surface'}`}>
+                      {opt.label}
+                    </p>
+                    <p className="text-[11px] text-on-surface-variant">{opt.hint}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+
+          <Card>
+            <CardLabel>Description</CardLabel>
+            <textarea
+              className={`${inputClass} w-full`}
+              rows={4}
+              value={form.description}
+              onChange={(e) => onChange('description', e.target.value)}
+              placeholder="Add any extra details about your shoes..."
+            />
+          </Card>
         </div>
-      </Card>
-
-      <Card>
-        <CardLabel>Listing Type</CardLabel>
-        <div className="flex gap-3">
-          {LISTING_MODES.map((opt) => {
-            const checked = form.listingMode === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => onChange('listingMode', opt.value)}
-                className={[
-                  'flex-1 rounded-xl border p-3 text-left transition-colors',
-                  checked ? 'border-primary bg-primary/5' : 'border-outline-variant',
-                ].join(' ')}
-              >
-                <p className={`text-[13px] font-semibold ${checked ? 'text-primary' : 'text-on-surface'}`}>
-                  {opt.label}
-                </p>
-                <p className="text-[11px] text-on-surface-variant">{opt.hint}</p>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      <Card>
-        <CardLabel>Description</CardLabel>
-        <textarea
-          className={`${inputClass} w-full`}
-          rows={4}
-          value={form.description}
-          onChange={(e) => onChange('description', e.target.value)}
-          placeholder="Add any extra details about your shoes..."
-        />
-      </Card>
+      </div>
 
       {!canContinue && (
         <p className="text-[12px] text-error mb-2 text-center">
@@ -191,7 +207,7 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
       <button
         onClick={onContinue}
         disabled={!canContinue}
-        className="w-full py-3.5 rounded-full font-semibold text-[15px] text-white bg-primary disabled:bg-outline-variant disabled:text-on-surface-variant transition-colors"
+        className="w-full md:w-auto md:min-w-64 md:mx-auto md:block py-3.5 rounded-full font-semibold text-[15px] text-white bg-primary disabled:bg-outline-variant disabled:text-on-surface-variant transition-colors"
       >
         Review Listing
       </button>
