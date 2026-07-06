@@ -62,7 +62,7 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
           <Field label="Model">
             <input className={inputClass} value={form.model} onChange={(e) => onChange('model', e.target.value)} />
           </Field>
-          <Field label="Colorway">
+          <Field label="Colorway *">
             <input
               className={inputClass}
               value={form.colorway}
@@ -72,7 +72,7 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Size (US)">
+            <Field label="Size (US) *">
               <input
                 className={inputClass}
                 value={form.size}
@@ -181,6 +181,12 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
           placeholder="Add any extra details about your shoes..."
         />
       </Card>
+
+      {!canContinue && (
+        <p className="text-[12px] text-error mb-2 text-center">
+          Fill in Brand, Model, Colorway, Size, and Price to continue.
+        </p>
+      )}
 
       <button
         onClick={onContinue}
