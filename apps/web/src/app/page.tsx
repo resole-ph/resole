@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from "react";
+import { useAuthGate } from "@/providers/AuthGateProvider";
 
 /* ---------------------------------------------------------
    Resole design tokens (from resole-web-design-details.txt)
@@ -174,6 +175,7 @@ function Badge({ children, color }) {
 
 function ListingCard({ listing }) {
   const [saved, setSaved] = useState(false);
+  const { requireAuth } = useAuthGate();
   return (
     <div
       style={{
@@ -210,7 +212,7 @@ function ListingCard({ listing }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setSaved((s) => !s);
+            requireAuth(() => setSaved((s) => !s), 'Log in to save listings to your favourites.');
           }}
           aria-label="Save listing"
           style={{
