@@ -1,6 +1,11 @@
 'use client';
 
 import { useState } from "react";
+// app/page.tsx
+'use client';
+
+import { useState } from "react";
+import { useAuthGate } from "@/providers/AuthGateProvider";
 
 /* ---------------------------------------------------------
    Resole design tokens (from resole-web-design-details.txt)
@@ -150,6 +155,7 @@ function StatCard({ label, value, color, icon }) {
   );
 }
 
+// Custom hook to fix Next.js hydration issues with local client sizing
 function Badge({ children, color }) {
   return (
     <span
@@ -173,6 +179,7 @@ function Badge({ children, color }) {
 function ListingCard({ listing }) {
   const [saved, setSaved] = useState(false);
 
+  const { requireAuth } = useAuthGate();
   return (
     <div
       style={{
@@ -210,6 +217,7 @@ function ListingCard({ listing }) {
           onClick={(e) => {
             e.stopPropagation();
             setSaved((s) => !s);
+            requireAuth(() => setSaved((s) => !s), 'Log in to save listings to your favourites.');
           }}
           aria-label="Save listing"
           style={{
@@ -311,10 +319,14 @@ export default function ResoleHome({ userName = "Miguel" }) {
             padding: "60px 60px",
             marginBottom: 32,
             minHeight: 360,
+            padding: "60px 60px", // Increased padding from 40px
+            marginBottom: 32,
+            minHeight: 360, // Increased minHeight from 260
             display: "flex",
             alignItems: "center",
           }}
         >
+          {/* Sized up text container layout */}
           <div style={{ position: "relative", zIndex: 2, maxWidth: 460 }}>
             <h2 style={{ color: "#fff", fontSize: 42, fontWeight: 800, lineHeight: 1.1, margin: "0 0 16px", letterSpacing: "-0.02em" }}>
               Know what your kicks are worth.
@@ -329,6 +341,7 @@ export default function ResoleHome({ userName = "Miguel" }) {
                 border: "none",
                 borderRadius: 9999,
                 padding: "14px 28px",
+                padding: "14px 28px", // Slightly bigger CTA button
                 fontSize: 15,
                 fontWeight: 700,
                 display: "inline-flex",
@@ -343,6 +356,7 @@ export default function ResoleHome({ userName = "Miguel" }) {
             </button>
           </div>
 
+          {/* Sized up sneaker to match container background bounds */}
           <img
             src="https://images.unsplash.com/photo-1600269452121-4f2416e55c28?q=80&w=900&auto=format&fit=crop"
             alt="Featured sneaker"
@@ -352,6 +366,8 @@ export default function ResoleHome({ userName = "Miguel" }) {
               bottom: -40,
               width: 560,
               height: 560,
+              width: 560, // Scaled up from 460
+              height: 560, // Scaled up from 460
               objectFit: "contain",
               transform: "rotate(-10deg)",
               filter: "drop-shadow(0 25px 35px rgba(0,0,0,0.4))",

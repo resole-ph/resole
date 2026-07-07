@@ -187,13 +187,14 @@ export default function EditListingContainer() {
           <SectionLabel>Listing Type</SectionLabel>
           <View className="gap-3">
             {(['sell', 'swap'] as const).map((type) => {
-              const checked = form.mode === type || form.mode === 'both';
+              const mode = form.mode;
+              const checked = mode === type || mode === 'both';
               const label = type === 'sell' ? 'Sell' : 'Swap';
               const subtitle = type === 'sell' ? 'List for a fixed price' : 'Trade for another pair';
               function toggle() {
                 const otherChecked = type === 'sell'
-                  ? (form.mode === 'swap' || form.mode === 'both')
-                  : (form.mode === 'sell' || form.mode === 'both');
+                  ? (mode === 'swap' || mode === 'both')
+                  : (mode === 'sell' || mode === 'both');
                 if (checked && !otherChecked) return;
                 if (checked) updateFormField('mode', type === 'sell' ? 'swap' : 'sell');
                 else updateFormField('mode', otherChecked ? 'both' : type);

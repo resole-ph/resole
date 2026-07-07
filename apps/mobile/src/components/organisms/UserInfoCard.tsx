@@ -1,26 +1,8 @@
+import { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-interface UserStat {
-  value: string;
-  label: string;
-}
-
-const DEFAULT_STATS: UserStat[] = [
-  { value: '14', label: 'LISTINGS' },
-  { value: '28', label: 'SOLD' },
-  { value: '6',  label: 'SWAPS' },
-];
-
-interface UserInfoCardProps {
-  name?: string;
-  initials?: string;
-  rating?: number;
-  reviewCount?: number;
-  location?: string;
-  joinYear?: number;
-  stats?: UserStat[];
-}
+import { UserStat, UserInfoCardProps, USERINFOCARDDUMMY } from '@/features/user/types/user.types';
+import { UserService } from '@/features/user/services/user.service';
 
 function StatBox({ value, label }: UserStat) {
   return (
@@ -33,15 +15,18 @@ function StatBox({ value, label }: UserStat) {
   );
 }
 
-export default function UserInfoCard({
-  name = 'Miguel R.',
-  initials = 'M',
-  rating = 4.9,
-  reviewCount = 32,
-  location = 'Quezon City',
-  joinYear = 2024,
-  stats = DEFAULT_STATS,
-}: UserInfoCardProps) {
+export default function UserInfoCard() {
+  const [userInfo, setUserInfo] = useState<UserInfoCardProps>(USERINFOCARDDUMMY);
+
+  useEffect(() => {
+    const loadData = async() => {
+      const data = await UserService.getUserInfoForCard();
+      setUserInfo(data);
+    }
+
+    loadData;
+  }, []);
+
   return (
     <View
       className="mx-5 mb-4 bg-white rounded-3xl p-5"
@@ -57,34 +42,34 @@ export default function UserInfoCard({
       <View className="flex-row items-center mb-5">
         {/* Avatar */}
         <View className="w-16 h-16 rounded-full bg-blue-700 items-center justify-center">
-          <Text className="text-white text-2xl font-bold">{initials}</Text>
+          <Text className="text-white text-2xl font-bold">{userInfo.initials}</Text>
         </View>
 
         {/* Details */}
         <View className="flex-1 ml-4">
           {/* Name */}
           <Text className="text-gray-900 font-semibold text-base mb-1">
-            {name}
+            {userInfo.name}
           </Text>
 
           {/* Rating */}
           <View className="flex-row items-center mb-1">
             <Ionicons name="star" size={13} color="#F59E0B" />
             <Text className="text-gray-700 text-sm ml-1">
-              {rating} · {reviewCount} reviews
+              {userInfo.rating} · {userInfo.reviewCount} reviews
             </Text>
           </View>
 
           {/* Location · join date */}
           <Text className="text-gray-400 text-xs">
-            {location} · Joined {joinYear}
+            {userInfo.location} · Joined {userInfo.joinYear}
           </Text>
         </View>
       </View>
 
       {/* ── Stats row ── */}
       <View className="flex-row gap-2">
-        {stats.map((stat) => (
+        {userInfo.stats.map((stat) => (
           <StatBox key={stat.label} {...stat} />
         ))}
       </View>

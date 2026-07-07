@@ -4,23 +4,32 @@ import { router } from 'expo-router';
 
 export interface Listing {
   id: string;
-  name: string;
+  model: string;
   brand: string;
   price: number;
   originalPrice?: number;
   condition: 'Like New' | 'Excellent' | 'Good' | 'Fair' | 'Poor';
-  imageUrl: string;
-  aiScore: number;
-  badgeType?: 'Swap' | 'Sale' | 'Hot' | 'Flash Deal';
+  imageUrl?: string;
+  imageUrlTop: string;
+  imageUrlSide: string;
+  imageUrlSole: string;
+  imageUrlInsole: string;
+  conditionScore: number;
+  listingMode?: 'Swap' | 'Sale' | 'Both' | 'Hot' | 'Flash Deal';
   description?: string;
   size?: string;
+  colorway?: string;
   sold?: string;
   freeShipping?: boolean;
   swapFor?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+  daysLeft?: number;
   seller: {
     name: string;
-    rating: number;
-    avatarUrl?: string;
+    rating?: number;
+    image?: string;
     totalSales?: number;               
     verified?: boolean;                
     avatarColor?: string;              
@@ -33,11 +42,12 @@ interface ListingCardProps {
 }
 
 const BADGE_STYLES: Record<
-  NonNullable<Exclude<Listing['badgeType'], 'Hot'>>,
+  NonNullable<Exclude<Listing['listingMode'], 'Hot'>>,
   { bg: string; text: string; icon: keyof typeof Ionicons.glyphMap }
 > = {
   Swap: { bg: '#2563EB', text: '#fff', icon: 'swap-horizontal' },
   Sale: { bg: '#10B981', text: '#fff', icon: 'pricetag' },
+  Both: { bg: '#8B5CF6', text: '#fff', icon: 'swap-horizontal' },
   'Flash Deal': { bg: '#F59E0B', text: '#fff', icon: 'flash' },
 };
 
@@ -51,7 +61,7 @@ const CONDITION_COLORS: Record<Listing['condition'], string> = {
 
 export default function ListingCard({ listing, onSave }: ListingCardProps) {
   // Only handle Swap and Sale on the browse card, fallback gracefully if Hot is passed
-  const badge = listing.badgeType && listing.badgeType !== 'Hot' ? BADGE_STYLES[listing.badgeType] : null;
+  const badge = listing.listingMode && listing.listingMode !== 'Hot' ? BADGE_STYLES[listing.listingMode] : null;
   const conditionColor = CONDITION_COLORS[listing.condition];
 
   const handlePress = () => {
@@ -91,7 +101,7 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
           >
             <Ionicons name={badge.icon} size={10} color={badge.text} />
             <Text style={{ color: badge.text }} className="text-xs font-semibold ml-1">
-              {listing.badgeType}
+              {listing.listingMode}
             </Text>
           </View>
         )}
@@ -135,10 +145,10 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
 
         {/* Name */}
         <Text className="text-gray-900 font-semibold text-sm leading-tight mb-2" numberOfLines={2}>
-          {listing.name}
+          {listing.model}
         </Text>
 
-        {listing.badgeType === 'Swap' ? (
+        {listing.listingMode === 'Swap' ? (
           /* ── Swap footer ── */
           <View className="pt-2 border-t border-gray-100">
             <Text className="text-gray-400 text-xs mb-1">Looking to swap for</Text>
@@ -187,7 +197,7 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
                   <>
                     <Ionicons name="star" size={10} color="#F59E0B" />
                     <Text className="text-gray-500 text-xs ml-0.5">
-                      {listing.seller.rating.toFixed(1)}
+                      {listing.seller.rating?.toFixed(1) || 0}
                     </Text>
                   </>
                 )}

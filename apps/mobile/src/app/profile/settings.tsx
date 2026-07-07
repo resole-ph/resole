@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { authService } from '@/features/auth/services/auth.service';
+import { UserService } from '@/features/user/services/user.service';
 import { useOnboardingStore } from '@/store/onboarding';
 
 const CARD_SHADOW = {
@@ -17,10 +18,10 @@ const CARD_SHADOW = {
 type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
 
 const ACCOUNT_FIELDS = [
-  { id: 'name',     label: 'Full name',     value: 'Marc Andre Santos', icon: 'person-outline' as const },
-  { id: 'email',    label: 'Email',         value: 'marc@example.com',  icon: 'mail-outline' as const },
-  { id: 'phone',    label: 'Phone',         value: '+63 917 123 4567',  icon: 'call-outline' as const },
-  { id: 'location', label: 'Location',      value: 'Quezon City, PH',   icon: 'location-outline' as const },
+  { id: 'name',     label: 'Full name',     value: '', icon: 'person-outline' as const },
+  { id: 'email',    label: 'Email',         value: '', icon: 'mail-outline' as const },
+  { id: 'phone',    label: 'Phone',         value: '', icon: 'call-outline' as const },
+  { id: 'location', label: 'Location',      value: '', icon: 'location-outline' as const },
 ];
 
 function SectionTitle({ title }: { title: string }) {
@@ -111,6 +112,22 @@ export default function SettingsScreen() {
     promos: false,
     recycleReminders: true,
   });
+  const [accountFields, setAccountFields] = useState<any[]>([]);
+
+  useEffect(() => {
+    const getAccountFields = async () => {
+      const data = await UserService.getUserInfoForSettings();
+
+      const displayFields = accountFields.map((field) => ({
+        ...field,
+        value: data ? data[field.id] : '', 
+      }));
+
+      setAccountFields(displayFields);
+    };
+
+    getAccountFields();
+  }, []);
 
   const toggle = (key: NotifKey) => (v: boolean) =>
     setNotifs((prev) => ({ ...prev, [key]: v }));
@@ -154,7 +171,7 @@ export default function SettingsScreen() {
         {/* Account */}
         <SectionTitle title="Account" />
         <View className="bg-white rounded-2xl mx-5" style={CARD_SHADOW}>
-          {ACCOUNT_FIELDS.map((f) => (
+          {accountFields.map((f) => (
             <AccountRow key={f.id} field={f} />
           ))}
           <TouchableOpacity

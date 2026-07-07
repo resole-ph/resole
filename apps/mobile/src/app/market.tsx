@@ -1,14 +1,35 @@
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
 import Header from '@/components/organisms/Header';
 import SearchBar from '@/components/organisms/SearchBar';
 import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import HeroBanner from '@/components/organisms/HeroBanner';
 import BottomNav from '@/components/organisms/BottomNav';
-import { MARKET_LISTINGS, SWAP_LISTINGS } from '@/data/MockListings';
+import { Listing } from '@/components/molecules/ListingCard';
+import { ListingService } from '@/features/listing/services/listing.service';
+
 export default function MarketScreen() {
   const router = useRouter();
+
+  const [saleListings, setSaleListings] = useState<Listing[]>([]);
+  const [swapListings, setSwapListings] = useState<Listing[]>([]);
+
+  useEffect(() => {
+    const fetchSaleListings = async () => {
+      const listings = await ListingService.getSaleListings();
+      setSaleListings(listings);
+    }
+
+    const fetchSwapListings = async () => {
+      const listings = await ListingService.getSwapListings();
+      setSwapListings(listings);
+    }
+
+    fetchSaleListings();
+    fetchSwapListings();
+  })
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -17,17 +38,17 @@ export default function MarketScreen() {
         <SearchBar />
         <CategoriesRow />
         <BrowseFeed
-          title="Flash Sale"
-          subtitle="Ends soon — grab your pair"
-          listings={MARKET_LISTINGS}
+          title="For Sale"
+          subtitle="Grab your pair at the best price"
+          listings={saleListings}
           showFlashSale
           showFilters
-          totalCount={126}
+          totalCount={saleListings.length}
         />
         <BrowseFeed
           title="Swap Board"
           subtitle="Trade kicks with the community"
-          listings={SWAP_LISTINGS}
+          listings={swapListings}
         />
         <HeroBanner
           tag="LIMITED OFFER"

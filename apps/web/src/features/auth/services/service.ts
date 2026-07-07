@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '@/config/db';
-import { and, eq, desc, count } from 'drizzle-orm';
-import { account, session, user, save, login } from '@/db/schema';
+import { and, eq, desc, count, isNull, or, sql } from 'drizzle-orm';
+import { account, session, user, save, login, rating, shoeListing, transaction } from '@/db/schema';
 import {
   createSessionToken,
   hashPassword,
@@ -93,12 +93,82 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   }
 }
 
+export async function getUserProfileById(userId: string) {
+  try {
+    const users = await db
+      .select()
+      .from(user)
+      .where(and(eq(user.id, userId), isNull(user.deletedAt)))
+      .limit(1);
+
+    const userRecord = users[0];
+    if (!userRecord) {
+      return null;
+    }
+
+    const ratingRows = await db
+      .select({
+        overallRating: sql<number>`coalesce(avg(${rating.rating}), 0)`,
+        reviewCount: count(rating.id),
+      })
+      .from(rating)
+      .where(and(eq(rating.rateeId, userId), isNull(rating.deletedAt)));
+
+    const ratingStats = ratingRows[0];
+
+    return {
+      id: userRecord.id,
+      name: userRecord.name,
+      email: userRecord.email,
+      emailVerified: userRecord.emailVerified,
+      image: userRecord.image,
+      address: userRecord.address,
+      city: userRecord.city,
+      location: userRecord.city || userRecord.address || null,
+      contactNo: userRecord.contactNo,
+      description: userRecord.description,
+      coins: userRecord.coins,
+      intent: userRecord.intent,
+      overallRating: Number(ratingStats?.overallRating ?? 0),
+      reviewCount: Number(ratingStats?.reviewCount ?? 0),
+      joinedAt: userRecord.createdAt,
+      joinedYear: userRecord.createdAt.getFullYear(),
+      updatedAt: userRecord.updatedAt,
+    };
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    return null;
+  }
+}
+
 export async function getUserStatsById(userId: string) {
   try {
     const saved = await db
       .select({ value: count(save.userId) })
       .from(save)
       .where(eq(save.userId, userId));
+
+    const listings = await db
+      .select({ value: count(shoeListing.id) })
+      .from(shoeListing)
+      .where(and(eq(shoeListing.userId, userId), isNull(shoeListing.deletedAt)));
+
+    const sales = await db
+      .select({ value: count(transaction.id) })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .where(and(eq(shoeListing.userId, userId), eq(transaction.type, 'sale')));
+
+    const swaps = await db
+      .select({ value: count(transaction.id) })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .where(
+        and(
+          eq(transaction.type, 'swap'),
+          or(eq(shoeListing.userId, userId), eq(transaction.recipientId, userId)),
+        ),
+      );
 
     const coins = await db
       .select({ value: user.coins })
@@ -116,7 +186,10 @@ export async function getUserStatsById(userId: string) {
     return {
       pairsSaved: saved[0].value,
       coinBalance: coins[0].value,
-      loginStreak: loginStreak
+      loginStreak: loginStreak,
+      listingCount: listings[0].value,
+      salesCount: sales[0].value,
+      swapsCount: swaps[0].value,
     };
   } catch (error) {
     console.error('Error fetching user by ID:', error);

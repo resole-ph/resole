@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   TextInput, Image, KeyboardAvoidingView, Platform,
@@ -6,7 +6,9 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MY_LISTINGS } from '@/data/MockListings';
+import { Listing } from '@/components/molecules/ListingCard';
+import { ListingService } from '@/features/listing/services/listing.service';
+import { OfferService } from '@/features/offer/services/offer.service';
 
 const CONDITION_COLORS: Record<string, string> = {
   'Like New':  '#10B981',
@@ -26,16 +28,35 @@ export default function SwapOfferScreen() {
       listingImage: string;
     }>();
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [userListings, setUserListings] = useState<Listing[]>();
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [cashTopUp, setCashTopUp]   = useState('');
   const [notes, setNotes]           = useState('');
   const [sent, setSent]             = useState(false);
+  const [isValid, setIsValid]       = useState<boolean>(false);
 
-  const selectedListing = MY_LISTINGS.find((l) => l.id === selectedId);
-  const isValid = !!selectedId;
+  useEffect(() => {
+    const fetchListing = async () => {
+      const listing = await ListingService.getListingById(Number(listingId));
+      setSelectedListing(listing);
+      setIsValid(!!listing);
+    };
+    
+    const fetchUserListings = async () => {
+      const data = await ListingService.getUserListings() || [];
+      setUserListings(data)
+    };
 
-  function handleSubmit() {
-    if (!isValid) return;
+    fetchListing();
+    fetchUserListings();
+  }, [listingId]);
+
+  async function handleSubmit() {
+    if (!isValid || !selectedId) return;
+
+    await OfferService.createSwap(Number(listingId), [selectedId], notes);
+
     setSent(true);
     setTimeout(() => {
       setSent(false);
@@ -108,7 +129,7 @@ export default function SwapOfferScreen() {
             Only AI-evaluated listings can be used in a swap.
           </Text>
 
-          {MY_LISTINGS.length === 0 ? (
+          {userListings?.length === 0 ? (
             <View className="bg-white rounded-2xl p-6 items-center" style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#E5E7EB' }}>
               <Ionicons name="cube-outline" size={32} color="#9CA3AF" />
               <Text className="text-gray-500 font-semibold mt-3 text-center">No listings yet</Text>
@@ -125,13 +146,13 @@ export default function SwapOfferScreen() {
             </View>
           ) : (
             <View className="gap-3">
-              {MY_LISTINGS.map((item) => {
-                const selected = selectedId === item.id;
+              {userListings?.map((item) => {
+                const selected = selectedId === Number(item.id);
                 const condColor = CONDITION_COLORS[item.condition] ?? '#9CA3AF';
                 return (
                   <TouchableOpacity
                     key={item.id}
-                    onPress={() => setSelectedId(selected ? null : item.id)}
+                    onPress={() => setSelectedId(selected ? null : Number(item.id))}
                     activeOpacity={0.8}
                     style={{
                       flexDirection: 'row',
@@ -158,7 +179,7 @@ export default function SwapOfferScreen() {
                     {/* Info */}
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 1 }}>{item.brand}</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }} numberOfLines={1}>{item.name}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }} numberOfLines={1}>{item.model}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 8 }}>
                         {/* Condition badge */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: condColor + '18', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
@@ -168,7 +189,7 @@ export default function SwapOfferScreen() {
                         {/* AI score */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
                           <Ionicons name="sparkles" size={9} color="#D97706" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#D97706', marginLeft: 3 }}>AI {item.aiScore}%</Text>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#D97706', marginLeft: 3 }}>AI {item.conditionScore}%</Text>
                         </View>
                         {item.size && <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{item.size}</Text>}
                       </View>
@@ -239,7 +260,7 @@ export default function SwapOfferScreen() {
           <View className="flex-row items-center bg-violet-50 rounded-2xl px-4 py-3 mb-3 border border-violet-200">
             <Ionicons name="swap-horizontal" size={16} color="#7C3AED" />
             <Text className="text-violet-700 text-sm font-medium ml-2 flex-1" numberOfLines={1}>
-              Offering: {selectedListing.name}
+              Offering: {selectedListing.model}
             </Text>
             {cashTopUp ? (
               <Text className="text-violet-600 text-xs font-semibold">+₱{parseInt(cashTopUp).toLocaleString()}</Text>

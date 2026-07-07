@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq, and, or, sql, desc, getTableColumns } from 'drizzle-orm';
+import { eq, and, or, sql, desc, getTableColumns, gt, gte } from 'drizzle-orm';
 import { 
   transaction,  
   sale,
@@ -9,6 +9,7 @@ import {
   swapItem,
   charity,
   voucher, 
+  voucherRedeem,
   user,
   shoeListing,
   trackingEvent,
@@ -19,6 +20,15 @@ import {
   Voucher 
 } from '@/features/transaction/types/types';
 import { ShoeListing } from '@/features/shoe/types/types';
+
+function getVoucherCoinCost(voucherAmount: string | null): number | null {
+  if (!voucherAmount) {
+    return null;
+  }
+
+  const coinCost = Number.parseInt(voucherAmount, 10);
+  return Number.isFinite(coinCost) && coinCost > 0 ? coinCost : null;
+}
 
 export async function getTransactionDetails(transaction: any) {
   if (!transaction.id || !transaction.type) return;
@@ -79,7 +89,7 @@ export async function createSale(transactionId: number, price: number) {
   }
 }
 
-export async function createSwap(transactionId: number, listings: ShoeListing[]) {
+export async function createSwap(transactionId: number, listings: number[]) {
   try {
     const result = await db
       .insert(swap)
@@ -93,7 +103,7 @@ export async function createSwap(transactionId: number, listings: ShoeListing[])
         .insert(swapItem)
         .values({
           swapId: result[0].id,
-          itemId: listing.id
+          itemId: listing
         })
     }
 
@@ -546,6 +556,433 @@ export async function donateShoeListing(userId: string, listingId: number, chari
     return {
       transaction: transactionRecord,
       donation: donationRecord
+    };
+  });
+}
+
+type DonationPickupInput = {
+  listingId: number;
+  charityId: number;
+  pickupAddress: string;
+  pickupDate: Date;
+  contactNo?: string;
+  notes?: string;
+};
+
+export async function scheduleDonationPickup(userId: string, data: DonationPickupInput) {
+  return db.transaction(async (tx) => {
+    const listings = await tx
+      .select()
+      .from(shoeListing)
+      .where(and(eq(shoeListing.id, data.listingId), eq(shoeListing.userId, userId)))
+      .limit(1);
+
+    const listing = listings[0];
+    if (!listing) {
+      throw new Error('Shoe listing not found');
+    }
+
+    if (listing.deletedAt) {
+      throw new Error('Shoe listing is deleted');
+    }
+
+    if (!listing.isAvailable) {
+      throw new Error('Shoe listing is not eligible for donation pickup');
+    }
+
+    const charities = await tx
+      .select({ id: charity.id })
+      .from(charity)
+      .where(and(eq(charity.id, data.charityId), sql`${charity.deletedAt} IS NULL`))
+      .limit(1);
+
+    if (!charities[0]) {
+      throw new Error('Charity not found');
+    }
+
+    const [transactionRecord] = await tx
+      .insert(transaction)
+      .values({
+        listingId: data.listingId,
+        type: 'donate',
+        isCompleted: false,
+      })
+      .returning();
+
+    const [donationRecord] = await tx
+      .insert(donation)
+      .values({
+        transactionId: transactionRecord.id,
+        charityId: data.charityId,
+      })
+      .returning();
+
+    const [pickupEvent] = await tx
+      .insert(trackingEvent)
+      .values({
+        transactionId: transactionRecord.id,
+        status: 'pickup_scheduled',
+        message: JSON.stringify({
+          pickupAddress: data.pickupAddress,
+          pickupDate: data.pickupDate.toISOString(),
+          contactNo: data.contactNo ?? null,
+          notes: data.notes ?? null,
+        }),
+      })
+      .returning();
+
+    await tx
+      .update(shoeListing)
+      .set({
+        isAvailable: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(shoeListing.id, data.listingId));
+
+    return {
+      transaction: transactionRecord,
+      donation: donationRecord,
+      pickup: pickupEvent,
+    };
+  });
+}
+
+export async function getWalletByUserId(userId: string) {
+  try {
+    const userRows = await db
+      .select({
+        id: user.id,
+        coins: user.coins,
+      })
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1);
+
+    const currentUser = userRows[0];
+    if (!currentUser) {
+      return null;
+    }
+
+    const userVouchers = await db
+      .select({
+        id: voucherRedeem.id,
+        redeemedAt: voucherRedeem.redeemedAt,
+        voucher: {
+          id: voucher.id,
+          name: voucher.name,
+          description: voucher.description,
+          amount: voucher.amount,
+          voucherType: voucher.voucherType,
+          expiresAt: voucher.expiresAt,
+        },
+      })
+      .from(voucherRedeem)
+      .innerJoin(voucher, eq(voucherRedeem.voucherId, voucher.id))
+      .where(eq(voucherRedeem.userId, userId))
+      .orderBy(desc(voucherRedeem.redeemedAt));
+
+    const earnedRows = await db
+      .select({
+        value: sql<number>`coalesce(sum(${transaction.coinsEarned}), 0)`,
+      })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .where(
+        and(
+          or(eq(transaction.recipientId, userId), eq(shoeListing.userId, userId)),
+          gt(transaction.coinsEarned, 0),
+        ),
+      );
+
+    const saleRedeemedRows = await db
+      .select({
+        value: sql<number>`coalesce(sum(${redemption.coinsRedeemed}), 0)`,
+      })
+      .from(redemption)
+      .innerJoin(sale, eq(redemption.saleId, sale.id))
+      .innerJoin(transaction, eq(sale.transactionId, transaction.id))
+      .where(eq(transaction.recipientId, userId));
+
+    const voucherCoinsRedeemed = userVouchers.reduce((total, userVoucher) => {
+      return total + (getVoucherCoinCost(userVoucher.voucher.amount) ?? 0);
+    }, 0);
+
+    return {
+      coinBalance: currentUser.coins,
+      vouchers: userVouchers.map((userVoucher) => ({
+        ...userVoucher,
+        voucher: {
+          ...userVoucher.voucher,
+          coinCost: getVoucherCoinCost(userVoucher.voucher.amount),
+        },
+      })),
+      summary: {
+        totalCoinsEarned: Number(earnedRows[0]?.value ?? 0),
+        totalCoinsRedeemed: Number(saleRedeemedRows[0]?.value ?? 0) + voucherCoinsRedeemed,
+        voucherCount: userVouchers.length,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching wallet.", error);
+    return null;
+  }
+}
+
+export async function getWalletTransactionsByUserId(userId: string) {
+  try {
+    const earnedTransactions = await db
+      .select({
+        id: transaction.id,
+        type: transaction.type,
+        coinsEarned: transaction.coinsEarned,
+        createdAt: transaction.createdAt,
+        listing: {
+          id: shoeListing.id,
+          colorway: shoeListing.colorway,
+          value: shoeListing.value,
+          userId: shoeListing.userId,
+        },
+      })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .where(
+        and(
+          or(eq(transaction.recipientId, userId), eq(shoeListing.userId, userId)),
+          gt(transaction.coinsEarned, 0),
+        ),
+      );
+
+    const saleRedemptions = await db
+      .select({
+        id: redemption.id,
+        saleId: redemption.saleId,
+        coinsRedeemed: redemption.coinsRedeemed,
+        createdAt: redemption.createdAt,
+        sale: {
+          id: sale.id,
+          price: sale.price,
+          transactionId: sale.transactionId,
+        },
+        listing: {
+          id: shoeListing.id,
+          colorway: shoeListing.colorway,
+          value: shoeListing.value,
+          userId: shoeListing.userId,
+        },
+      })
+      .from(redemption)
+      .innerJoin(sale, eq(redemption.saleId, sale.id))
+      .innerJoin(transaction, eq(sale.transactionId, transaction.id))
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .where(eq(transaction.recipientId, userId));
+
+    const voucherRedemptions = await db
+      .select({
+        id: voucherRedeem.id,
+        redeemedAt: voucherRedeem.redeemedAt,
+        voucher: {
+          id: voucher.id,
+          name: voucher.name,
+          description: voucher.description,
+          amount: voucher.amount,
+          voucherType: voucher.voucherType,
+          expiresAt: voucher.expiresAt,
+        },
+      })
+      .from(voucherRedeem)
+      .innerJoin(voucher, eq(voucherRedeem.voucherId, voucher.id))
+      .where(eq(voucherRedeem.userId, userId));
+
+    const rows = [
+      ...earnedTransactions.map((item) => ({
+        id: `transaction-${item.id}`,
+        sourceId: item.id,
+        kind: 'earn' as const,
+        type: item.type,
+        amount: item.coinsEarned ?? 0,
+        createdAt: item.createdAt,
+        listing: item.listing,
+      })),
+      ...saleRedemptions.map((item) => ({
+        id: `redemption-${item.id}`,
+        sourceId: item.id,
+        kind: 'spend' as const,
+        type: 'sale_redemption' as const,
+        amount: -item.coinsRedeemed,
+        createdAt: item.createdAt,
+        redemption: {
+          id: item.id,
+          saleId: item.saleId,
+          coinsRedeemed: item.coinsRedeemed,
+          createdAt: item.createdAt,
+        },
+        sale: item.sale,
+        listing: item.listing,
+      })),
+      ...voucherRedemptions
+        .map((item) => ({
+          id: `voucher-redeem-${item.id}`,
+          sourceId: item.id,
+          kind: 'spend' as const,
+          type: 'voucher_redemption' as const,
+          amount: -(getVoucherCoinCost(item.voucher.amount) ?? 0),
+          createdAt: item.redeemedAt,
+          voucher: {
+            ...item.voucher,
+            coinCost: getVoucherCoinCost(item.voucher.amount),
+          },
+        }))
+        .filter((item) => item.amount < 0),
+    ];
+
+    return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  } catch (error) {
+    console.error("Error fetching wallet transactions.", error);
+    return null;
+  }
+}
+
+export async function getActiveRedeemOptions() {
+  try {
+    const rows = await db
+      .select({
+        id: voucher.id,
+        name: voucher.name,
+        description: voucher.description,
+        amount: voucher.amount,
+        voucherType: voucher.voucherType,
+        expiresAt: voucher.expiresAt,
+      })
+      .from(voucher)
+      .where(gt(voucher.expiresAt, new Date()))
+      .orderBy(desc(voucher.createdAt));
+
+    return rows.map((row) => ({
+      ...row,
+      type: 'voucher' as const,
+      coinCost: getVoucherCoinCost(row.amount),
+      isAvailable: row.expiresAt > new Date(),
+    }));
+  } catch (error) {
+    console.error("Error fetching redeem options.", error);
+    return null;
+  }
+}
+
+export async function redeemSaleCoins(userId: string, saleId: number, coinsRedeemed: number) {
+  if (coinsRedeemed <= 0) {
+    throw new Error('Coins redeemed must be a positive number');
+  }
+
+  return db.transaction(async (tx) => {
+    const saleRows = await tx
+      .select({
+        sale: getTableColumns(sale),
+        transaction: getTableColumns(transaction),
+      })
+      .from(sale)
+      .innerJoin(transaction, eq(sale.transactionId, transaction.id))
+      .where(eq(sale.id, saleId))
+      .limit(1);
+
+    const saleRecord = saleRows[0];
+    if (!saleRecord) {
+      throw new Error('Redeem option not found');
+    }
+
+    if (saleRecord.transaction.recipientId !== userId) {
+      throw new Error('Forbidden');
+    }
+
+    const [updatedUser] = await tx
+      .update(user)
+      .set({
+        coins: sql`${user.coins} - ${coinsRedeemed}`,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(user.id, userId), gte(user.coins, coinsRedeemed)))
+      .returning({ coinBalance: user.coins });
+
+    if (!updatedUser) {
+      throw new Error('Insufficient coin balance');
+    }
+
+    const [redemptionRecord] = await tx
+      .insert(redemption)
+      .values({
+        saleId,
+        coinsRedeemed,
+      })
+      .returning();
+
+    return {
+      redemption: redemptionRecord,
+      coinBalance: updatedUser.coinBalance,
+    };
+  });
+}
+
+export async function redeemVoucher(userId: string, voucherId: number) {
+  return db.transaction(async (tx) => {
+    const voucherRows = await tx
+      .select()
+      .from(voucher)
+      .where(and(eq(voucher.id, voucherId), gt(voucher.expiresAt, new Date())))
+      .limit(1);
+
+    const voucherRecord = voucherRows[0];
+    if (!voucherRecord) {
+      throw new Error('Redeem option not found');
+    }
+
+    const coinCost = getVoucherCoinCost(voucherRecord.amount);
+    if (!coinCost) {
+      throw new Error('Redeem option does not have a coin cost');
+    }
+
+    const existingRedemptions = await tx
+      .select({ id: voucherRedeem.id })
+      .from(voucherRedeem)
+      .where(and(eq(voucherRedeem.userId, userId), eq(voucherRedeem.voucherId, voucherId)))
+      .limit(1);
+
+    if (existingRedemptions[0]) {
+      throw new Error('Voucher already redeemed');
+    }
+
+    const [updatedUser] = await tx
+      .update(user)
+      .set({
+        coins: sql`${user.coins} - ${coinCost}`,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(user.id, userId), gte(user.coins, coinCost)))
+      .returning({ coinBalance: user.coins });
+
+    if (!updatedUser) {
+      throw new Error('Insufficient coin balance');
+    }
+
+    const [voucherRedemption] = await tx
+      .insert(voucherRedeem)
+      .values({
+        voucherId,
+        userId,
+      })
+      .returning();
+
+    return {
+      redemption: voucherRedemption,
+      voucher: {
+        id: voucherRecord.id,
+        name: voucherRecord.name,
+        description: voucherRecord.description,
+        amount: voucherRecord.amount,
+        voucherType: voucherRecord.voucherType,
+        expiresAt: voucherRecord.expiresAt,
+        coinCost,
+      },
+      coinBalance: updatedUser.coinBalance,
     };
   });
 }

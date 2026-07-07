@@ -1,15 +1,8 @@
 import { useSellStore } from '@/store/sell';
-import type { ListingFormData, SellStep } from '../types/sell.types';
+import type { SellStep } from '../types/sell.types';
+import { ratingToLabel } from '../utils/condition';
 
 const PHOTO_ANGLES = ['top', 'side', 'soles', 'insoles'] as const;
-
-function ratingToLabel(rating: number): ListingFormData['conditionLabel'] {
-  if (rating >= 9.0) return 'Like New';
-  if (rating >= 8.0) return 'Excellent';
-  if (rating >= 6.5) return 'Good';
-  if (rating >= 4.0) return 'Fair';
-  return 'Poor';
-}
 
 function clamp(val: number, min: number, max: number) {
   return Math.max(min, Math.min(max, val));

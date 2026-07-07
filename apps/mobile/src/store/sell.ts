@@ -14,7 +14,7 @@ interface SellState {
   isAnalyzing: boolean;
   analysisError: string | null;
   aiResult: AiAnalysisResult | null;
-  aiAnalysisId: string | null;
+  aiAnalysisId: number | null;
   form: ListingFormData | null;
   publishedListing: PublishListingResult | null;
 
@@ -23,7 +23,7 @@ interface SellState {
   clearPhoto: (angle: PhotoAngle) => void;
   setIsAnalyzing: (v: boolean) => void;
   setAnalysisError: (err: string | null) => void;
-  setAiResult: (result: AiAnalysisResult, id: string) => void;
+  setAiResult: (result: AiAnalysisResult, id: number) => void;
   setForm: (form: ListingFormData) => void;
   updateFormField: <K extends keyof ListingFormData>(key: K, value: ListingFormData[K]) => void;
   setPublishedListing: (result: PublishListingResult) => void;

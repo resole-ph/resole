@@ -1,34 +1,50 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull } from 'drizzle-orm';
-import { shoe, shoePrice, shoeListing, user } from '@/db/schema';
-import { 
-  Shoe, 
-  CreateShoe, 
+import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count } from 'drizzle-orm';
+import { shoe, shoePrice, shoeListing, user, shoeAnalysis } from '@/db/schema';
+import {
+  Shoe,
+  CreateShoe,
   UpdateShoe,
   ShoePrice,
   CreateShoePrice,
   UpdateShoePrice,
   ShoeListing,
   CreateShoeListing,
-  UpdateShoeListing 
+  UpdateShoeListing,
+  ShoeAnalysis,
+  ShoeAnalysisResult
 } from '@/features/shoe/types/types';
 import { GoogleGenAI } from "@google/genai";
 import { detectIfShoe } from '@/features/shoe/services/detector';
+
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemiwni-embedding-2";
+const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1536", 10);
+const BASELINE_MATCH_THRESHOLD = parseFloat(process.env.BASELINE_MATCH_THRESHOLD || "0.75");
 
 export async function generateEmbedding(context: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
 
   const response = await ai.models.embedContent({
-    model: 'gemini-embedding-2',
+    model: EMBEDDING_MODEL,
     contents: context,
+    config: { outputDimensionality: EMBEDDING_DIMENSIONS },
   });
 
-  return response.embeddings as number[];
+  const values = response.embeddings?.[0]?.values;
+  if (!values) {
+    throw new Error('Failed to generate embedding');
+  }
+
+  return values as number[];
 }
 
 export async function createShoe(data: CreateShoe) {
   try {
+    if (data.embedding.length === 0) {
+      data.embedding = await generateEmbedding(data.model);
+    }
+
     const result = await db
       .insert(shoe)
       .values(data)
@@ -69,6 +85,28 @@ export async function createShoeListing(data: CreateShoeListing) {
   }
 }
 
+export async function createShoeAnalysis(data: ShoeAnalysisResult) {
+  try {
+    const result = await db.insert(shoeAnalysis).values({
+      brand: data.brand,
+      model: data.model,
+      colorway: data.colorway,
+      size: data.size,
+      year: data.year,
+      conditionScore: data.conditionScore,
+      description: data.description,
+      estimatedPrice: data.estimatedPrice.toString(), 
+      defects: data.defects, 
+      pricing: data.pricing, 
+  }).returning();
+
+  return result[0];
+  } catch (error) {
+    console.error("Error creating shoe analysis.", error);
+    return null;
+  }
+}
+
 export async function getAllShoe() {
   try {
     const rows = await db
@@ -103,7 +141,7 @@ export async function getAllShoeListing() {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
@@ -121,11 +159,41 @@ export async function getAllShoeListing() {
   }
 }
 
+export async function getShoeAnalysisById(id: number) {
+  try {
+    const result = await db
+      .select()
+      .from(shoeAnalysis)
+      .where(eq(shoeAnalysis.id, id))
+
+    return result[0] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe prices.", error);
+    return null;
+  }
+}
+
+export async function getShoeByModelName(name: string) {
+  try {
+    const result = await db
+      .select()
+      .from(shoe)
+      .where(eq(shoe.model, name));
+    
+    return result[0] as Shoe ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe.", error);
+    return null;
+  }
+}
+
 export async function getShoeListingsByUserId(userId: string) {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        model: shoe.model,
+        brand: shoe.brand,
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
@@ -135,9 +203,35 @@ export async function getShoeListingsByUserId(userId: string) {
       .where(and(eq(shoeListing.userId, userId), isNull(shoeListing.deletedAt)))
       .orderBy(desc(shoeListing.updatedAt));
 
-    return rows as ShoeListing[] ?? null;
+    return rows ?? null;
   } catch (error) {
     console.error("Error fetching user shoe listings.", error);
+    return null;
+  }
+}
+
+export async function getShoeListingSummaryByUserId(userId: string) {
+  try {
+    const rows = await db
+      .select({
+        total: count(shoeListing.id),
+        active: sql<number>`count(*) filter (where ${shoeListing.isAvailable} = true and ${shoeListing.deletedAt} is null)`,
+        unavailable: sql<number>`count(*) filter (where ${shoeListing.isAvailable} = false and ${shoeListing.deletedAt} is null)`,
+        deleted: sql<number>`count(*) filter (where ${shoeListing.deletedAt} is not null)`,
+      })
+      .from(shoeListing)
+      .where(eq(shoeListing.userId, userId));
+
+    const summary = rows[0];
+
+    return {
+      total: Number(summary?.total ?? 0),
+      active: Number(summary?.active ?? 0),
+      unavailable: Number(summary?.unavailable ?? 0),
+      deleted: Number(summary?.deleted ?? 0),
+    };
+  } catch (error) {
+    console.error("Error fetching user shoe listing summary.", error);
     return null;
   }
 }
@@ -155,18 +249,31 @@ export async function getShoeCategories() {
   }
 }
 
+export async function getShoeBrands() {
+  try {
+    const rows = await db
+      .selectDistinct({ categories: shoe.brand })
+      .from(shoe);
+    
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe brands.", error);
+    return null;
+  }
+}
+
 export async function getAllShoeListingForSale() {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(or(eq(shoeListing.listingMode, 'sale'), eq(shoeListing.listingMode, 'both')));
+      .where(or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')));
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
@@ -179,14 +286,14 @@ export async function getAllShoeListingForSwap() {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(or(eq(shoeListing.listingMode, 'swap'), eq(shoeListing.listingMode, 'both')));
+      .where(or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')));
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
@@ -216,6 +323,28 @@ export async function getShoeBySearch(query: string) {
     return searchResults as Shoe[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe search results.", error);
+    return null;
+  }
+}
+
+export async function getShoeListingsBySearch(query: string) {
+  try {
+    const shoes = await getShoeBySearch(query) || [];
+    const shoeNames = shoes.map(item => item.model);
+    const listingResults: ShoeListing[] = [];
+
+    for (const shoeName of shoeNames) {
+      const fetchedListings = await getShoeListingByModelName(shoeName) || [];
+      listingResults.push(...fetchedListings);
+      if (listingResults.length >= 20) {
+        listingResults.length = 20;
+        break;
+      }
+    }
+
+    return listingResults as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe listing search results.", error);
     return null;
   }
 }
@@ -256,7 +385,7 @@ export async function getShoeListingById(id: number) {
   try {
     const rows = await db
       .select({
-        user: getTableColumns(user),
+        seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
       })
@@ -267,7 +396,27 @@ export async function getShoeListingById(id: number) {
     
     return rows[0] as ShoeListing ?? null;
   } catch (error) {
-    console.error("Error fetching shoe listings.", error);
+    console.error("Error fetching shoe listing.", error);
+    return null;
+  }
+}
+
+export async function getShoeListingByModelName(model: string) {
+  try {
+    const rows = await db
+      .select({
+        seller: getTableColumns(user),
+        shoe: getTableColumns(shoe),
+        ...getTableColumns(shoeListing)
+      })
+      .from(shoeListing)
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(eq(shoe.model, model));
+    
+    return rows as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe listing.", error);
     return null;
   }
 }
@@ -292,8 +441,8 @@ export async function updateShoePrice(data: UpdateShoePrice, id: number) {
     const result = await db 
       .update(shoePrice)
       .set(data)
-      .where(eq(shoe.id, id))
-      .returning({ id: shoe.id });
+      .where(eq(shoePrice.shoeId, id))
+      .returning({ id: shoePrice.shoeId });
 
     return getShoePriceByShoeId(result[0].id);
   } catch (error) {
@@ -362,7 +511,7 @@ export async function deleteUserShoeListing(userId: string, id: number) {
   }
 }
 
-export async function analyzeShoePhotos(photoUrls: { top: string; side: string; sole: string; insole: string }) {
+export async function analyzeShoePhotos(photoUrls: { top: string; side: string; sole: string; insole: string }): Promise<ShoeAnalysis> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     throw new Error('Google API key is not configured');
@@ -402,7 +551,18 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const prompt = 'Analyze these four photos of a shoe representing its top, side, sole, and insole. Accurately identify the brand, model, provide a description outlining its wear, condition, and visible defects, estimate a condition score from 1 to 10 (where 10 is brand new), and suggest a fair resale pricing value in PHP (Philippine Peso) based on its current condition.';
+  const prompt = [
+    'Analyze these four photos of a shoe representing its top, side, sole, and insole.',
+    'Accurately identify:',
+    '- brand and model',
+    '- colorway (the common name for the color scheme, e.g. "Chicago", "Bred", or a plain description)',
+    '- size: the US size, read from any label on the insole or tongue, as a plain number string (e.g. "10" or "10.5"). If unreadable, give your best visual estimate.',
+    '- year: the approximate release or production year as a number.',
+    '- conditionScore: a condition score from 0 to 10 (10 = brand new, unworn).',
+    '- description: a short paragraph outlining wear, condition, and visible defects.',
+    '- defects: an array of short strings, one per distinct visible defect (empty array if none).',
+    '- estimatedPrice: the typical BRAND-NEW / retail market price in PHP (Philippine Peso) for this model, NOT adjusted for condition.',
+  ].join('\n');
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
@@ -414,11 +574,15 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
         properties: {
           brand: { type: 'STRING' },
           model: { type: 'STRING' },
+          colorway: { type: 'STRING' },
+          size: { type: 'STRING' },
+          year: { type: 'NUMBER' },
           conditionScore: { type: 'NUMBER' },
           description: { type: 'STRING' },
+          defects: { type: 'ARRAY', items: { type: 'STRING' } },
           estimatedPrice: { type: 'NUMBER' },
         },
-        required: ['brand', 'model', 'conditionScore', 'description', 'estimatedPrice'],
+        required: ['brand', 'model', 'colorway', 'size', 'year', 'conditionScore', 'description', 'defects', 'estimatedPrice'],
       },
     },
   });
@@ -428,7 +592,83 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
     throw new Error('Failed to generate content from AI model');
   }
 
-  return JSON.parse(resultText);
+  return JSON.parse(resultText) as ShoeAnalysis;
+}
+
+/**
+ * Pricing engine: find the closest catalog shoe to `${brand} ${model}` via pgvector
+ * cosine similarity and return its baseline market price from shoe_price. Returns
+ * null fields when there is no confident match (e.g. an empty/sparse catalog).
+ */
+export async function getBaselinePriceByShoe(brand: string, model: string) {
+  try {
+    const embedding = await generateEmbedding(`${brand} ${model}`);
+
+    // cosine distance is `<=>`; similarity = 1 - distance.
+    const similarity = sql<number>`1 - (${cosineDistance(shoe.embedding, embedding)})`;
+
+    const rows = await db
+      .select({
+        shoeId: shoe.id,
+        price: shoePrice.price,
+        similarity,
+      })
+      .from(shoe)
+      .innerJoin(shoePrice, eq(shoePrice.shoeId, shoe.id))
+      // gemini-embedding-001 keeps even unrelated short phrases in the ~0.6 range,
+      // so require a high similarity to accept a catalog match; below this we fall
+      // back to the AI's own price estimate.
+      .where(gt(similarity, BASELINE_MATCH_THRESHOLD))
+      .orderBy(desc(similarity))
+      .limit(1);
+
+    const top = rows[0];
+    if (!top) {
+      return { baselinePrice: null, matchedShoeId: null, similarity: null };
+    }
+
+    return {
+      baselinePrice: Number(top.price),
+      matchedShoeId: top.shoeId,
+      similarity: Number(top.similarity),
+    };
+  } catch (error) {
+    console.error('Error fetching baseline price.', error);
+    return { baselinePrice: null, matchedShoeId: null, similarity: null };
+  }
+}
+
+/** Depreciation math: baseline price scaled by condition (score / 10), clamped to 0–10. */
+export function calculateSuggestedPrice(baselinePrice: number, conditionScore: number): number {
+  const score = Math.min(Math.max(conditionScore, 0), 10);
+  return Math.round(baselinePrice * (score / 10));
+}
+
+/**
+ * Full analyze pipeline: Gemini vision → pgvector baseline lookup → depreciation.
+ * When no catalog baseline is found, falls back to Gemini's own estimatedPrice so a
+ * suggested price is always produced.
+ */
+export async function analyzeAndPriceShoe(photoUrls: { top: string; side: string; sole: string; insole: string }): Promise<ShoeAnalysisResult> {
+  const analysis = await analyzeShoePhotos(photoUrls);
+
+  const { baselinePrice, matchedShoeId, similarity } = await getBaselinePriceByShoe(analysis.brand, analysis.model);
+
+  const catalogHit = baselinePrice !== null;
+  const baseline = catalogHit ? baselinePrice : analysis.estimatedPrice;
+  const suggestedPrice = calculateSuggestedPrice(baseline, analysis.conditionScore);
+
+  return {
+    ...analysis,
+    pricing: {
+      baselinePrice,
+      matchedShoeId,
+      similarity,
+      conditionScore: analysis.conditionScore,
+      suggestedPrice,
+      priceSource: catalogHit ? 'catalog' : 'ai-estimate',
+    },
+  };
 }
 
 export async function getShoeByModelAndBrand(brand: string, model: string) {

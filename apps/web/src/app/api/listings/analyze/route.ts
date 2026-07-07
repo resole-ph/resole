@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { analyzeShoePhotos } from '@/features/shoe/services/service';
+import { analyzeAndPriceShoe, createShoeAnalysis } from '@/features/shoe/services/service';
 
 export async function POST(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
@@ -17,14 +17,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing one or more photo URLs' }, { status: 400 });
     }
 
-    const parsedResult = await analyzeShoePhotos({
+    const analysis = await analyzeAndPriceShoe({
       top: imageUrlTop,
       side: imageUrlSide,
       sole: imageUrlSole,
       insole: imageUrlInsole,
     });
 
-    return NextResponse.json({ analysis: parsedResult });
+    const insertAnalysis = await createShoeAnalysis(analysis);
+
+    return NextResponse.json({ 
+      analysis, 
+      analysisId: insertAnalysis?.id || 0
+    });
   } catch (error: any) {
     console.error('Error analyzing photos:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });

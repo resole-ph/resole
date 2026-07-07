@@ -9,13 +9,17 @@ import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import CharitiesSection from '@/components/organisms/CharitiesSection';
 import { useOnboardingStore } from '@/store/onboarding';
+import { UserService } from '@/features/user/services/user.service';
 
 export default function HomeScreen() {
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
   const router = useRouter();
+
   const [hydrated, setHydrated] = useState(
     () => useOnboardingStore.persist.hasHydrated()
   );
+  const [user, setUser] = useState<any>({ name: 'Resoler' });
+
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -26,6 +30,21 @@ export default function HomeScreen() {
   useEffect(() => {
     if (hydrated) return;
     return useOnboardingStore.persist.onFinishHydration(() => setHydrated(true));
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return; 
+
+    const getUser = async () => {
+      try {
+        const data = await UserService.getUserInfo();
+        setUser(data);
+      } catch (error) {
+        console.error("Failed to fetch user info:", error);
+      }
+    };
+
+    getUser();
   }, [hydrated]);
 
   if (!hydrated) return null;
@@ -41,12 +60,12 @@ export default function HomeScreen() {
       />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-5 pt-3 pb-1">
-          <Text className="text-2xl font-bold text-gray-900">{greeting}, Miguel</Text>
+          <Text className="text-2xl font-bold text-gray-900">{greeting}, {user.name}</Text>
           <Text className="text-sm text-gray-400 mt-0.5">Find your next pair today</Text>
         </View>
         <SearchBar />
         <HeroBanner />
-<CategoriesRow />
+        <CategoriesRow />
         <CharitiesSection />
         <BrowseFeed />
       </ScrollView>

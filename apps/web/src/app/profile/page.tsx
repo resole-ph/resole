@@ -1,7 +1,23 @@
+import UserInfoHeader from '@/features/profile/components/UserInfoHeader';
+import RecycleCoinsCard from '@/features/profile/components/RecycleCoinsCard';
+import MyListingsPreviewCard from '@/features/profile/components/MyListingsPreviewCard';
+import FavouritesPreviewCard from '@/features/profile/components/FavouritesPreviewCard';
+import QuickLinksCard from '@/features/profile/components/QuickLinksCard';
+import SellerAnalyticsCard from '@/features/profile/components/SellerAnalyticsCard';
+
 export default function ProfilePage() {
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-72px)]">
-      <p className="text-on-surface-variant text-[16px]">Profile page</p>
-    </div>
+    <>
+      <UserInfoHeader />
+      <RecycleCoinsCard />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <MyListingsPreviewCard />
+        <FavouritesPreviewCard />
+      </div>
+
+      <QuickLinksCard />
+      <SellerAnalyticsCard />
+    </>
   );
 }

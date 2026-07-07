@@ -14,19 +14,19 @@ function parseShoeListingId(rawId: string) {
 }
 
 export async function POST(
-  request: Request
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
   const currentUser = await getAuthenticatedUser(request);
-
+  
   if (!currentUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
-  const id = body.listingId || body.id;
-  const shoeListingId = parseShoeListingId(id?.toString() || '');
+  const { id } = await context.params;
+  const shoeListingId = parseShoeListingId(id);
   if (!shoeListingId) {
-    return NextResponse.json({ error: 'Invalid listing id' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
 
   const shoeListing = await getShoeListingById(shoeListingId);
@@ -34,6 +34,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 404 });
   }
 
+  const body = await request.json();
   body['recipientId'] = currentUser.user.id;
   body['listingId'] = shoeListingId;
   const { price, ...transactionBody } = body;

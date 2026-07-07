@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { updateUserProfile, deleteUser } from '@/features/auth/services/service';
+import { updateUserProfile, deleteUser, getUserProfileById } from '@/features/auth/services/service';
 import { normalizeContactNo, isValidEmail } from '@/lib/auth';
 import type { UpdateUserProfileInput } from '@/features/auth/types/types';
 
@@ -11,7 +11,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return NextResponse.json({ user: currentUser.user });
+  const userProfile = await getUserProfileById(currentUser.user.id);
+  if (!userProfile) {
+    return NextResponse.json({ error: 'Unable to fetch user profile' }, { status: 500 });
+  }
+
+  return NextResponse.json({ user: userProfile });
 }
 
 export async function PATCH(request: Request) {

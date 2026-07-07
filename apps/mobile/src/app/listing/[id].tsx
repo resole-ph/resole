@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity,
   Modal, TextInput, KeyboardAvoidingView, Platform,
@@ -7,9 +7,8 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
-import { MOCK_LISTINGS, MARKET_LISTINGS, SWAP_LISTINGS } from '@/data/MockListings';
-
-const ALL_LISTINGS = [...MOCK_LISTINGS, ...MARKET_LISTINGS, ...SWAP_LISTINGS];
+import { ListingService } from '@/features/listing/services/listing.service';
+import { OfferService } from '@/features/offer/services/offer.service';
 
 export const CONDITION_COLORS: Record<Listing['condition'], string> = {
   'Like New':  '#10B981',
@@ -28,7 +27,7 @@ const BTN_SHADOW = (color: string) => ({
 });
 
 export default function ListingDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const id  = Number(useLocalSearchParams<{ id: string }>());
   const insets = useSafeAreaInsets();
 
   const [showBuyModal, setShowBuyModal]     = useState(false);
@@ -37,8 +36,22 @@ export default function ListingDetailScreen() {
   const [offerNote, setOfferNote]           = useState('');
   const [buyConfirmed, setBuyConfirmed]     = useState(false);
   const [offerSent, setOfferSent]           = useState(false);
+  const [listing, setListing]               = useState<Listing | null>(null);
+  const [similarListings, setSimilarListings] = useState<Listing[] | null>(null);
 
-  const listing = ALL_LISTINGS.find((l) => l.id === id);
+  useEffect(() => {
+    const loadData = async () => {
+      const fetchedListing = await ListingService.getListingById(id);
+      setListing(fetchedListing);
+      
+      if (fetchedListing && fetchedListing.model) {
+        const similarData = await ListingService.getSimilarListings(fetchedListing.model);
+        setSimilarListings(similarData);
+      }
+    };
+
+    loadData();
+  }, [id]);
 
   if (!listing) {
     return (
@@ -52,35 +65,31 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const isSwappable   = listing.badgeType === 'Swap';
+  const isSwappable   = listing.listingMode === 'Swap';
   const conditionColor = CONDITION_COLORS[listing.condition];
 
-  const similarItems = ALL_LISTINGS.filter(
-    (l) => l.id !== listing.id && (l.brand === listing.brand || l.badgeType === listing.badgeType)
-  ).slice(0, 6);
+  const similarItems = similarListings?.filter(
+    (l) => l.id !== listing.id && (l.brand === listing.brand || l.listingMode === listing.listingMode)
+  ).slice(0, 6) || [];
 
   function handleSwap() {
+    
     router.push({
       pathname: '/listing/swap-offer',
       params: {
-        listingId:    listing.id,
-        listingName:  listing.name,
-        listingPrice: listing.price,
-        listingImage: listing.imageUrl,
+        listingId:    listing!.id,
+        listingName:  listing!.model,
+        listingPrice: listing!.price,
+        listingImage: listing!.imageUrl,
       },
     });
   }
 
-  function handleConfirmBuy() {
-    setBuyConfirmed(true);
-    setTimeout(() => {
-      setBuyConfirmed(false);
-      setShowBuyModal(false);
-      router.push('/inbox' as any);
-    }, 1200);
-  }
-
-  function handleSendOffer() {
+  async function handleSendOffer() {
+    if (!id) return;
+    
+    await OfferService.createSale(id, Number(offerPrice) || 0, offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`);
+    
     setOfferSent(true);
     setTimeout(() => {
       setOfferSent(false);
@@ -120,7 +129,7 @@ export default function ListingDetailScreen() {
             </View>
           </View>
 
-          <Text className="text-gray-900 text-2xl font-bold mb-1">{listing.name}</Text>
+          <Text className="text-gray-900 text-2xl font-bold mb-1">{listing.model}</Text>
           {listing.size && <Text className="text-gray-400 text-sm mb-4">Size: {listing.size}</Text>}
 
           <View className="flex-row items-center mb-6">
@@ -153,7 +162,7 @@ export default function ListingDetailScreen() {
               </View>
               <View className="flex-row items-center mt-0.5">
                 <Ionicons name="star" size={12} color="#F59E0B" />
-                <Text className="text-gray-500 text-xs ml-1">{listing.seller.rating.toFixed(1)} · {listing.seller.totalSales ?? 0} sales</Text>
+                <Text className="text-gray-500 text-xs ml-1">{listing.seller.rating?.toFixed(1) || 0} · {listing.seller.totalSales ?? 0} sales</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
@@ -178,7 +187,7 @@ export default function ListingDetailScreen() {
                   >
                     <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 120, borderRadius: 14, backgroundColor: '#F3F4F6' }} resizeMode="cover" />
                     <Text className="text-gray-400 text-xs mt-2">{item.brand}</Text>
-                    <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>{item.name}</Text>
+                    <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>{item.model}</Text>
                     <Text className="text-blue-600 font-bold text-sm">₱{item.price.toLocaleString()}</Text>
                   </TouchableOpacity>
                 ))}
@@ -252,7 +261,7 @@ export default function ListingDetailScreen() {
             <Image source={{ uri: listing.imageUrl }} style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: '#F3F4F6' }} resizeMode="cover" />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 2 }}>{listing.brand}</Text>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }} numberOfLines={2}>{listing.name}</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }} numberOfLines={2}>{listing.model}</Text>
               {listing.size && <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Size: {listing.size}</Text>}
             </View>
           </View>
@@ -275,7 +284,7 @@ export default function ListingDetailScreen() {
           </View>
 
           <TouchableOpacity
-            onPress={handleConfirmBuy}
+            onPress={handleSendOffer}
             style={{ backgroundColor: buyConfirmed ? '#059669' : '#059669', borderRadius: 18, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, ...BTN_SHADOW('#059669') }}
             activeOpacity={0.85}
           >
