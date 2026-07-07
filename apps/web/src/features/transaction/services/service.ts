@@ -1,5 +1,6 @@
 import { db } from '@/config/db';
 import { eq, and, or, sql, desc, getTableColumns, gt, gte } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { 
   transaction,  
   sale,
@@ -11,6 +12,7 @@ import {
   voucher, 
   voucherRedeem,
   user,
+  shoe,
   shoeListing,
   trackingEvent,
   cartItem
@@ -19,7 +21,6 @@ import {
   CreateTransaction, 
   Voucher 
 } from '@/features/transaction/types/types';
-import { ShoeListing } from '@/features/shoe/types/types';
 
 function getVoucherCoinCost(voucherAmount: string | null): number | null {
   if (!voucherAmount) {
@@ -242,6 +243,148 @@ export async function getAllUserTransactions(userId: string) {
     return rows ?? null;
   } catch (error) {
     console.error("Error fetching user transactions.", error);
+    return null;
+  }
+}
+
+function getTransactionStatus(row: { isAccepted: boolean | null; isCompleted: boolean }) {
+  if (row.isCompleted) {
+    return 'completed';
+  }
+
+  if (row.isAccepted === true) {
+    return 'accepted';
+  }
+
+  if (row.isAccepted === false) {
+    return 'declined';
+  }
+
+  return 'pending';
+}
+
+export async function getUserTransactionHistory(userId: string) {
+  try {
+    const listingOwner = alias(user, 'listingOwner');
+
+    const rows = await db
+      .select({
+        id: transaction.id,
+        type: transaction.type,
+        isAccepted: transaction.isAccepted,
+        isCompleted: transaction.isCompleted,
+        coinsEarned: transaction.coinsEarned,
+        createdAt: transaction.createdAt,
+        updatedAt: transaction.updatedAt,
+        acceptedAt: transaction.acceptedAt,
+        completedAt: transaction.completedAt,
+        amount: sql<string | null>`coalesce(${sale.price}, ${shoeListing.value})`,
+        listingId: shoeListing.id,
+        listingColorway: shoeListing.colorway,
+        listingSize: shoeListing.size,
+        listingConditionScore: shoeListing.conditionScore,
+        listingValue: shoeListing.value,
+        listingMode: shoeListing.listingMode,
+        listingIsAvailable: shoeListing.isAvailable,
+        listingImageUrlTop: shoeListing.imageUrlTop,
+        listingImageUrlSide: shoeListing.imageUrlSide,
+        shoeId: shoe.id,
+        shoeBrand: shoe.brand,
+        shoeModel: shoe.model,
+        shoeCategory: shoe.category,
+        ownerId: listingOwner.id,
+        ownerName: listingOwner.name,
+        ownerImage: listingOwner.image,
+        ownerCity: listingOwner.city,
+        recipientId: user.id,
+        recipientName: user.name,
+        recipientImage: user.image,
+        recipientCity: user.city,
+        saleId: sale.id,
+        salePrice: sale.price,
+        swapId: swap.id,
+        donationId: donation.id,
+        charityId: charity.id,
+        charityName: charity.name,
+      })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(listingOwner, eq(shoeListing.userId, listingOwner.id))
+      .leftJoin(user, eq(transaction.recipientId, user.id))
+      .leftJoin(sale, eq(sale.transactionId, transaction.id))
+      .leftJoin(swap, eq(swap.transactionId, transaction.id))
+      .leftJoin(donation, eq(donation.transactionId, transaction.id))
+      .leftJoin(charity, eq(donation.charityId, charity.id))
+      .where(
+        or(
+          eq(transaction.recipientId, userId),
+          eq(shoeListing.userId, userId)
+        )
+      )
+      .orderBy(desc(transaction.createdAt));
+
+    return rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      status: getTransactionStatus(row),
+      amount: row.amount,
+      coinsEarned: row.coinsEarned,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      acceptedAt: row.acceptedAt,
+      completedAt: row.completedAt,
+      listing: {
+        id: row.listingId,
+        colorway: row.listingColorway,
+        size: row.listingSize,
+        conditionScore: row.listingConditionScore,
+        value: row.listingValue,
+        listingMode: row.listingMode,
+        isAvailable: row.listingIsAvailable,
+        imageUrlTop: row.listingImageUrlTop,
+        imageUrlSide: row.listingImageUrlSide,
+        shoe: {
+          id: row.shoeId,
+          brand: row.shoeBrand,
+          model: row.shoeModel,
+          category: row.shoeCategory,
+        },
+        owner: {
+          id: row.ownerId,
+          name: row.ownerName,
+          image: row.ownerImage,
+          city: row.ownerCity,
+        },
+      },
+      relatedUser: row.ownerId === userId
+        ? row.recipientId
+          ? {
+              id: row.recipientId,
+              name: row.recipientName,
+              image: row.recipientImage,
+              city: row.recipientCity,
+            }
+          : null
+        : {
+            id: row.ownerId,
+            name: row.ownerName,
+            image: row.ownerImage,
+            city: row.ownerCity,
+          },
+      details: {
+        sale: row.saleId ? { id: row.saleId, price: row.salePrice } : null,
+        swap: row.swapId ? { id: row.swapId } : null,
+        donation: row.donationId
+          ? {
+              id: row.donationId,
+              charity: row.charityId ? { id: row.charityId, name: row.charityName } : null,
+            }
+          : null,
+      },
+    }));
+  } catch (error) {
+    console.error("Error fetching user transaction history.", error);
     return null;
   }
 }
