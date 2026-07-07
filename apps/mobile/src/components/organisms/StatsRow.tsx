@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { UserService } from '@/features/user/services/user.service';
 
 interface Stat {
   icon: keyof typeof Ionicons.glyphMap;
@@ -14,22 +16,22 @@ const STATS: Stat[] = [
     icon: 'leaf',
     iconColor: '#10B981',
     iconBg: '#D1FAE5',
-    value: '12.4k',
+    value: '',
     label: 'Pairs saved',
   },
   {
     icon: 'flash',
     iconColor: '#F59E0B',
     iconBg: '#FEF3C7',
-    value: '248',
+    value: '',
     label: 'Your coins',
   },
   {
     icon: 'flame',
     iconColor: '#EF4444',
     iconBg: '#FEE2E2',
-    value: '7d',
-    label: 'Streak',
+    value: '',
+    label: 'Login streak',
   },
 ];
 
@@ -58,9 +60,25 @@ function StatCard({ stat }: { stat: Stat }) {
 }
 
 export default function StatsRow() {
+  const [userStats, setUserStats] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const getUserStats = async () => {
+      const data = await UserService.getUserStats();
+
+      const displayFields = STATS.map((stat) => ({
+        ...stat,
+        value: data ? data[stat.label] : '', 
+      }));
+
+      setUserStats(displayFields);
+    };
+
+    getUserStats();
+  }, []);
   return (
     <View className="flex-row mx-5 mb-4 gap-3">
-      {STATS.map((stat) => (
+      {userStats.map((stat) => (
         <StatCard key={stat.label} stat={stat} />
       ))}
     </View>

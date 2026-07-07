@@ -30,24 +30,28 @@ export const UserService = {
     };
   },
 
-  async getUserListingSummary(model: string): Promise<Listing[]> {
-    const res = await apiFetch<Listing[]>(`/api/listings/search?query=${model}`, {
-      method: 'GET'
-    });
-
-    return res;
-  },
-
   async getUserInfoForSettings(): Promise<any> {
-    const userStats = await apiFetch<any>(`/api/users/me`, {
+    const userInfo = await apiFetch<any>(`/api/users/me`, {
       method: 'GET'
     });
 
     return {
-      name: userStats.name,
-      email: userStats.email,
-      phone: userStats.contactNo,
-      location: userStats.location
+      name: userInfo.name,
+      email: userInfo.email,
+      phone: userInfo.contactNo,
+      location: userInfo.location
     };
   },
+
+  async getUserStats(): Promise<any> {
+    const userStats = await apiFetch<any>(`api/users/me/stats`, {
+      method: 'GET'
+    });
+
+    return {
+      "Pairs saved": userStats.pairsSaved,
+      "Your coins": userStats.coinBalance,
+      "Login streak": userStats.loginStreak
+    }
+  }
 }
