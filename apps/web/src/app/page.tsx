@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from "react";
 // app/page.tsx
 'use client';
 
@@ -175,6 +178,7 @@ function Badge({ children, color }) {
 
 function ListingCard({ listing }) {
   const [saved, setSaved] = useState(false);
+
   const { requireAuth } = useAuthGate();
   return (
     <div
@@ -212,6 +216,7 @@ function ListingCard({ listing }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
+            setSaved((s) => !s);
             requireAuth(() => setSaved((s) => !s), 'Log in to save listings to your favourites.');
           }}
           aria-label="Save listing"
@@ -311,6 +316,9 @@ export default function ResoleHome({ userName = "Miguel" }) {
             borderRadius: 28,
             overflow: "hidden",
             background: `linear-gradient(135deg, ${COLORS.primaryDark} 0%, ${COLORS.primary} 60%, #3b7cf0 100%)`,
+            padding: "60px 60px",
+            marginBottom: 32,
+            minHeight: 360,
             padding: "60px 60px", // Increased padding from 40px
             marginBottom: 32,
             minHeight: 360, // Increased minHeight from 260
@@ -332,6 +340,7 @@ export default function ResoleHome({ userName = "Miguel" }) {
                 color: COLORS.primary,
                 border: "none",
                 borderRadius: 9999,
+                padding: "14px 28px",
                 padding: "14px 28px", // Slightly bigger CTA button
                 fontSize: 15,
                 fontWeight: 700,
@@ -355,6 +364,8 @@ export default function ResoleHome({ userName = "Miguel" }) {
               position: "absolute",
               right: -10,
               bottom: -40,
+              width: 560,
+              height: 560,
               width: 560, // Scaled up from 460
               height: 560, // Scaled up from 460
               objectFit: "contain",
