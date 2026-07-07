@@ -1,18 +1,8 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-
-interface Category {
-  id: string;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
-}
-
-interface Brand {
-  id: string;
-  label: string;
-}
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { Category, Brand } from '@/features/shoe/types/shoe.types';
+import { ShoeService } from '@/features/shoe/services/shoe.service';
 
 const CATEGORIES: Category[] = [
   { id: 'running',    label: 'Running',    icon: 'walk',         iconColor: '#F59E0B' },
@@ -21,17 +11,7 @@ const CATEGORIES: Category[] = [
   { id: 'skate',      label: 'Skate',      icon: 'trending-up',  iconColor: '#10B981' },
   { id: 'training',   label: 'Training',   icon: 'barbell',      iconColor: '#3B82F6' },
   { id: 'casual',     label: 'Casual',     icon: 'shirt',        iconColor: '#EC4899' },
-];
-
-const BRANDS: Brand[] = [
-  { id: 'nike',      label: 'Nike' },
-  { id: 'adidas',    label: 'Adidas' },
-  { id: 'jordan',    label: 'Jordan' },
-  { id: 'new-balance', label: 'New Balance' },
-  { id: 'puma',      label: 'Puma' },
-  { id: 'converse',  label: 'Converse' },
-  { id: 'vans',      label: 'Vans' },
-  { id: 'asics',     label: 'ASICS' },
+  { id: 'other',      label: 'Other',      icon: 'ellipsis-horizontal-outline',        iconColor: '#EC4899' },
 ];
 
 interface CategoriesRowProps {
@@ -41,8 +21,18 @@ interface CategoriesRowProps {
 }
 
 export default function CategoriesRow({ onCategoryPress, onBrandPress, onSeeAll }: CategoriesRowProps) {
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [activeCatId, setActiveCatId] = useState<string | null>(null);
   const [activeBrandId, setActiveBrandId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const getBrands = async () => {
+      const data = await ShoeService.getShoeBrands();
+      setBrands(data);
+    }
+
+    getBrands();
+  }, [])
 
   const handleCatPress = (id: string) => {
     setActiveCatId(prev => (prev === id ? null : id));
@@ -106,7 +96,7 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress, onSeeAll 
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
       >
-        {BRANDS.map((brand) => {
+        {brands.map((brand) => {
           const isActive = activeBrandId === brand.id;
           return (
             <TouchableOpacity

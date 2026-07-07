@@ -43,7 +43,7 @@ export default function MarketScreen() {
           listings={saleListings}
           showFlashSale
           showFilters
-          totalCount={126}
+          totalCount={saleListings.length}
         />
         <BrowseFeed
           title="Swap Board"

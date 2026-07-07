@@ -191,6 +191,8 @@ export async function getShoeListingsByUserId(userId: string) {
   try {
     const rows = await db
       .select({
+        model: shoe.model,
+        brand: shoe.brand,
         seller: getTableColumns(user),
         shoe: getTableColumns(shoe),
         ...getTableColumns(shoeListing)
@@ -201,7 +203,7 @@ export async function getShoeListingsByUserId(userId: string) {
       .where(and(eq(shoeListing.userId, userId), isNull(shoeListing.deletedAt)))
       .orderBy(desc(shoeListing.updatedAt));
 
-    return rows as ShoeListing[] ?? null;
+    return rows ?? null;
   } catch (error) {
     console.error("Error fetching user shoe listings.", error);
     return null;
@@ -243,6 +245,19 @@ export async function getShoeCategories() {
     return rows ?? null;
   } catch (error) {
     console.error("Error fetching shoe categories.", error);
+    return null;
+  }
+}
+
+export async function getShoeBrands() {
+  try {
+    const rows = await db
+      .selectDistinct({ categories: shoe.brand })
+      .from(shoe);
+    
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe brands.", error);
     return null;
   }
 }

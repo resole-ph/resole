@@ -18,9 +18,14 @@ export interface Listing {
   listingMode?: 'Swap' | 'Sale' | 'Both' | 'Hot' | 'Flash Deal';
   description?: string;
   size?: string;
+  colorway?: string;
   sold?: string;
   freeShipping?: boolean;
   swapFor?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+  daysLeft?: number;
   seller: {
     name: string;
     rating?: number;

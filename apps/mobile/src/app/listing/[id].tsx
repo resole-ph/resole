@@ -37,7 +37,7 @@ export default function ListingDetailScreen() {
   const [buyConfirmed, setBuyConfirmed]     = useState(false);
   const [offerSent, setOfferSent]           = useState(false);
   const [listing, setListing]               = useState<Listing | null>(null);
-  const [similarListings, setSimilarListings]               = useState<Listing[] | null>(null);
+  const [similarListings, setSimilarListings] = useState<Listing[] | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -85,19 +85,10 @@ export default function ListingDetailScreen() {
     });
   }
 
-  function handleConfirmBuy() {
-    setBuyConfirmed(true);
-    setTimeout(() => {
-      setBuyConfirmed(false);
-      setShowBuyModal(false);
-      router.push('/inbox' as any);
-    }, 1200);
-  }
-
   async function handleSendOffer() {
     if (!id) return;
     
-    await OfferService.createSale(id, Number(offerPrice) || 0, offerNote);
+    await OfferService.createSale(id, Number(offerPrice) || 0, offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`);
     
     setOfferSent(true);
     setTimeout(() => {
@@ -293,7 +284,7 @@ export default function ListingDetailScreen() {
           </View>
 
           <TouchableOpacity
-            onPress={handleConfirmBuy}
+            onPress={handleSendOffer}
             style={{ backgroundColor: buyConfirmed ? '#059669' : '#059669', borderRadius: 18, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, ...BTN_SHADOW('#059669') }}
             activeOpacity={0.85}
           >
