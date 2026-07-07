@@ -212,7 +212,7 @@ function ListingCard({ listing }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            requireAuth(() => setSaved((s) => !s), 'Sign in to save listings to your favourites.');
+            requireAuth(() => setSaved((s) => !s), 'Log in to save listings to your favourites.');
           }}
           aria-label="Save listing"
           style={{

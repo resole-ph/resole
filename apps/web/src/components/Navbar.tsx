@@ -20,7 +20,7 @@ export default function Navbar() {
 
   function handleInboxClick(e: React.MouseEvent) {
     e.preventDefault();
-    requireAuth(() => router.push('/inbox'), 'Sign in to view your messages.');
+    requireAuth(() => router.push('/inbox'), 'Log in to view your messages.');
   }
 
   return (
@@ -109,7 +109,7 @@ export default function Navbar() {
                 onClick={openSignIn}
                 className="ml-2 px-4 py-2 text-[13.5px] font-semibold text-primary hover:bg-surface-variant rounded-full transition-colors"
               >
-                Sign In
+                Log In
               </button>
               <button
                 onClick={openSignUp}
