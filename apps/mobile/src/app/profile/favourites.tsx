@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
-import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
+import { FavItem } from '@/features/listing/types/listing.types';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -11,17 +11,6 @@ const CARD_SHADOW = {
   shadowOpacity: 0.05,
   shadowRadius: 8,
   elevation: 2,
-};
-
-export type FavItem = {
-  id: number;
-  model: string;
-  brand: string;
-  size: string;
-  price?: string;
-  colorway: string;
-  savedAt: Date;
-  saved: boolean;
 };
 
 // const INITIAL_FAVOURITES: FavItem[] = [

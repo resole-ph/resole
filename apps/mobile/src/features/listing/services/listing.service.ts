@@ -1,5 +1,5 @@
 import { Listing } from '@/components/molecules/ListingCard';
-import { FavItem } from '@/app/profile/favourites';
+import { FavItem } from '../types/listing.types';
 import { apiFetch } from '@/lib/api-client';
 
 export const ListingService = {

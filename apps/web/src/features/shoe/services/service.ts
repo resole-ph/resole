@@ -249,6 +249,19 @@ export async function getShoeCategories() {
   }
 }
 
+export async function getShoeBrands() {
+  try {
+    const rows = await db
+      .selectDistinct({ categories: shoe.brand })
+      .from(shoe);
+    
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe brands.", error);
+    return null;
+  }
+}
+
 export async function getAllShoeListingForSale() {
   try {
     const rows = await db
