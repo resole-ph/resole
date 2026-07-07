@@ -2,7 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/providers/AuthProvider';
+import { useAuthGate } from '@/providers/AuthGateProvider';
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
@@ -12,6 +14,14 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const { requireAuth, openSignIn, openSignUp } = useAuthGate();
+
+  function handleInboxClick(e: React.MouseEvent) {
+    e.preventDefault();
+    requireAuth(() => router.push('/inbox'), 'Sign in to view your messages.');
+  }
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
@@ -66,20 +76,49 @@ export default function Navbar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1 ml-auto">
-          <Link
-            href="/inbox"
-            className="relative p-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors"
-          >
-            <span className="material-symbols-outlined">inbox</span>
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-primary border-2 border-white rounded-full" />
-          </Link>
+          {loading ? (
+            <div className="w-[132px] h-9" />
+          ) : user ? (
+            <>
+              <Link
+                href="/inbox"
+                className="relative p-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors"
+              >
+                <span className="material-symbols-outlined">inbox</span>
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-primary border-2 border-white rounded-full" />
+              </Link>
 
-          <Link
-            href="/profile"
-            className="p-1 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors"
-          >
-            <span className="material-symbols-outlined text-[40px]">account_circle</span>
-          </Link>
+              <Link
+                href="/profile"
+                className="p-1 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors"
+              >
+                <span className="material-symbols-outlined text-[40px]">account_circle</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleInboxClick}
+                className="relative p-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors"
+                aria-label="Inbox"
+              >
+                <span className="material-symbols-outlined">inbox</span>
+              </button>
+
+              <button
+                onClick={openSignIn}
+                className="ml-2 px-4 py-2 text-[13.5px] font-semibold text-primary hover:bg-surface-variant rounded-full transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={openSignUp}
+                className="px-4 py-2 text-[13.5px] font-semibold text-on-primary bg-primary rounded-full hover:opacity-90 transition-opacity"
+              >
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
 
       </div>
