@@ -1,8 +1,15 @@
-import { Listing } from '@/components/molecules/ListingCard';
 import { apiFetch } from '@/lib/api-client';
 import { UserStat, UserInfoCardProps } from '../types/user.types';
 
 export const UserService = {
+  async getUserInfo(): Promise<any> {
+    const userStats = await apiFetch<any>(`/api/users/me`, {
+      method: 'GET'
+    });
+
+    return userStats;
+  },
+
   async getUserInfoForCard(): Promise<UserInfoCardProps> {
     const userStats = await apiFetch<any>(`/api/users/me`, {
       method: 'GET'

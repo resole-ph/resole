@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ListingCard, { Listing } from '@/components/molecules/ListingCard';
-import { MOCK_LISTINGS } from '@/data/MockListings';
+import { ListingService } from '@/features/listing/services/listing.service';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -26,9 +26,8 @@ interface BrowseFeedProps {
 }
 
 export default function BrowseFeed({
-  title = 'Trending now',
-  subtitle = 'Hot listings expiring soon',
-  listings = MOCK_LISTINGS,
+  title = 'Listings',
+  subtitle = 'Kickstart your day',
   showFlashSale = false,
   showFilters = false,
   totalCount,
@@ -38,6 +37,7 @@ export default function BrowseFeed({
   onSaveListing,
 }: BrowseFeedProps) {
   const [countdown, setCountdown] = useState({ h: 3, m: 45, s: 22 });
+  const [listings, setListings] = useState<Listing[]>([])
 
   useEffect(() => {
     if (!showFlashSale) return;
@@ -53,6 +53,16 @@ export default function BrowseFeed({
     }, 1000);
     return () => clearInterval(t);
   }, [showFlashSale]);
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      const data = await ListingService.getListings();
+      setListings(data);
+    }
+
+    fetchListings();
+    totalCount = listings.length;
+  }, [])
 
   const pad = (n: number) => String(n).padStart(2, '0');
 

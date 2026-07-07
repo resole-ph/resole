@@ -115,12 +115,17 @@ export default function ListingsScreen() {
 
   useEffect(() => {
     const fetchUserListings = async () => {
-      const now = new Date();
       const data = (await ListingService.getUserListings()) || [];
-      const activeItems = data.filter((item) => {
-        const itemTime = new Date(item.createdAt).getTime();
-        return (now.getTime() - itemTime) / (1000 * 60 * 60 * 24) <= 30;
-      });
+      const itemsWithDays = await Promise.all(
+        data.map(async (item) => {
+          item.daysLeft = await ListingService.getDaysLeft(item.createdAt);
+          return item;
+        })
+      );
+
+      const activeItems = itemsWithDays.filter(
+        (item) => item.daysLeft !== undefined && item.daysLeft <= 30
+      );
 
       setActive(activeItems);
     };

@@ -3,6 +3,20 @@ import { FavItem } from '../types/listing.types';
 import { apiFetch } from '@/lib/api-client';
 
 export const ListingService = {
+  async getDaysLeft(date: Date): Promise<number> {
+    const now = new Date().getTime();
+    const listing = date.getTime();
+    return (now - listing) / (1000 * 60 * 60 * 24);
+  },
+  
+  async getListings(): Promise<Listing[]> {
+    const res = await apiFetch<Listing[]>(`/api/listings`, {
+      method: 'GET'
+    });
+
+    return res;
+  },
+
   async getSimilarListings(model: string): Promise<Listing[]> {
     const res = await apiFetch<Listing[]>(`/api/listings/search?query=${model}`, {
       method: 'GET'
