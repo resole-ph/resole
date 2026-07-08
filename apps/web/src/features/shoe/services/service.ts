@@ -17,7 +17,7 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import { detectIfShoe } from '@/features/shoe/services/detector';
 
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemiwni-embedding-2";
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-001";
 const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1536", 10);
 const BASELINE_MATCH_THRESHOLD = parseFloat(process.env.BASELINE_MATCH_THRESHOLD || "0.75");
 

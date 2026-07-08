@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity,
-  Modal, TextInput, KeyboardAvoidingView, Platform,
+  Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
+  Dimensions, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +30,8 @@ const BTN_SHADOW = (color: string) => ({
 });
 
 export default function ListingDetailScreen() {
-  const id  = Number(useLocalSearchParams<{ id: string }>());
+  const { id: rawId } = useLocalSearchParams<{ id: string }>();
+  const id = Number(rawId);
   const insets = useSafeAreaInsets();
 
   const [showBuyModal, setShowBuyModal]     = useState(false);
@@ -38,20 +42,44 @@ export default function ListingDetailScreen() {
   const [offerSent, setOfferSent]           = useState(false);
   const [listing, setListing]               = useState<Listing | null>(null);
   const [similarListings, setSimilarListings] = useState<Listing[] | null>(null);
+  const [isLoading, setIsLoading]           = useState(true);
+  const [activePhoto, setActivePhoto]       = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
-      const fetchedListing = await ListingService.getListingById(id);
-      setListing(fetchedListing);
-      
-      if (fetchedListing && fetchedListing.model) {
-        const similarData = await ListingService.getSimilarListings(fetchedListing.model);
-        setSimilarListings(similarData);
+      setIsLoading(true);
+      try {
+        const fetchedListing = await ListingService.getListingById(id);
+        setListing(fetchedListing);
+
+        if (fetchedListing && fetchedListing.model) {
+          const similarData = await ListingService.getSimilarListings(fetchedListing.model);
+          setSimilarListings(similarData);
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadData();
   }, [id]);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50">
+        <TouchableOpacity
+          className="absolute z-10 w-10 h-10 rounded-full bg-white items-center justify-center"
+          style={{ top: insets.top + 12, left: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 4 }}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color="#111827" />
+        </TouchableOpacity>
+        <ActivityIndicator size="large" color="#2563EB" />
+        <Text className="text-gray-400 mt-3">Loading listing…</Text>
+      </View>
+    );
+  }
 
   if (!listing) {
     return (
@@ -67,6 +95,13 @@ export default function ListingDetailScreen() {
 
   const isSwappable   = listing.listingMode === 'Swap';
   const conditionColor = CONDITION_COLORS[listing.condition];
+
+  const photoUrls = [
+    listing.imageUrlTop,
+    listing.imageUrlSide,
+    listing.imageUrlSole,
+    listing.imageUrlInsole,
+  ].filter((url): url is string => Boolean(url));
 
   const similarItems = similarListings?.filter(
     (l) => l.id !== listing.id && (l.brand === listing.brand || l.listingMode === listing.listingMode)
@@ -113,11 +148,42 @@ export default function ListingDetailScreen() {
       </TouchableOpacity>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        <Image
-          source={{ uri: listing.imageUrl }}
-          style={{ width: '100%', height: 300, backgroundColor: '#F3F4F6' }}
-          resizeMode="cover"
-        />
+        <View style={{ width: '100%', height: 300 }}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+              const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+              setActivePhoto(index);
+            }}
+          >
+            {photoUrls.map((uri, index) => (
+              <Image
+                key={index}
+                source={{ uri }}
+                style={{ width: SCREEN_WIDTH, height: 300, backgroundColor: '#F3F4F6' }}
+                resizeMode="cover"
+              />
+            ))}
+          </ScrollView>
+
+          {photoUrls.length > 1 && (
+            <View style={{ position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+              {photoUrls.map((_, index) => (
+                <View
+                  key={index}
+                  style={{
+                    width: index === activePhoto ? 16 : 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: index === activePhoto ? '#fff' : 'rgba(255,255,255,0.5)',
+                  }}
+                />
+              ))}
+            </View>
+          )}
+        </View>
 
         <View className="px-5 pt-5">
           {/* Brand + condition */}

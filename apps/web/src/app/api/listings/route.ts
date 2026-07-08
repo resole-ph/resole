@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { 
+import {
   getAllShoeListing,
   getAllShoeListingForSale,
   getAllShoeListingForSwap,
   publishShoeListing
 } from '@/features/shoe/services/service';
+import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
 
 export async function GET(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
@@ -31,11 +32,7 @@ export async function GET(request: Request) {
       break;
   }
 
-  if (!shoeListings || shoeListings.length === 0) {
-    return NextResponse.json({ error: 'Shoe listings not found' }, { status: 404 });
-  }
-
-  return NextResponse.json({ shoeListings });
+  return NextResponse.json({ shoeListings: (shoeListings ?? []).map(serializeShoeListing) });
 }
 
 export async function POST(request: Request) {

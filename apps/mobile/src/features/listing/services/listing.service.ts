@@ -10,35 +10,35 @@ export const ListingService = {
   },
   
   async getListings(): Promise<Listing[]> {
-    const res = await apiFetch<Listing[]>(`/api/listings`, {
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings`, {
       method: 'GET'
     });
 
-    return res;
+    return res.shoeListings;
   },
 
   async getSimilarListings(model: string): Promise<Listing[]> {
-    const res = await apiFetch<Listing[]>(`/api/listings/search?query=${model}`, {
+    const res = await apiFetch<{ shoeSearch: Listing[] }>(`/api/listings/search?query=${model}`, {
       method: 'GET'
     });
 
-    return res;
+    return res.shoeSearch;
   },
   
   async getListingById(id: number): Promise<Listing> {
-    const res = await apiFetch<Listing>(`/api/listings/${id}`, {
+    const res = await apiFetch<{ shoeListing: Listing }>(`/api/listings/${id}`, {
       method: 'GET'
     });
 
-    return res;
+    return res.shoeListing;
   },
 
   async getUserListings(): Promise<Listing[]> {
-    const res = await apiFetch<Listing[]>(`/api/users/me/listings`, {
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/users/me/listings`, {
       method: 'GET'
     });
 
-    return res;
+    return res.shoeListings;
   },
 
   async getUserFavourites(): Promise<FavItem[]> {
@@ -53,19 +53,19 @@ export const ListingService = {
   },
 
   async getSwapListings(): Promise<Listing[]> {
-    const res = await apiFetch<Listing[]>(`/api/listings?section=swap-board`, {
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings?section=swap-board`, {
       method: 'GET'
     });
 
-    return res;
+    return res.shoeListings;
   },
 
   async getSaleListings(): Promise<Listing[]> {
-    const res = await apiFetch<Listing[]>(`/api/listings?section=swap-board`, {
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings?section=swap-board`, {
       method: 'GET'
     });
 
-    return res;
+    return res.shoeListings;
   },
 
   async favoriteListing(id: number): Promise<undefined> {

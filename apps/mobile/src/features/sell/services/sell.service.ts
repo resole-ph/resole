@@ -4,7 +4,8 @@ import type {
   AiAnalysisResult,
   UploadPhotosResult,
   PublishListingPayload,
-  PublishListingResult
+  PublishListingResult,
+  ListingFormData
 } from '../types/sell.types';
 import { apiFetch } from '@/lib/api-client';
 import { ratingToLabel } from '../utils/condition';
@@ -24,6 +25,13 @@ const FIELD_TO_URL_KEY = {
   sole: 'imageUrlSole',
   insole: 'imageUrlInsole',
 } as const;
+
+/** Mobile's lowercase listing mode vs. the web API's capitalized enum. */
+const MODE_TO_LISTING_MODE: Record<ListingFormData['mode'], 'Sale' | 'Swap' | 'Both'> = {
+  sell: 'Sale',
+  swap: 'Swap',
+  both: 'Both',
+};
 
 /** Shape of the `analysis` payload returned by POST /api/listings/analyze. */
 interface AnalyzeResponse {
@@ -128,10 +136,29 @@ export const sellService: SellService = {
     return { result, analysisId };
   },
 
-  async publishListing(_payload) {
+  async publishListing(payload) {
+    const remoteUrlByAngle = Object.fromEntries(
+      payload.photos.map((p) => [p.angle, p.remoteUrl])
+    ) as Record<PhotoAngle, string>;
+
+    const { form } = payload;
+
     const listing = await apiFetch<PublishListingResult>('/api/listings', {
       method: 'POST',
-      body: _payload,
+      body: {
+        brand: form.brand,
+        model: form.model,
+        value: form.price,
+        description: form.description,
+        colorway: form.colorway,
+        size: form.size,
+        conditionScore: form.conditionRating,
+        listingMode: MODE_TO_LISTING_MODE[form.mode],
+        imageUrlTop: remoteUrlByAngle.top,
+        imageUrlSide: remoteUrlByAngle.side,
+        imageUrlSole: remoteUrlByAngle.soles,
+        imageUrlInsole: remoteUrlByAngle.insoles,
+      },
     });
 
     return listing

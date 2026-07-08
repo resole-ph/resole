@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getShoeListingsBySearch } from '@/features/shoe/services/service';
+import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
 
 export async function GET(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
@@ -23,6 +24,6 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    shoeSearch
+    shoeSearch: shoeSearch.map(serializeShoeListing)
   });
 }

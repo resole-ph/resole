@@ -56,12 +56,15 @@ export default function BrowseFeed({
 
   useEffect(() => {
     const fetchListings = async () => {
-      const data = await ListingService.getListings();
-      setListings(data);
+      try {
+        const data = await ListingService.getListings();
+        setListings(Array.isArray(data) ? data : []);
+      } catch {
+        setListings([]);
+      }
     }
 
     fetchListings();
-    totalCount = listings.length;
   }, [])
 
   const pad = (n: number) => String(n).padStart(2, '0');

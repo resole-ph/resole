@@ -6,6 +6,7 @@ import {
   updateShoeListing
 } from '@/features/shoe/services/service';
 import type { UpdateShoeListing } from '@/features/shoe/types/types';
+import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
 
 function parseShoeListingId(rawId: string) {
   const shoeListingId = Number.parseInt(rawId, 10);
@@ -39,7 +40,7 @@ export async function GET(
   }
 
   return NextResponse.json({
-    shoeListing: shoeListing
+    shoeListing: serializeShoeListing(shoeListing)
   })
 }
 
