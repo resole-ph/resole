@@ -165,9 +165,6 @@ function ListingCard({ item }: { item: SneakerItem }) {
     >
       <div style={{ position: "relative", aspectRatio: "1/1", background: "#F3F4F6" }}>
         <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <div style={{ position: "absolute", top: 8, left: 8, background: `${COLORS.amber}1A`, color: COLORS.amber, fontSize: 10, fontWeight: 700, borderRadius: 9999, padding: "3px 8px" }}>
-          AI {item.score}
-        </div>
         <button onClick={(e) => { e.stopPropagation(); setSaved((s) => !s); }} style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 9999, background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <span className="material-symbols-outlined" style={{ fontSize: 13, color: saved ? COLORS.red : "#6B7280", fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
         </button>

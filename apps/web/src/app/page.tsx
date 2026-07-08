@@ -45,7 +45,6 @@ const LISTINGS = [
     name: "990v5 Core Grey",
     condition: "VNDS Condition",
     price: "9,200",
-    score: "95%",
     tag: null,
     seller: "M",
     image:
@@ -57,7 +56,6 @@ const LISTINGS = [
     name: "Air Jordan 1 Panda",
     condition: "Excellent",
     price: "12,500",
-    score: "88%",
     tag: "SALE",
     seller: "A",
     image:
@@ -69,7 +67,6 @@ const LISTINGS = [
     name: "Ultraboost 1.0 DNA",
     condition: "Brand New",
     price: "8,400",
-    score: "99%",
     tag: null,
     seller: "S",
     image:
@@ -81,7 +78,6 @@ const LISTINGS = [
     name: "Dunk Low 'What The'",
     condition: "Gently Used",
     price: "15,800",
-    score: "82%",
     tag: "SALE",
     seller: "R",
     image:
@@ -173,11 +169,8 @@ function ListingCard({ listing }) {
           alt={`${listing.brand} ${listing.name}`}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
-        <div style={{ position: "absolute", top: 10, left: 10 }}>
-          <Badge color={COLORS.amber}>{listing.score}</Badge>
-        </div>
         {listing.tag && (
-          <div style={{ position: "absolute", top: 38, left: 10 }}>
+          <div style={{ position: "absolute", top: 10, left: 10 }}>
             <Badge color={COLORS.green}>{listing.tag}</Badge>
           </div>
         )}

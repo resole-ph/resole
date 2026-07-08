@@ -32,6 +32,12 @@ export default function ProductDetailPage() {
   
   const [activeImg, setActiveImg] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerPrice, setOfferPrice] = useState("");
+  const [offerNote, setOfferNote] = useState("");
+  const [buyConfirmed, setBuyConfirmed] = useState(false);
+  const [offerSent, setOfferSent] = useState(false);
 
   // Faking a gallery array using the product image so the UI layout remains intact
   const galleryImages = [product.image, product.image, product.image, product.image];
@@ -41,6 +47,29 @@ export default function ProductDetailPage() {
 
   // Get up to 4 related items excluding current one
   const relatedItems = ALL_SNEAKERS.filter((item) => item.id !== product.id).slice(0, 4);
+
+  const isSwappable = product.isSwapBoard;
+
+  function handleConfirmPurchase() {
+    setBuyConfirmed(true);
+    setTimeout(() => {
+      setBuyConfirmed(false);
+      setShowBuyModal(false);
+      router.push('/inbox');
+    }, 1200);
+  }
+
+  function handleSendOffer() {
+    if (!offerPrice) return;
+    setOfferSent(true);
+    setTimeout(() => {
+      setOfferSent(false);
+      setShowOfferModal(false);
+      setOfferPrice("");
+      setOfferNote("");
+      router.push('/inbox');
+    }, 1200);
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
@@ -118,13 +147,6 @@ export default function ProductDetailPage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <span style={{ background: `${COLORS.green}1A`, color: COLORS.green, fontSize: 11.5, fontWeight: 700, borderRadius: 9999, padding: "3px 10px" }}>{product.condition}</span>
-              <span style={{ background: `${COLORS.amber}1A`, color: COLORS.amber, fontSize: 11.5, fontWeight: 700, borderRadius: 9999, padding: "3px 10px", display: "flex", alignItems: "center", gap: 4 }}>
-                {/* Inline Star SVG */}
-                <svg width="11" height="11" viewBox="0 0 24 24" fill={COLORS.amber} stroke={COLORS.amber} strokeWidth="1">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg> 
-                {product.score} Authenticated
-              </span>
             </div>
             <div style={{ fontSize: 12.5, color: COLORS.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>{product.brand}</div>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: COLORS.textMain, margin: "4px 0 6px" }}>{product.name}</h1>
@@ -193,21 +215,42 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            {/* ROUTING BUTTONS WITH ID PARAMETERS */}
-            <div style={{ display: "flex", gap: 12 }}>
-              <button 
-                onClick={() => router.push(`/swap?id=${product.id}`)} 
-                style={{ flex: 1, background: COLORS.inputBg, color: COLORS.textMain, border: "none", borderRadius: 9999, padding: "14px 0", fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}
-              >
-                Propose Swap
-              </button>
-              <button 
-                onClick={() => router.push(`/checkout?id=${product.id}`)} 
-                style={{ flex: 1, background: COLORS.primary, color: "#fff", border: "none", borderRadius: 9999, padding: "14px 0", fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}
-              >
-                Buy Now
-              </button>
-            </div>
+            {/* Buy / Swap / Offer actions */}
+            {isSwappable ? (
+              <div style={{ display: "flex", gap: 12 }}>
+                <button
+                  onClick={() => setShowBuyModal(true)}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#059669", color: "#fff", border: "none", borderRadius: 9999, padding: "14px 0", fontSize: 14.5, fontWeight: 700, cursor: "pointer", boxShadow: "0px 4px 14px rgba(5,150,105,0.3)" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>shopping_bag</span>
+                  Buy Now
+                </button>
+                <button
+                  onClick={() => router.push(`/swap?id=${product.id}`)}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#7C3AED", color: "#fff", border: "none", borderRadius: 9999, padding: "14px 0", fontSize: 14.5, fontWeight: 700, cursor: "pointer", boxShadow: "0px 4px 14px rgba(124,58,237,0.3)" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>swap_horiz</span>
+                  Swap Offer
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 12 }}>
+                <button
+                  onClick={() => { setOfferPrice(String(product.price)); setShowOfferModal(true); }}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#D97706", color: "#fff", border: "none", borderRadius: 9999, padding: "14px 0", fontSize: 14.5, fontWeight: 700, cursor: "pointer", boxShadow: "0px 4px 14px rgba(217,119,6,0.3)" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>sell</span>
+                  Make Offer
+                </button>
+                <button
+                  onClick={() => setShowBuyModal(true)}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#059669", color: "#fff", border: "none", borderRadius: 9999, padding: "14px 0", fontSize: 14.5, fontWeight: 700, cursor: "pointer", boxShadow: "0px 4px 14px rgba(5,150,105,0.3)" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>shopping_bag</span>
+                  Buy Now
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -217,15 +260,12 @@ export default function ProductDetailPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
             {relatedItems.map((item) => (
               <div 
-                key={item.id} 
-                onClick={() => router.push(`/listing/${item.id}`)}
+                key={item.id}
+                onClick={() => router.push(`/listings/${item.id}`)}
                 style={{ background: COLORS.surface, borderRadius: 16, overflow: "hidden", boxShadow: CARD_SHADOW, cursor: "pointer" }}
               >
                 <div style={{ position: "relative", aspectRatio: "1/1", background: "#F3F4F6" }}>
                   <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  <div style={{ position: "absolute", top: 8, left: 8, background: `${COLORS.amber}1A`, color: COLORS.amber, fontSize: 10, fontWeight: 700, borderRadius: 9999, padding: "3px 8px" }}>
-                    {item.score}
-                  </div>
                 </div>
                 <div style={{ padding: "10px 12px 12px" }}>
                   <div style={{ fontSize: 10.5, color: COLORS.textFaint, fontWeight: 600, textTransform: "uppercase" }}>{item.brand}</div>
@@ -237,6 +277,155 @@ export default function ProductDetailPage() {
           </div>
         </section>
       </main>
+
+      {/* Buy Now modal */}
+      {showBuyModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div
+            onClick={() => setShowBuyModal(false)}
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }}
+          />
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: 460,
+              background: "#fff",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              padding: 24,
+              paddingBottom: 32,
+            }}
+          >
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: "#E5E7EB", margin: "0 auto 20px" }} />
+
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: "0 0 16px" }}>Order Summary</h3>
+
+            <div style={{ display: "flex", alignItems: "center", background: "#F9FAFB", borderRadius: 16, padding: 12, marginBottom: 20 }}>
+              <img src={product.image} alt={product.name} style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover", background: "#F3F4F6" }} />
+              <div style={{ flex: 1, marginLeft: 12 }}>
+                <div style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 2 }}>{product.brand}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: COLORS.textMain }}>{product.name}</div>
+                <div style={{ fontSize: 12, color: COLORS.textFaint, marginTop: 2 }}>Size {product.size}</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 14, color: COLORS.textMuted }}>Item price</span>
+                <span style={{ fontSize: 14, color: COLORS.textMain, fontWeight: 500 }}>₱{product.price.toLocaleString()}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 14, color: COLORS.textMuted }}>Meet-up / shipping</span>
+                <span style={{ fontSize: 14, color: COLORS.textMuted }}>To be arranged</span>
+              </div>
+              <div style={{ height: 1, background: "#F3F4F6" }} />
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: COLORS.textMain }}>Total</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#059669" }}>₱{product.price.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleConfirmPurchase}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#059669", color: "#fff", border: "none", borderRadius: 18, padding: "16px 0", fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0px 4px 14px rgba(5,150,105,0.3)" }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+                {buyConfirmed ? "check_circle" : "shopping_bag"}
+              </span>
+              {buyConfirmed ? "Order Placed!" : "Confirm Purchase"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Make Offer modal */}
+      {showOfferModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div
+            onClick={() => setShowOfferModal(false)}
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }}
+          />
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: 460,
+              background: "#fff",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              padding: 24,
+              paddingBottom: 32,
+            }}
+          >
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: "#E5E7EB", margin: "0 auto 20px" }} />
+
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: "0 0 4px" }}>Make an Offer</h3>
+            <p style={{ fontSize: 13, color: COLORS.textFaint, margin: "0 0 20px" }}>Listed at ₱{product.price.toLocaleString()}</p>
+
+            <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8, display: "block" }}>
+              Your offer price
+            </label>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                background: "#F9FAFB",
+                borderRadius: 14,
+                padding: "0 14px",
+                border: `1.5px solid ${offerPrice ? "#D97706" : COLORS.border}`,
+                marginBottom: 16,
+              }}
+            >
+              <span style={{ fontSize: 16, color: COLORS.textMuted, marginRight: 4 }}>₱</span>
+              <input
+                value={offerPrice}
+                onChange={(e) => setOfferPrice(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder={String(product.price)}
+                inputMode="numeric"
+                style={{ flex: 1, padding: "14px 0", fontSize: 18, fontWeight: 700, color: COLORS.textMain, background: "transparent", border: "none", outline: "none" }}
+              />
+            </div>
+
+            <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8, display: "block" }}>
+              Message to seller (optional)
+            </label>
+            <textarea
+              value={offerNote}
+              onChange={(e) => setOfferNote(e.target.value)}
+              placeholder="e.g. Can we meet in BGC this weekend?"
+              rows={3}
+              style={{ width: "100%", background: "#F9FAFB", borderRadius: 14, padding: 14, fontSize: 14, color: COLORS.textMain, border: `1.5px solid ${COLORS.border}`, marginBottom: 20, resize: "none", outline: "none", fontFamily: "Inter, sans-serif" }}
+            />
+
+            <button
+              onClick={offerPrice ? handleSendOffer : undefined}
+              disabled={!offerPrice}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                background: offerPrice ? "#D97706" : COLORS.border,
+                color: offerPrice ? "#fff" : COLORS.textFaint,
+                border: "none",
+                borderRadius: 18,
+                padding: "16px 0",
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: offerPrice ? "pointer" : "default",
+                boxShadow: offerPrice ? "0px 4px 14px rgba(217,119,6,0.3)" : "none",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+                {offerSent ? "check_circle" : "sell"}
+              </span>
+              {offerSent ? "Offer Sent!" : "Send Offer"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer style={{ background: "#F3F4F5", borderTop: `1px solid ${COLORS.border}`, padding: "32px 24px" }}>
