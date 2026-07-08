@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ListingCard, { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
+import { UserService } from '@/features/user/services/user.service';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -38,6 +39,7 @@ export default function BrowseFeed({
 }: BrowseFeedProps) {
   const [countdown, setCountdown] = useState({ h: 3, m: 45, s: 22 });
   const [listings, setListings] = useState<Listing[]>([])
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!showFlashSale) return;
@@ -65,6 +67,10 @@ export default function BrowseFeed({
     }
 
     fetchListings();
+
+    UserService.getUserInfo()
+      .then((user) => setCurrentUserId(user.id))
+      .catch((error) => console.error('Failed to load current user:', error));
   }, [])
 
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -142,7 +148,7 @@ export default function BrowseFeed({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 }}>
         {listings.map((listing) => (
           <View key={listing.id} style={{ width: '50%', padding: 5 }}>
-            <ListingCard listing={listing} onSave={onSaveListing} />
+            <ListingCard listing={listing} onSave={onSaveListing} currentUserId={currentUserId} />
           </View>
         ))}
       </View>

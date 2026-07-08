@@ -7,4 +7,5 @@ export type FavItem = {
   colorway: string;
   savedAt: Date;
   saved: boolean;
+  imageUrl?: string;
 };

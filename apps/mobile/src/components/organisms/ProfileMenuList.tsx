@@ -1,6 +1,14 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { UserService } from '@/features/user/services/user.service';
+import { ListingService } from '@/features/listing/services/listing.service';
+import { ListingSummary, FavouritesSummary } from '@/features/user/types/user.types';
+import { Listing } from '@/components/molecules/ListingCard';
+import { FavItem } from '@/features/listing/types/listing.types';
+
+const PREVIEW_COUNT = 3;
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -30,9 +38,36 @@ function CardHeader({
   );
 }
 
+function PreviewThumb({ uri }: { uri?: string }) {
+  return (
+    <View className="flex-1 h-20 rounded-xl items-center justify-center bg-gray-100 overflow-hidden">
+      {uri ? (
+        <Image source={{ uri }} className="w-full h-full" resizeMode="cover" />
+      ) : (
+        <Ionicons name="image-outline" size={20} color="#9CA3AF" />
+      )}
+    </View>
+  );
+}
+
 /* ── My Listings ── */
 function MyListingsCard({ onPress }: { onPress: () => void }) {
-  const previews = ['#DBEAFE', '#EDE9FE', '#FCE7F3'];
+  const [summary, setSummary] = useState<ListingSummary | null>(null);
+  const [listings, setListings] = useState<Listing[]>([]);
+
+  useEffect(() => {
+    UserService.getListingSummary()
+      .then(setSummary)
+      .catch((error) => console.error('Failed to load listing summary:', error));
+
+    ListingService.getUserListings()
+      .then((data) => setListings(data ?? []))
+      .catch((error) => console.error('Failed to load listings:', error));
+  }, []);
+
+  const previews = listings.slice(0, PREVIEW_COUNT);
+  const remaining = Math.max((summary?.total ?? listings.length) - previews.length, 0);
+
   return (
     <TouchableOpacity
       className="bg-white rounded-2xl mx-5 mb-3 p-4"
@@ -43,25 +78,21 @@ function MyListingsCard({ onPress }: { onPress: () => void }) {
       <CardHeader icon="cube-outline" title="My listings" onPress={onPress} />
 
       <View className="flex-row gap-2 mb-3">
-        {previews.map((bg, i) => (
-          <View
-            key={i}
-            className="flex-1 h-20 rounded-xl items-center justify-center"
-            style={{ backgroundColor: bg }}
-          >
-            <Ionicons name="image-outline" size={20} color="#9CA3AF" />
-          </View>
+        {previews.map((item) => (
+          <PreviewThumb key={item.id} uri={item.imageUrl} />
         ))}
-        <View className="w-16 h-20 rounded-xl bg-gray-100 items-center justify-center">
-          <Text className="text-gray-500 font-bold text-sm">+11</Text>
-        </View>
+        {remaining > 0 && (
+          <View className="w-16 h-20 rounded-xl bg-gray-100 items-center justify-center">
+            <Text className="text-gray-500 font-bold text-sm">+{remaining}</Text>
+          </View>
+        )}
       </View>
 
       <View className="flex-row items-center">
         <View className="w-2 h-2 rounded-full bg-green-400 mr-1.5" />
-        <Text className="text-gray-500 text-xs">5 active</Text>
+        <Text className="text-gray-500 text-xs">{summary?.active ?? 0} active</Text>
         <Text className="text-gray-300 mx-2">·</Text>
-        <Text className="text-amber-500 text-xs">2 pending review</Text>
+        <Text className="text-amber-500 text-xs">{summary?.unavailable ?? 0} unavailable</Text>
       </View>
     </TouchableOpacity>
   );
@@ -69,7 +100,21 @@ function MyListingsCard({ onPress }: { onPress: () => void }) {
 
 /* ── Saved Items ── */
 function SavedItemsCard({ onPress }: { onPress: () => void }) {
-  const colors = ['#FEF3C7', '#D1FAE5', '#DBEAFE', '#FCE7F3'];
+  const [favourites, setFavourites] = useState<FavouritesSummary | null>(null);
+  const [items, setItems] = useState<FavItem[]>([]);
+
+  useEffect(() => {
+    UserService.getFavouritesSummary()
+      .then(setFavourites)
+      .catch((error) => console.error('Failed to load favourites summary:', error));
+
+    ListingService.getUserFavourites()
+      .then((data) => setItems(data ?? []))
+      .catch((error) => console.error('Failed to load favourites:', error));
+  }, []);
+
+  const previews = items.slice(0, 4);
+
   return (
     <TouchableOpacity
       className="bg-white rounded-2xl mx-5 mb-3 p-4"
@@ -80,19 +125,13 @@ function SavedItemsCard({ onPress }: { onPress: () => void }) {
       <CardHeader icon="heart-outline" title="Favourites" onPress={onPress} />
 
       <View className="flex-row gap-2 mb-3">
-        {colors.map((bg, i) => (
-          <View
-            key={i}
-            className="flex-1 h-20 rounded-xl items-center justify-center"
-            style={{ backgroundColor: bg }}
-          >
-            <Ionicons name="footsteps-outline" size={18} color="#9CA3AF" />
-          </View>
+        {previews.map((item) => (
+          <PreviewThumb key={item.id} uri={item.imageUrl} />
         ))}
       </View>
 
       <Text className="text-gray-400 text-xs">
-        <Text className="text-gray-700 font-semibold">23 sneakers</Text> saved across all brands
+        <Text className="text-gray-700 font-semibold">{favourites?.totalCount ?? 0} sneakers</Text> saved across all brands
       </Text>
     </TouchableOpacity>
   );

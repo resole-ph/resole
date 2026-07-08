@@ -20,7 +20,6 @@ export async function POST(request: Request) {
     }
 
     const files = { top, side, sole, insole };
-    const urls: Record<string, string> = {};
 
     const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -34,37 +33,53 @@ export async function POST(request: Request) {
     // PostgREST and fails with PGRST125).
     const supabaseUrl = rawSupabaseUrl.replace(/\/+$/, '');
 
-    for (const [key, file] of Object.entries(files)) {
-      const ext = file.name.split('.').pop() || 'jpg';
-      const randomPart = Math.random().toString(36).substring(2, 8);
-      const filePath = `${currentUser.user.id}/${key}-${Date.now()}-${randomPart}.${ext}`;
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/resole-photos/${filePath}`;
+    const urlKeys = {
+      top: 'imageUrlTop',
+      side: 'imageUrlSide',
+      sole: 'imageUrlSole',
+      insole: 'imageUrlInsole',
+    } as const;
 
-      const fileBuffer = await file.arrayBuffer();
+    // Upload all four angles concurrently instead of one-at-a-time — each is an
+    // independent Storage request, so serializing them only adds latency.
+    const uploads = await Promise.all(
+      Object.entries(files).map(async ([key, file]) => {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const randomPart = Math.random().toString(36).substring(2, 8);
+        const filePath = `${currentUser.user.id}/${key}-${Date.now()}-${randomPart}.${ext}`;
+        const uploadUrl = `${supabaseUrl}/storage/v1/object/resole-photos/${filePath}`;
 
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'Content-Type': file.type,
-        },
-        body: fileBuffer,
-      });
+        const fileBuffer = await file.arrayBuffer();
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Failed to upload ${key} to Supabase:`, errorText);
-        return NextResponse.json({ error: `Failed to upload ${key} photo` }, { status: 500 });
-      }
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': file.type,
+          },
+          body: fileBuffer,
+        });
 
-      urls[key === 'top' ? 'imageUrlTop' : key === 'side' ? 'imageUrlSide' : key === 'sole' ? 'imageUrlSole' : 'imageUrlInsole'] = 
-        `${supabaseUrl}/storage/v1/object/public/resole-photos/${filePath}`;
-    }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to upload ${key} to Supabase:`, errorText);
+          throw new Error(`Failed to upload ${key} photo`);
+        }
+
+        return {
+          urlKey: urlKeys[key as keyof typeof urlKeys],
+          url: `${supabaseUrl}/storage/v1/object/public/resole-photos/${filePath}`,
+        };
+      })
+    );
+
+    const urls = Object.fromEntries(uploads.map(({ urlKey, url }) => [urlKey, url]));
 
     return NextResponse.json(urls);
   } catch (error) {
     console.error('Error uploading photos:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -188,7 +188,7 @@ export async function getUserStatsById(userId: string) {
       .where(eq(login.userId, userId))
       .orderBy(desc(login.createdAt));
     
-    const loginStreak = getLoginStreak(logins.map(item => item.date))
+    const loginStreak = await getLoginStreak(logins.map(item => item.date))
 
     return {
       pairsSaved: saved[0].value,

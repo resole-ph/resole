@@ -22,3 +22,13 @@ export const USERINFOCARDDUMMY: UserInfoCardProps = {
   joinYear: 0,
   stats: [],
 }
+
+export interface ListingSummary {
+  total: number;
+  active: number;
+  unavailable: number;
+}
+
+export interface FavouritesSummary {
+  totalCount: number;
+}

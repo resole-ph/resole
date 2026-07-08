@@ -3,10 +3,12 @@ import { FavItem } from '../types/listing.types';
 import { apiFetch } from '@/lib/api-client';
 
 export const ListingService = {
-  async getDaysLeft(date: Date): Promise<number> {
+  async getDaysLeft(date: Date | string): Promise<number> {
+    const LISTING_DURATION_DAYS = 30;
     const now = new Date().getTime();
-    const listing = date.getTime();
-    return (now - listing) / (1000 * 60 * 60 * 24);
+    const listing = new Date(date).getTime();
+    const daysElapsed = (now - listing) / (1000 * 60 * 60 * 24);
+    return Math.max(Math.round(LISTING_DURATION_DAYS - daysElapsed), 0);
   },
   
   async getListings(): Promise<Listing[]> {
@@ -42,13 +44,13 @@ export const ListingService = {
   },
 
   async getUserFavourites(): Promise<FavItem[]> {
-    const res = await apiFetch<any>(`/api/users/me/favourites`, {
+    const res = await apiFetch<{ favourites: any[] }>(`/api/users/me/favourites`, {
       method: 'GET'
     });
 
-    return res.map((item: any) => { 
-      let details = item.details;
-      return { ...details, saved: true };
+    return res.favourites.map((item: any) => {
+      const details = item.details;
+      return { ...details, saved: true, imageUrl: item.listing?.imageUrlTop };
     });
   },
 

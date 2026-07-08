@@ -11,6 +11,10 @@ export async function POST(request: Request) {
 
   const body = await request.json();
 
+  if (body.listerId === currentUser.user.id) {
+    return NextResponse.json({ error: 'You cannot message yourself' }, { status: 400 });
+  }
+
   const conversationPayload = {
     recipientId: currentUser.user.id,
     listerId: body.listerId,

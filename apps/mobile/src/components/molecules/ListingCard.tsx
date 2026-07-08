@@ -27,18 +27,20 @@ export interface Listing {
   deletedAt?: Date;
   daysLeft?: number;
   seller: {
+    id?: string;
     name: string;
     rating?: number;
     image?: string;
-    totalSales?: number;               
-    verified?: boolean;                
-    avatarColor?: string;              
+    totalSales?: number;
+    verified?: boolean;
+    avatarColor?: string;
   };
 }
 
 interface ListingCardProps {
   listing: Listing;
   onSave?: (listing: Listing) => void;
+  currentUserId?: string;
 }
 
 const BADGE_STYLES: Record<
@@ -59,10 +61,11 @@ const CONDITION_COLORS: Record<Listing['condition'], string> = {
   'Poor':     '#EF4444',
 };
 
-export default function ListingCard({ listing, onSave }: ListingCardProps) {
+export default function ListingCard({ listing, onSave, currentUserId }: ListingCardProps) {
   // Only handle Swap and Sale on the browse card, fallback gracefully if Hot is passed
   const badge = listing.listingMode && listing.listingMode !== 'Hot' ? BADGE_STYLES[listing.listingMode] : null;
   const conditionColor = CONDITION_COLORS[listing.condition];
+  const isOwnListing = !!currentUserId && listing.seller.id === currentUserId;
 
   const handlePress = () => {
     router.push({
@@ -117,14 +120,16 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
         )}
 
         {/* Save button */}
-        <TouchableOpacity
-          className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white items-center justify-center"
-          style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 }}
-          onPress={() => onSave?.(listing)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="heart-outline" size={14} color="#6B7280" />
-        </TouchableOpacity>
+        {!isOwnListing && (
+          <TouchableOpacity
+            className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white items-center justify-center"
+            style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 }}
+            onPress={() => onSave?.(listing)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="heart-outline" size={14} color="#6B7280" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Info area */}
@@ -155,17 +160,29 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
             <Text className="text-gray-800 font-semibold text-xs mb-3" numberOfLines={2}>
               {listing.swapFor ?? 'Open to offers'}
             </Text>
-            <TouchableOpacity
-              className="flex-row items-center justify-center rounded-xl py-2"
-              style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
-              activeOpacity={0.75}
-              onPress={(e) => { e.stopPropagation(); }}
-            >
-              <Ionicons name="swap-horizontal" size={13} color="#2563EB" />
-              <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
-                Propose Swap
-              </Text>
-            </TouchableOpacity>
+            {isOwnListing ? (
+              <View
+                className="flex-row items-center justify-center rounded-xl py-2"
+                style={{ backgroundColor: '#F3F4F6' }}
+              >
+                <Ionicons name="person-outline" size={13} color="#6B7280" />
+                <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
+                  This is your listing
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                className="flex-row items-center justify-center rounded-xl py-2"
+                style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
+                activeOpacity={0.75}
+                onPress={(e) => { e.stopPropagation(); }}
+              >
+                <Ionicons name="swap-horizontal" size={13} color="#2563EB" />
+                <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
+                  Propose Swap
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           /* ── Sale/Flash footer ── */
@@ -204,17 +221,29 @@ export default function ListingCard({ listing, onSave }: ListingCardProps) {
               </View>
             </View>
 
-            <TouchableOpacity
-              className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
-              style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
-              activeOpacity={0.75}
-              onPress={(e) => { e.stopPropagation(); }}
-            >
-              <Ionicons name="bag-handle-outline" size={13} color="#2563EB" />
-              <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
-                Buy Now
-              </Text>
-            </TouchableOpacity>
+            {isOwnListing ? (
+              <View
+                className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
+                style={{ backgroundColor: '#F3F4F6' }}
+              >
+                <Ionicons name="person-outline" size={13} color="#6B7280" />
+                <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
+                  This is your listing
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
+                style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
+                activeOpacity={0.75}
+                onPress={(e) => { e.stopPropagation(); }}
+              >
+                <Ionicons name="bag-handle-outline" size={13} color="#2563EB" />
+                <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
+                  Buy Now
+                </Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
       </View>

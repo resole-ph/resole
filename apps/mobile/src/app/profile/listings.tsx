@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
@@ -19,23 +19,34 @@ type Tab = 'active' | 'pending';
 
 function ActiveCard({
   item,
+  onPress,
   onEdit,
   onDelete,
 }: {
   item: Listing;
+  onPress: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
-    <View className="bg-white rounded-2xl p-4 mb-3 mx-5 flex-row items-center" style={CARD_SHADOW}>
-      <View
-        className="w-16 h-16 rounded-xl items-center justify-center mr-3"
-        // style={{ backgroundColor: item.colorway }}
-      >
-        <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
+    <TouchableOpacity
+      className="bg-white rounded-2xl p-4 mb-3 mx-5 flex-row items-center"
+      style={CARD_SHADOW}
+      activeOpacity={0.85}
+      onPress={onPress}
+    >
+      <View className="w-16 h-16 rounded-xl items-center justify-center mr-3 bg-gray-100 overflow-hidden">
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="cover" />
+        ) : (
+          <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
+        )}
       </View>
 
       <View className="flex-1 mr-2">
+        <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>
+          {item.brand}
+        </Text>
         <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
           {item.model}
         </Text>
@@ -51,33 +62,37 @@ function ActiveCard({
         <TouchableOpacity
           className="w-9 h-9 rounded-xl bg-gray-50 items-center justify-center"
           activeOpacity={0.7}
-          onPress={onEdit}
+          onPress={(e) => { e.stopPropagation(); onEdit(); }}
         >
           <Ionicons name="create-outline" size={18} color="#6B7280" />
         </TouchableOpacity>
         <TouchableOpacity
           className="w-9 h-9 rounded-xl bg-red-50 items-center justify-center"
           activeOpacity={0.7}
-          onPress={onDelete}
+          onPress={(e) => { e.stopPropagation(); onDelete(); }}
         >
           <Ionicons name="trash-outline" size={18} color="#EF4444" />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 function PendingCard({ item }: { item: Listing }) {
   return (
     <View className="bg-white rounded-2xl p-4 mb-3 mx-5 flex-row items-center" style={CARD_SHADOW}>
-      <View
-        className="w-16 h-16 rounded-xl items-center justify-center mr-3"
-        // style={{ backgroundColor: item.colorway }}
-      >
-        <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
+      <View className="w-16 h-16 rounded-xl items-center justify-center mr-3 bg-gray-100 overflow-hidden">
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="cover" />
+        ) : (
+          <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
+        )}
       </View>
 
       <View className="flex-1 mr-2">
+        <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>
+          {item.brand}
+        </Text>
         <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
           {item.model}
         </Text>
@@ -115,30 +130,26 @@ export default function ListingsScreen() {
 
   useEffect(() => {
     const fetchUserListings = async () => {
-      const data = (await ListingService.getUserListings()) || [];
-      const itemsWithDays = await Promise.all(
-        data.map(async (item) => {
-          item.daysLeft = await ListingService.getDaysLeft(item.createdAt);
-          return item;
-        })
-      );
+      try {
+        const data = (await ListingService.getUserListings()) || [];
+        const itemsWithDays = await Promise.all(
+          data.map(async (item) => {
+            item.daysLeft = await ListingService.getDaysLeft(item.createdAt);
+            return item;
+          })
+        );
 
-      const activeItems = itemsWithDays.filter(
-        (item) => item.daysLeft !== undefined && item.daysLeft <= 30
-      );
+        const activeItems = itemsWithDays.filter(
+          (item) => item.daysLeft !== undefined && item.daysLeft > 0
+        );
 
-      setActive(activeItems);
+        setActive(activeItems);
+      } catch (error) {
+        console.error('Failed to load user listings:', error);
+      }
     };
 
-    const fetchPendingListings = async () => {
-      const data = localStorage.getItem('pending');
-      const pendingItems = data ? JSON.parse(data) : [];
-
-      setPending(pendingItems);
-    }
-
     fetchUserListings();
-    fetchPendingListings();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -148,8 +159,16 @@ export default function ListingsScreen() {
         text: 'Remove',
         style: 'destructive',
         onPress: async () => {
-          setActive((prev) => prev.filter((l) => l.id !== id));
-          await ListingService.deleteListing(Number(id));
+          // Only drop it from the list once the server confirms the delete —
+          // an optimistic removal here previously made a failed delete look
+          // like it succeeded, when the listing was still live server-side.
+          try {
+            await ListingService.deleteListing(Number(id));
+            setActive((prev) => prev.filter((l) => l.id !== id));
+          } catch (error) {
+            console.error('Failed to delete listing:', error);
+            Alert.alert('Could not remove listing', 'Please try again.');
+          }
         }
       },
     ]);
@@ -202,6 +221,7 @@ export default function ListingsScreen() {
             <ActiveCard
               key={item.id}
               item={item}
+              onPress={() => router.push({ pathname: '/listing/[id]', params: { id: item.id } })}
               onEdit={handleEdit}
               onDelete={() => handleDelete(item.id)}
             />

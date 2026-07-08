@@ -23,6 +23,7 @@ export function serializeShoeListing(row: ShoeListing) {
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt ?? undefined,
     seller: {
+      id: row.seller.id,
       name: row.seller.name,
       image: row.seller.image ?? undefined,
     },

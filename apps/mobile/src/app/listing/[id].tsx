@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { OfferService } from '@/features/offer/services/offer.service';
+import { UserService } from '@/features/user/services/user.service';
 
 export const CONDITION_COLORS: Record<Listing['condition'], string> = {
   'Like New':  '#10B981',
@@ -44,6 +45,7 @@ export default function ListingDetailScreen() {
   const [similarListings, setSimilarListings] = useState<Listing[] | null>(null);
   const [isLoading, setIsLoading]           = useState(true);
   const [activePhoto, setActivePhoto]       = useState(0);
+  const [currentUserId, setCurrentUserId]   = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -62,6 +64,9 @@ export default function ListingDetailScreen() {
     };
 
     loadData();
+    UserService.getUserInfo()
+      .then((user) => setCurrentUserId(user.id))
+      .catch((error) => console.error('Failed to load current user:', error));
   }, [id]);
 
   if (isLoading) {
@@ -95,6 +100,7 @@ export default function ListingDetailScreen() {
 
   const isSwappable   = listing.listingMode === 'Swap';
   const conditionColor = CONDITION_COLORS[listing.condition];
+  const isOwnListing  = !!currentUserId && listing.seller.id === currentUserId;
 
   const photoUrls = [
     listing.imageUrlTop,
@@ -108,7 +114,8 @@ export default function ListingDetailScreen() {
   ).slice(0, 6) || [];
 
   function handleSwap() {
-    
+    if (isOwnListing) return;
+
     router.push({
       pathname: '/listing/swap-offer',
       params: {
@@ -121,8 +128,8 @@ export default function ListingDetailScreen() {
   }
 
   async function handleSendOffer() {
-    if (!id) return;
-    
+    if (!id || isOwnListing) return;
+
     await OfferService.createSale(id, Number(offerPrice) || 0, offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`);
     
     setOfferSent(true);
@@ -268,7 +275,12 @@ export default function ListingDetailScreen() {
         className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 pt-4"
         style={{ paddingBottom: Math.max(insets.bottom, 16), shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 10 }}
       >
-        {isSwappable ? (
+        {isOwnListing ? (
+          <View className="rounded-2xl py-4 items-center justify-center flex-row bg-gray-100">
+            <Ionicons name="person-outline" size={18} color="#6B7280" />
+            <Text className="text-gray-500 font-bold text-base ml-2">This is your listing</Text>
+          </View>
+        ) : isSwappable ? (
           <View className="flex-row gap-3">
             <TouchableOpacity
               className="flex-1 rounded-2xl py-4 items-center justify-center flex-row"

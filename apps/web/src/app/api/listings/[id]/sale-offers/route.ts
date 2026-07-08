@@ -34,6 +34,10 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 404 });
   }
 
+  if (shoeListing.seller.id === currentUser.user.id) {
+    return NextResponse.json({ error: 'You cannot purchase your own listing' }, { status: 400 });
+  }
+
   const body = await request.json();
   body['recipientId'] = currentUser.user.id;
   body['listingId'] = shoeListingId;

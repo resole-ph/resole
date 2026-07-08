@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions, Alert, Linking, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import SellStepHeader from '../components/SellStepHeader';
 import PhotoGrid from '../components/PhotoGrid';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,20 @@ const ANGLE_LABELS: Record<PhotoAngle, string> = {
   soles: 'Soles',
   insoles: 'Insoles',
 };
+
+/** Max width photos are resized to before upload. Cuts file size drastically
+ * with no visible quality loss for AI valuation, since raw camera photos come
+ * in at full sensor resolution (often 3000px+ wide, several MB each). */
+const UPLOAD_MAX_WIDTH = 1280;
+
+async function compressForUpload(uri: string): Promise<string> {
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ resize: { width: UPLOAD_MAX_WIDTH } }],
+    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+  );
+  return result.uri;
+}
 
 export default function PhotoUploadContainer() {
   const router = useRouter();
@@ -51,7 +66,8 @@ export default function PhotoUploadContainer() {
         }
         const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
         if (!result.canceled && result.assets[0]) {
-          setPreviewPhoto({ uri: result.assets[0].uri, angle });
+          const uri = await compressForUpload(result.assets[0].uri);
+          setPreviewPhoto({ uri, angle });
         }
       } else {
         const { granted, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -70,7 +86,8 @@ export default function PhotoUploadContainer() {
         }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
         if (!result.canceled && result.assets[0]) {
-          setPreviewPhoto({ uri: result.assets[0].uri, angle });
+          const uri = await compressForUpload(result.assets[0].uri);
+          setPreviewPhoto({ uri, angle });
         }
       }
     } catch (e) {

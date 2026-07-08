@@ -19,12 +19,16 @@ export default function UserInfoCard() {
   const [userInfo, setUserInfo] = useState<UserInfoCardProps>(USERINFOCARDDUMMY);
 
   useEffect(() => {
-    const loadData = async() => {
-      const data = await UserService.getUserInfoForCard();
-      setUserInfo(data);
-    }
+    const loadData = async () => {
+      try {
+        const data = await UserService.getUserInfoForCard();
+        setUserInfo(data);
+      } catch (error) {
+        console.error('Failed to load user info:', error);
+      }
+    };
 
-    loadData;
+    loadData();
   }, []);
 
   return (
@@ -56,7 +60,7 @@ export default function UserInfoCard() {
           <View className="flex-row items-center mb-1">
             <Ionicons name="star" size={13} color="#F59E0B" />
             <Text className="text-gray-700 text-sm ml-1">
-              {userInfo.rating} · {userInfo.reviewCount} reviews
+              {userInfo.rating.toFixed(1)} · {userInfo.reviewCount} reviews
             </Text>
           </View>
 
