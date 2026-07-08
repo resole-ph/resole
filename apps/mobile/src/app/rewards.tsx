@@ -1,8 +1,11 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '@/components/organisms/BottomNav';
+import { RedeemOption, CoinTx } from '@/features/transaction/types/transaction.types';
+import { TransactionService } from '@/features/transaction/services/transaction.service';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -11,41 +14,6 @@ const CARD_SHADOW = {
   shadowRadius: 8,
   elevation: 2,
 };
-
-const BALANCE = 1_240;
-
-type CoinTx = {
-  id: string;
-  label: string;
-  sub: string;
-  amount: number;
-  date: string;
-  icon: 'heart-outline' | 'sync-outline' | 'star-outline' | 'gift-outline';
-};
-
-const COIN_HISTORY: CoinTx[] = [
-  { id: '1', label: 'Donated Converse Chuck 70', sub: 'Gawad Kalinga', amount: +80, date: 'May 22', icon: 'heart-outline' },
-  { id: '2', label: 'Recycled Vans Old Skool', sub: 'Drop-off verified', amount: +120, date: 'May 18', icon: 'sync-outline' },
-  { id: '3', label: 'Listing milestone', sub: '10th listing bonus', amount: +50, date: 'May 10', icon: 'star-outline' },
-  { id: '4', label: 'Redeemed discount', sub: '₱200 off on purchase', amount: -200, date: 'May 5', icon: 'gift-outline' },
-  { id: '5', label: 'Donated Puma RS-X', sub: 'Caritas Manila', amount: +100, date: 'Apr 30', icon: 'heart-outline' },
-];
-
-type RedeemOption = {
-  id: string;
-  title: string;
-  description: string;
-  cost: number;
-  icon: 'ticket-outline' | 'heart-circle-outline' | 'pricetag-outline' | 'leaf-outline';
-  highlight?: boolean;
-};
-
-const REDEEM_OPTIONS: RedeemOption[] = [
-  { id: 'r1', title: '₱200 off next purchase', description: 'Apply as discount on any listing', cost: 200, icon: 'pricetag-outline', highlight: true },
-  { id: 'r2', title: 'Donate 100 coins', description: 'We plant a tree in your name', cost: 100, icon: 'leaf-outline' },
-  { id: 'r3', title: 'Priority listing boost', description: 'Push your listing to the top for 7 days', cost: 300, icon: 'ticket-outline' },
-  { id: 'r4', title: 'Charity bundle', description: 'Funds ₱500 worth of charity goods', cost: 500, icon: 'heart-circle-outline' },
-];
 
 function HistoryRow({ tx }: { tx: CoinTx }) {
   const isPositive = tx.amount > 0;
@@ -71,8 +39,8 @@ function HistoryRow({ tx }: { tx: CoinTx }) {
   );
 }
 
-function RedeemCard({ option }: { option: RedeemOption }) {
-  const canAfford = BALANCE >= option.cost;
+function RedeemCard({ option, balance }: { option: RedeemOption; balance: number }) {
+  const canAfford = balance >= option.cost;
   const isHighlight = option.highlight;
   return (
     <View
@@ -136,6 +104,33 @@ export default function RewardsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const [balance, setBalance] = useState<number>(0);
+  const [balanceSummary, setBalanceSummary] = useState<any>({});
+  const [walletHistory, setWalletHistory] = useState<CoinTx[]>([]);
+  const [vouchers, setVouchers] = useState<RedeemOption[]>([]);
+
+  useEffect(() => {
+    const getBalance = async () => {
+      const data = await TransactionService.getUserCoinBalance();
+      setBalance(data.coinBalance);
+      setBalanceSummary(data.summary);
+    };
+
+    const getWalletHistory = async () => {
+      const data = await TransactionService.getUserWalletTransactions();
+      setWalletHistory(data);
+    }
+
+    const getVouchers = async () => {
+      const data = await TransactionService.getVouchers();
+      setVouchers(data);
+    };
+
+    getBalance();
+    getWalletHistory();
+    getVouchers();
+  }, []);
+
   return (
     <View className="flex-1 bg-gray-50">
       <View style={{ paddingTop: insets.top + 8 }} className="px-5 pb-4">
@@ -163,7 +158,7 @@ export default function RewardsScreen() {
             </Text>
           </View>
           <Text className="text-white text-5xl font-bold mt-1 mb-1">
-            {BALANCE.toLocaleString()}
+            {balance.toLocaleString()}
           </Text>
           <Text className="text-green-200 text-sm">
             Earn more by donating or recycling your kicks
@@ -171,9 +166,9 @@ export default function RewardsScreen() {
 
           <View className="flex-row mt-5 gap-2">
             {[
-              { label: 'Donations', value: '800' },
-              { label: 'Recycling', value: '390' },
-              { label: 'Bonuses',   value: '50' },
+              { label: 'Earned', value: balanceSummary.totalCoinsEarned || 0 },
+              { label: 'Redeemed', value: balanceSummary.totalCoinsRedeemed || 0 },
+              { label: 'Vouchers Owned', value: balanceSummary.voucherCount || 0 },
             ].map((b) => (
               <View key={b.label} className="flex-1 rounded-2xl py-2.5 px-2 items-center" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
                 <Text className="text-white font-bold text-base">{b.value}</Text>
@@ -186,15 +181,15 @@ export default function RewardsScreen() {
         {/* Redeem options */}
         <Text className="text-gray-900 font-semibold text-base px-5 mb-3">Redeem</Text>
         <View className="px-5">
-          {REDEEM_OPTIONS.map((opt) => (
-            <RedeemCard key={opt.id} option={opt} />
+          {vouchers.map((opt) => (
+            <RedeemCard key={opt.id} option={opt} balance={balance} />
           ))}
         </View>
 
         {/* Coin history */}
         <Text className="text-gray-900 font-semibold text-base px-5 mt-4 mb-1">History</Text>
         <View className="bg-white rounded-2xl mx-5 px-4" style={CARD_SHADOW}>
-          {COIN_HISTORY.map((tx) => (
+          {walletHistory.map((tx) => (
             <HistoryRow key={tx.id} tx={tx} />
           ))}
         </View>

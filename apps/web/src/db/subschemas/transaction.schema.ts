@@ -24,7 +24,10 @@ export const transactionEnum = pgEnum('transaction_enum', [
 export const voucherEnum = pgEnum('voucher_enum', [
   'percent_off',
   'price_off',
-  'free_coins'
+  'free_coins',
+  'donation',
+  'boost',
+  'other'
 ])
 
 export const transaction = pgTable('transaction', {
@@ -134,7 +137,7 @@ export const voucher = pgTable('voucher', {
   name: text('name').notNull(),
   description: text('description').notNull(),
   amount: numeric('amount'),
-  voucherType: voucherEnum('voucher_type').notNull(),
+  voucherType: voucherEnum('voucher_type').default('other').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   expiresAt: timestamp('expires_at').notNull()
 }, (table) => [
