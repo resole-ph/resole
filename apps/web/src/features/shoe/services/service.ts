@@ -255,7 +255,7 @@ export async function getShoeBrands() {
       .selectDistinct({ categories: shoe.brand })
       .from(shoe);
     
-    return rows ?? null;
+    return rows.map(item => item.categories) ?? null;
   } catch (error) {
     console.error("Error fetching shoe brands.", error);
     return null;
