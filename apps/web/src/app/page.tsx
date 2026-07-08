@@ -26,7 +26,17 @@ const CARD_SHADOW = "0px 4px 20px rgba(0,0,0,0.05)";
 /* ---------------------------------------------------------
    Mock data
 --------------------------------------------------------- */
-const CATEGORIES = ["Running", "Basketball", "Lifestyle", "Skate", "Training", "Casual"];
+const CATEGORIES = [
+  { label: "Running", icon: "directions_run", iconColor: "#F59E0B" },
+  { label: "Basketball", icon: "sports_basketball", iconColor: "#EF4444" },
+  { label: "Lifestyle", icon: "wb_sunny", iconColor: "#8B5CF6" },
+  { label: "Skate", icon: "trending_up", iconColor: "#10B981" },
+  { label: "Training", icon: "fitness_center", iconColor: "#3B82F6" },
+  { label: "Casual", icon: "checkroom", iconColor: "#EC4899" },
+  { label: "Other", icon: "more_horiz", iconColor: "#EC4899" },
+];
+
+const BRANDS = ["Nike", "Adidas", "Jordan Brand", "New Balance", "Asics", "Salomon", "Puma"];
 
 const LISTINGS = [
   {
@@ -79,20 +89,17 @@ const LISTINGS = [
   },
 ];
 
-const STATS = [
-  { label: "Pairs saved", value: "12.4k", color: COLORS.green, icon: "bookmark" },
-  { label: "Your coins", value: "248", color: COLORS.amber, icon: "add" },
-  { label: "Streak", value: "7d", color: COLORS.red, icon: "favorite" },
-];
-
 /* ---------------------------------------------------------
    Small building blocks
 --------------------------------------------------------- */
-function Pill({ children, active, onClick }) {
+function Pill({ children, icon, iconColor, active, onClick }) {
   return (
     <button
       onClick={onClick}
       style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
         borderRadius: 9999,
         padding: "8px 18px",
         fontSize: 13.5,
@@ -106,48 +113,13 @@ function Pill({ children, active, onClick }) {
         transition: "all 0.15s ease",
       }}
     >
-      {children}
-    </button>
-  );
-}
-
-function StatCard({ label, value, color, icon }) {
-  return (
-    <div
-      style={{
-        background: COLORS.surface,
-        borderRadius: 16,
-        padding: 16,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        boxShadow: CARD_SHADOW,
-        flex: 1,
-      }}
-    >
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 9999,
-          background: `${color}33`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: 18, color: color }}>
+      {icon && (
+        <span className="material-symbols-outlined" style={{ fontSize: 15, color: active ? "#fff" : iconColor }}>
           {icon}
         </span>
-      </div>
-      <div>
-        <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 17, color: COLORS.textMain, lineHeight: 1.15 }}>
-          {value}
-        </div>
-        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: COLORS.textFaint }}>{label}</div>
-      </div>
-    </div>
+      )}
+      {children}
+    </button>
   );
 }
 
@@ -287,6 +259,7 @@ function ListingCard({ listing }) {
 --------------------------------------------------------- */
 export default function ResoleHome({ userName = "Miguel" }) {
   const [activeCategory, setActiveCategory] = useState("Lifestyle");
+  const [activeBrand, setActiveBrand] = useState(null);
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
@@ -365,32 +338,6 @@ export default function ResoleHome({ userName = "Miguel" }) {
           />
         </div>
 
-        {/* Stats row */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 36, position: "relative" }}>
-          {STATS.map((s) => (
-            <StatCard key={s.label} {...s} />
-          ))}
-          <button
-            aria-label="Add"
-            style={{
-              width: 54,
-              height: 54,
-              borderRadius: 9999,
-              background: COLORS.primary,
-              border: "none",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              boxShadow: "0px 6px 16px rgba(37,99,235,0.35)",
-              flexShrink: 0,
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>add</span>
-          </button>
-        </div>
-
         {/* Categories */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: 0 }}>Categories</h3>
@@ -398,10 +345,30 @@ export default function ResoleHome({ userName = "Miguel" }) {
             See all
           </button>
         </div>
-        <div style={{ display: "flex", gap: 10, marginBottom: 36, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 28, flexWrap: "wrap" }}>
           {CATEGORIES.map((c) => (
-            <Pill key={c} active={activeCategory === c} onClick={() => setActiveCategory(c)}>
-              {c}
+            <Pill
+              key={c.label}
+              icon={c.icon}
+              iconColor={c.iconColor}
+              active={activeCategory === c.label}
+              onClick={() => setActiveCategory(activeCategory === c.label ? null : c.label)}
+            >
+              {c.label}
+            </Pill>
+          ))}
+        </div>
+
+        {/* Brands */}
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: "0 0 16px" }}>Brands</h3>
+        <div style={{ display: "flex", gap: 10, marginBottom: 36, flexWrap: "wrap" }}>
+          {BRANDS.map((b) => (
+            <Pill
+              key={b}
+              active={activeBrand === b}
+              onClick={() => setActiveBrand(activeBrand === b ? null : b)}
+            >
+              {b}
             </Pill>
           ))}
         </div>
