@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-interface Charity {
-  id: string;
-  name: string;
-  cause: string;
-}
+import { Charity } from '@/features/charity/types/charity.types';
 
 const CHARITIES: Charity[] = [
   { id: 'gawad-kalinga', name: 'Gawad Kalinga', cause: 'Community building' },
@@ -24,24 +19,7 @@ const CHARITY_IMAGES = [
 ];
 
 export default function CharitiesSection() {
-  const [charities, setCharities] = useState<CharityDetails[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const getCharities = async () => {
-      const data = await CharityService.getCharities();
-      const charityList = data.map((item: Charity) => {
-        return {
-          ...item,
-          ...(CHARITY_TYPES[item.cause as keyof typeof CHARITY_TYPES] ?? CHARITY_TYPES.Other),
-        };
-      });
-
-      setCharities(charityList);
-    };
-
-    getCharities();
-  }, []);
 
   return (
     <View className="mb-6">
