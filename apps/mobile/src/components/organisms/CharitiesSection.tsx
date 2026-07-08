@@ -24,7 +24,24 @@ const CHARITY_IMAGES = [
 ];
 
 export default function CharitiesSection() {
+  const [charities, setCharities] = useState<CharityDetails[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getCharities = async () => {
+      const data = await CharityService.getCharities();
+      const charityList = data.map((item: Charity) => {
+        return {
+          ...item,
+          ...(CHARITY_TYPES[item.cause as keyof typeof CHARITY_TYPES] ?? CHARITY_TYPES.Other),
+        };
+      });
+
+      setCharities(charityList);
+    };
+
+    getCharities();
+  }, []);
 
   return (
     <View className="mb-6">

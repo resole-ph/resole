@@ -11,7 +11,7 @@ const CATEGORIES: Category[] = [
   { id: 'skate',      label: 'Skate',      icon: 'trending-up',  iconColor: '#10B981' },
   { id: 'training',   label: 'Training',   icon: 'barbell',      iconColor: '#3B82F6' },
   { id: 'casual',     label: 'Casual',     icon: 'shirt',        iconColor: '#EC4899' },
-  { id: 'other',      label: 'Other',      icon: 'ellipsis-horizontal-outline',        iconColor: '#EC4899' },
+  { id: 'other',      label: 'Other',      icon: 'ellipsis-horizontal-outline',        iconColor: '#a1a1a1' },
 ];
 
 interface CategoriesRowProps {
