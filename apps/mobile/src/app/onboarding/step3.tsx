@@ -5,9 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import OnboardingProgress from '@/components/molecules/OnboardingProgress';
 
-const ILLUSTRATION_URI =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDCfCGtzv4ECgUO2hP3eYyWMNohbT98eA__61UPQnylBcvC7DyRLElG0_S7GEn_WqE2hQ7ohKgQ9M656lxoPPdz1L97eM8ynMhUbLQuECWGcm8kVXeG_VlwWmNQci9azbaHv5F0FrwQk8IetDa-zF22AJyBBo9VluzUGASrg4n_t0xtIsllWmnpWx9AeYnniwuewDVcUGzjYrextsBru3uyVoAE1ofVBcHucKn7UJKrWPgNe1KpGLeWj9HwL_HbXexurSX9KQTgVJ8';
-
 export default function Step3Screen() {
   const router = useRouter();
   const { bottom } = useSafeAreaInsets();
@@ -20,7 +17,7 @@ export default function Step3Screen() {
     <View className="flex-1 bg-surface">
       <View style={{ flex: 1 }}>
         <Image
-          source={{ uri: ILLUSTRATION_URI }}
+          source={require('../../../assets/onboarding-step3.png')}
           className="w-full h-full"
           resizeMode="cover"
         />
