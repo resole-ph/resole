@@ -73,13 +73,30 @@ export async function getUserConversations(id: string) {
   try {
     const otherUser = alias(user, 'otherUser');
 
+    const latestMessageSq = db.$with('latest_message_sq').as(
+      db.selectDistinctOn([message.conversationId])
+        .from(message)
+        .orderBy(message.conversationId, desc(message.createdAt))
+    );
+
     const rows = await db
+      .with(latestMessageSq)
       .select({
         id: conversation.id,
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
         user: getTableColumns(otherUser),
         transaction: getTableColumns(transaction),
+        latestMessage: {
+          id: latestMessageSq.id,
+          conversationId: latestMessageSq.conversationId,
+          senderId: latestMessageSq.userId,
+          recipientId: latestMessageSq.replyTo,
+          content: latestMessageSq.content,
+          isEdited: latestMessageSq.isEdited,
+          createdAt: latestMessageSq.createdAt,
+          deletedAt: latestMessageSq.deletedAt
+        }
       })
       .from(conversation)
       .innerJoin(
@@ -96,13 +113,14 @@ export async function getUserConversations(id: string) {
         )
       )
       .innerJoin(transaction, eq(conversation.transactionId, transaction.id))
+      .leftJoin(latestMessageSq, eq(conversation.id, latestMessageSq.conversationId))
       .where(
         or(
           eq(conversation.listerId, id),
           eq(conversation.recipientId, id)
         )
       )
-      .orderBy(desc(conversation.updatedAt))
+      .orderBy(desc(latestMessageSq.createdAt))
 
     return rows ?? null;
   } catch (error) {

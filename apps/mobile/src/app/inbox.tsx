@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
+import { MsgTab, Message } from '@/features/inbox/types/inbox.types';
+import { InboxService } from '@/features/inbox/services/inbox.service';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -11,112 +13,6 @@ const CARD_SHADOW = {
   shadowRadius: 8,
   elevation: 2,
 };
-
-type MsgTab = 'all' | 'offers' | 'updates';
-
-type Message = {
-  id: string;
-  tab: MsgTab | 'all';
-  sender: string;
-  avatarColor: string;
-  avatarInitial: string;
-  preview: string;
-  time: string;
-  unread: number;
-  icon?: keyof typeof Ionicons.glyphMap;
-  isSystem?: boolean;
-};
-
-const MESSAGES: Message[] = [
-  {
-    id: 'm1',
-    tab: 'offers',
-    sender: '@jmendoza',
-    avatarColor: '#DBEAFE',
-    avatarInitial: 'J',
-    preview: 'Hey! Would you do ₱16,000 for the Jordan 1 Retro? I can pick up today.',
-    time: '9:41 AM',
-    unread: 2,
-  },
-  {
-    id: 'm2',
-    tab: 'updates',
-    sender: 'Resole',
-    avatarColor: '#EFF6FF',
-    avatarInitial: 'R',
-    preview: 'Your order ORD-001 (Nike Air Max 90) is now out for delivery. Expected by 3 PM.',
-    time: '8:15 AM',
-    unread: 1,
-    icon: 'cube-outline',
-    isSystem: true,
-  },
-  {
-    id: 'm3',
-    tab: 'offers',
-    sender: '@kevinr',
-    avatarColor: '#EDE9FE',
-    avatarInitial: 'K',
-    preview: 'Swap proposal: my NB 550 (size 10) for your Panda Dunk. Both DS. Let me know!',
-    time: 'Yesterday',
-    unread: 0,
-  },
-  {
-    id: 'm4',
-    tab: 'updates',
-    sender: 'Resole',
-    avatarColor: '#EFF6FF',
-    avatarInitial: 'R',
-    preview: 'Your listing "Adidas Samba OG" has been viewed 48 times this week.',
-    time: 'Yesterday',
-    unread: 0,
-    icon: 'bar-chart-outline',
-    isSystem: true,
-  },
-  {
-    id: 'm5',
-    tab: 'offers',
-    sender: '@amirag',
-    avatarColor: '#D1FAE5',
-    avatarInitial: 'A',
-    preview: 'Is the Samba OG still available? I can do ₱7,500 cash on meet-up.',
-    time: 'Mon',
-    unread: 0,
-  },
-  {
-    id: 'm6',
-    tab: 'updates',
-    sender: 'Resole',
-    avatarColor: '#EFF6FF',
-    avatarInitial: 'R',
-    preview: 'Donation confirmed! Your Converse Chuck 70 earned you 80 Recycle Coins.',
-    time: 'May 22',
-    unread: 0,
-    icon: 'heart-outline',
-    isSystem: true,
-  },
-  {
-    id: 'm7',
-    tab: 'offers',
-    sender: '@lramos',
-    avatarColor: '#FCE7F3',
-    avatarInitial: 'L',
-    preview: 'Thanks for the swap! The Panda Dunk arrived in perfect condition.',
-    time: 'May 20',
-    unread: 0,
-  },
-  {
-    id: 'm8',
-    tab: 'updates',
-    sender: 'Resole Support',
-    avatarColor: '#FEF3C7',
-    avatarInitial: 'S',
-    preview: 'Your dispute for DON-002 has been resolved. Refund of ₱200 is on its way.',
-    time: 'May 18',
-    unread: 0,
-    icon: 'shield-checkmark-outline',
-    isSystem: true,
-  },
-];
 
 function Avatar({ color, initial, icon, isSystem }: {
   color: string;
@@ -147,7 +43,7 @@ function MessageRow({ msg, onPress }: { msg: Message; onPress: () => void }) {
       onPress={onPress}
     >
       <Avatar
-        color={msg.avatarColor}
+        color={msg.avatarColor || '#EFF6FF'}
         initial={msg.avatarInitial}
         icon={msg.icon}
         isSystem={msg.isSystem}
@@ -183,7 +79,18 @@ function MessageRow({ msg, onPress }: { msg: Message; onPress: () => void }) {
 
 export default function InboxScreen() {
   const router = useRouter();
+
   const [tab, setTab] = useState<MsgTab>('all');
+  const [conversations, setConversations] = useState<Message[]>([]);
+
+  useEffect(() => {
+    const getConversations = async () => {
+      const data = await InboxService.getConversations();
+      setConversations(data);
+    }
+
+    getConversations();
+  }, []);
 
   const TAB_LABELS: { id: MsgTab; label: string }[] = [
     { id: 'all',     label: 'All' },
@@ -191,8 +98,8 @@ export default function InboxScreen() {
     { id: 'updates', label: 'Updates' },
   ];
 
-  const filtered = tab === 'all' ? MESSAGES : MESSAGES.filter((m) => m.tab === tab);
-  const totalUnread = MESSAGES.reduce((n, m) => n + m.unread, 0);
+  const filtered = tab === 'all' ? conversations : conversations.filter((m) => m.tab === tab);
+  const totalUnread = conversations.reduce((n, m) => n + m.unread, 0);
 
   return (
     <View className="flex-1 bg-gray-50">
