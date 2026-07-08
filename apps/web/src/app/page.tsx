@@ -1,10 +1,6 @@
 'use client';
 
 import { useState } from "react";
-// app/page.tsx
-'use client';
-
-import { useState } from "react";
 import { useAuthGate } from "@/providers/AuthGateProvider";
 
 /* ---------------------------------------------------------
@@ -319,9 +315,6 @@ export default function ResoleHome({ userName = "Miguel" }) {
             padding: "60px 60px",
             marginBottom: 32,
             minHeight: 360,
-            padding: "60px 60px", // Increased padding from 40px
-            marginBottom: 32,
-            minHeight: 360, // Increased minHeight from 260
             display: "flex",
             alignItems: "center",
           }}
@@ -341,7 +334,6 @@ export default function ResoleHome({ userName = "Miguel" }) {
                 border: "none",
                 borderRadius: 9999,
                 padding: "14px 28px",
-                padding: "14px 28px", // Slightly bigger CTA button
                 fontSize: 15,
                 fontWeight: 700,
                 display: "inline-flex",
@@ -366,8 +358,6 @@ export default function ResoleHome({ userName = "Miguel" }) {
               bottom: -40,
               width: 560,
               height: 560,
-              width: 560, // Scaled up from 460
-              height: 560, // Scaled up from 460
               objectFit: "contain",
               transform: "rotate(-10deg)",
               filter: "drop-shadow(0 25px 35px rgba(0,0,0,0.4))",
