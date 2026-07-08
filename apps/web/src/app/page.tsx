@@ -38,6 +38,15 @@ const CATEGORIES = [
 
 const BRANDS = ["Nike", "Adidas", "Jordan Brand", "New Balance", "Asics", "Salomon", "Puma"];
 
+const CHARITIES = [
+  { id: "gawad-kalinga", name: "Gawad Kalinga", cause: "Community building", image: "/charity1.jpg" },
+  { id: "red-cross", name: "Philippine Red Cross", cause: "Disaster relief", image: "/charity2.jpg" },
+  { id: "wwf", name: "WWF Philippines", cause: "Environment & wildlife", image: "/charity3.jpg" },
+  { id: "unicef", name: "UNICEF Philippines", cause: "Children's welfare", image: "/charity1.jpg" },
+  { id: "caritas", name: "Caritas Philippines", cause: "Poverty alleviation", image: "/charity2.jpg" },
+  { id: "save-children", name: "Save the Children", cause: "Child education", image: "/charity3.jpg" },
+];
+
 const LISTINGS = [
   {
     id: 1,
@@ -247,12 +256,87 @@ function ListingCard({ listing }) {
   );
 }
 
+function CharityCard({ charity, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: 160,
+        textAlign: "left",
+        flexShrink: 0,
+        background: selected ? "#EFF6FF" : COLORS.surface,
+        borderRadius: 16,
+        padding: 12,
+        border: selected ? `1.5px solid ${COLORS.primary}` : `1.5px solid ${COLORS.border}`,
+        boxShadow: CARD_SHADOW,
+        cursor: "pointer",
+        position: "relative",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <img
+        src={charity.image}
+        alt={charity.name}
+        style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 12, marginBottom: 10 }}
+      />
+      <div style={{ fontSize: 13.5, fontWeight: 700, color: selected ? "#1D4ED8" : COLORS.textMain, marginBottom: 2 }}>
+        {charity.name}
+      </div>
+      <div style={{ fontSize: 11.5, color: COLORS.textFaint }}>{charity.cause}</div>
+
+      {selected && (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            width: 20,
+            height: 20,
+            borderRadius: 9999,
+            background: COLORS.primary,
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 13 }}>check</span>
+        </div>
+      )}
+    </button>
+  );
+}
+
+function CharitiesSection({ selectedCharity, onSelect }) {
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 16 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: 0 }}>Support a Cause</h3>
+        <p style={{ fontSize: 13, color: COLORS.textFaint, margin: "2px 0 0" }}>
+          Pick a charity — donation proceeds go straight to them.
+        </p>
+      </div>
+      <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
+        {CHARITIES.map((charity) => (
+          <CharityCard
+            key={charity.id}
+            charity={charity}
+            selected={selectedCharity === charity.id}
+            onClick={() => onSelect(selectedCharity === charity.id ? null : charity.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------
    Page
 --------------------------------------------------------- */
 export default function ResoleHome({ userName = "Miguel" }) {
   const [activeCategory, setActiveCategory] = useState("Lifestyle");
   const [activeBrand, setActiveBrand] = useState(null);
+  const [selectedCharity, setSelectedCharity] = useState(null);
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
@@ -351,6 +435,9 @@ export default function ResoleHome({ userName = "Miguel" }) {
             </Pill>
           ))}
         </div>
+
+        {/* Charities */}
+        <CharitiesSection selectedCharity={selectedCharity} onSelect={setSelectedCharity} />
 
         {/* Brands */}
         <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: "0 0 16px" }}>Brands</h3>
