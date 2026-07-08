@@ -197,7 +197,10 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 className="flex-row items-center justify-center rounded-xl py-2"
                 style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
                 activeOpacity={0.75}
-                onPress={(e) => { e.stopPropagation(); }}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push({ pathname: '/listing/[id]', params: { id: listing.id, action: 'swap' } });
+                }}
               >
                 <Ionicons name="swap-horizontal" size={13} color="#2563EB" />
                 <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
@@ -258,11 +261,14 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
                 style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
                 activeOpacity={0.75}
-                onPress={(e) => { e.stopPropagation(); }}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push({ pathname: '/listing/[id]', params: { id: listing.id, action: 'offer' } });
+                }}
               >
-                <Ionicons name="bag-handle-outline" size={13} color="#2563EB" />
+                <Ionicons name="pricetag-outline" size={13} color="#2563EB" />
                 <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
-                  Buy Now
+                  Make Offer
                 </Text>
               </TouchableOpacity>
             )}

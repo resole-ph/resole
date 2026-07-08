@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { acceptOffer } from '@/features/transaction/services/service';
 import { getTransactionById } from '@/features/transaction/services/service';
+import { createNotification } from '@/features/notifications/services/service';
 
 function parseTransactionId(rawId: string) {
   const shoeListingId = Number.parseInt(rawId, 10);
@@ -43,6 +44,17 @@ export async function POST(
   const result = await acceptOffer(transaction.id);
   if (!result || !result.isAccepted) {
     return NextResponse.json({ error: 'Failed to accept offer' }, { status: 400 });
+  }
+
+  if (transaction.recipientId) {
+    await createNotification({
+      userId: transaction.recipientId,
+      category: 'offer',
+      title: 'Offer accepted',
+      body: 'Your offer was accepted by the seller.',
+      entityType: 'transaction',
+      entityId: String(transaction.id),
+    });
   }
 
   return NextResponse.json({ message: "Offer accepted successfully" });

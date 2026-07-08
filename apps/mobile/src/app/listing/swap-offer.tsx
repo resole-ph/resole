@@ -186,12 +186,15 @@ export default function SwapOfferScreen() {
                           <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: condColor, marginRight: 4 }} />
                           <Text style={{ fontSize: 11, fontWeight: '600', color: condColor }}>{item.condition}</Text>
                         </View>
-                        {/* AI score */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
-                          <Ionicons name="sparkles" size={9} color="#D97706" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#D97706', marginLeft: 3 }}>AI {item.conditionScore}%</Text>
+                        {/* Rated capsule */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>Rated: {item.conditionScore}</Text>
                         </View>
-                        {item.size && <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{item.size}</Text>}
+                        {item.size && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
+                            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>Size: {item.size}</Text>
+                          </View>
+                        )}
                       </View>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: '#7C3AED', marginTop: 4 }}>
                         ₱{item.price.toLocaleString()}

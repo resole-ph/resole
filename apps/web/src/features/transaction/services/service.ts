@@ -426,6 +426,7 @@ export async function getSwapById(id: number) {
         ...getTableColumns(swapItem)
       })
       .from(swapItem)
+      .innerJoin(shoeListing, eq(swapItem.itemId, shoeListing.id))
       .where(eq(swapItem.swapId, id))
       .orderBy(desc(swapItem.createdAt));
 

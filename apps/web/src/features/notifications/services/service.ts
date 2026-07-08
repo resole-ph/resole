@@ -1,7 +1,21 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/config/db';
 import { notification, notificationDevice, notificationPreference } from '@/db/schema';
-import type { Notification, NotificationDevice, NotificationPreference } from '@/features/notifications/types/types';
+import type { Notification, CreateNotification, NotificationDevice, NotificationPreference } from '@/features/notifications/types/types';
+
+export async function createNotification(data: CreateNotification): Promise<Notification | null> {
+  try {
+    const rows = await db
+      .insert(notification)
+      .values(data)
+      .returning();
+
+    return rows[0] ?? null;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return null;
+  }
+}
 
 export async function getNotificationsByUserId(userId: string): Promise<Notification[] | null> {
   try {

@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { and, or, desc, eq, getTableColumns, isNotNull } from 'drizzle-orm';
+import { and, or, asc, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
 import { conversation, message, transaction, user } from '@/db/schema';
 import { Conversation, CreateConversation, Message, CreateMessage } from '../types/types';
 import { alias } from 'drizzle-orm/pg-core';
@@ -65,6 +65,30 @@ export async function getConversationById(id: number) {
     return result[0] ?? null;
   } catch (error) {
     console.error("Error fetching conversation.", error);
+    return null;
+  }
+}
+
+export async function getConversationBetweenUsers(userAId: string, userBId: string) {
+  try {
+    const result = await db
+      .select({
+        transaction: getTableColumns(transaction),
+        ...getTableColumns(conversation)
+      })
+      .from(conversation)
+      .innerJoin(transaction, eq(conversation.transactionId, transaction.id))
+      .where(
+        or(
+          and(eq(conversation.listerId, userAId), eq(conversation.recipientId, userBId)),
+          and(eq(conversation.listerId, userBId), eq(conversation.recipientId, userAId))
+        )
+      )
+      .limit(1);
+
+    return result[0] ?? null;
+  } catch (error) {
+    console.error("Error fetching conversation between users.", error);
     return null;
   }
 }
@@ -137,10 +161,10 @@ export async function getConversationMessages(id: number) {
       .where(
         and(
           eq(message.conversationId, id),
-          isNotNull(message.deletedAt)
+          isNull(message.deletedAt)
         )
       )
-      .orderBy(desc(message.createdAt))
+      .orderBy(asc(message.createdAt))
 
     return result as Message[] ?? null;
   } catch (error) {

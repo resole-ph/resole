@@ -4,15 +4,15 @@ export const OfferService = {
   async createSwap(id: number, listings: number[], message: string) {
     const transaction = await apiFetch<any>(`api/listings/${id}/swap-offers`, {
       method: 'POST',
-      body: { 
-        'type': 'Swap',
+      body: {
+        'type': 'swap',
         listings: listings
       }
     });
 
     const messagePayload = {
       listerId: transaction.transactionDetails.listing.userId,
-      transactionId: transaction.id,
+      transactionId: transaction.transactionDetails.id,
       content: message
     };
 
@@ -30,15 +30,15 @@ export const OfferService = {
   async createSale(id: number, price: number, message: string) {
     const transaction = await apiFetch<any>(`api/listings/${id}/sale-offers`, {
       method: 'POST',
-      body: { 
-        'type': 'Sale', 
+      body: {
+        'type': 'sale',
         price: price
       }
     });
 
     const messagePayload = {
       listerId: transaction.transactionDetails.listing.userId,
-      transactionId: transaction.id,
+      transactionId: transaction.transactionDetails.id,
       content: message
     };
 
@@ -51,5 +51,17 @@ export const OfferService = {
       transaction: transaction,
       inbox: inbox
     };
-  } 
+  },
+
+  async acceptOffer(transactionId: number) {
+    return apiFetch<{ message: string }>(`api/offers/${transactionId}/accept`, {
+      method: 'POST',
+    });
+  },
+
+  async declineOffer(transactionId: number) {
+    return apiFetch<{ message: string }>(`api/offers/${transactionId}/decline`, {
+      method: 'POST',
+    });
+  },
 }
