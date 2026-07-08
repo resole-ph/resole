@@ -1,69 +1,74 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { Charity } from '@/features/charity/types/charity.types';
+import { CharityService } from '@/features/charity/services/charity.service';
 
-interface Charity {
-  id: string;
-  name: string;
-  cause: string;
+interface CharityDisplayProps {
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   iconBg: string;
 }
 
-const CHARITIES: Charity[] = [
-  {
-    id: 'gawad-kalinga',
-    name: 'Gawad Kalinga',
-    cause: 'Community building',
+type CharityDetails = Charity & CharityDisplayProps;
+
+export const CHARITY_TYPES = {
+  'Community building': {
     icon: 'home-outline',
     iconColor: '#F59E0B',
     iconBg: '#FEF3C7',
   },
-  {
-    id: 'red-cross',
-    name: 'Philippine Red Cross',
-    cause: 'Disaster relief',
+  'Disaster relief': {
     icon: 'medkit-outline',
     iconColor: '#EF4444',
     iconBg: '#FEE2E2',
   },
-  {
-    id: 'wwf',
-    name: 'WWF Philippines',
-    cause: 'Environment & wildlife',
+  'Environment & wildlife': {
     icon: 'leaf-outline',
     iconColor: '#10B981',
     iconBg: '#D1FAE5',
   },
-  {
-    id: 'unicef',
-    name: 'UNICEF Philippines',
-    cause: "Children's welfare",
+  "Children's welfare": {
     icon: 'happy-outline',
     iconColor: '#3B82F6',
     iconBg: '#DBEAFE',
   },
-  {
-    id: 'caritas',
-    name: 'Caritas Philippines',
-    cause: 'Poverty alleviation',
+  'Poverty alleviation': {
     icon: 'heart-outline',
     iconColor: '#8B5CF6',
     iconBg: '#EDE9FE',
   },
-  {
-    id: 'save-children',
-    name: 'Save the Children',
-    cause: 'Child education',
+  'Child education': {
     icon: 'school-outline',
     iconColor: '#EC4899',
     iconBg: '#FCE7F3',
   },
-];
+  'Other': {
+    icon: 'ellipsis-horizontal-outline',
+    iconColor: "#929292",
+    iconBg: '#FFFFFF'
+  }
+} as const;
 
 export default function CharitiesSection() {
+  const [charities, setCharities] = useState<CharityDetails[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getCharities = async () => {
+      const data = await CharityService.getCharities();
+      const charityList = data.map((item: Charity) => {
+        return {
+          ...item,
+          ...(CHARITY_TYPES[item.cause as keyof typeof CHARITY_TYPES] ?? CHARITY_TYPES.Other),
+        };
+      });
+
+      setCharities(charityList);
+    };
+
+    getCharities();
+  }, []);
 
   return (
     <View className="mb-6">
@@ -81,7 +86,7 @@ export default function CharitiesSection() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
       >
-        {CHARITIES.map((charity) => {
+        {charities.map((charity) => {
           const selected = selectedId === charity.id;
           return (
             <TouchableOpacity

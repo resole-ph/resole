@@ -157,7 +157,13 @@ export async function getUserStatsById(userId: string) {
       .select({ value: count(transaction.id) })
       .from(transaction)
       .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
-      .where(and(eq(shoeListing.userId, userId), eq(transaction.type, 'sale')));
+      .where(
+        and(
+          eq(shoeListing.userId, userId), 
+          eq(transaction.type, 'sale'),
+          eq(transaction.isCompleted, true)
+        )
+      );
 
     const swaps = await db
       .select({ value: count(transaction.id) })
@@ -167,6 +173,7 @@ export async function getUserStatsById(userId: string) {
         and(
           eq(transaction.type, 'swap'),
           or(eq(shoeListing.userId, userId), eq(transaction.recipientId, userId)),
+          eq(transaction.isCompleted, true)
         ),
       );
 
