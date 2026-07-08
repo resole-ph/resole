@@ -142,7 +142,16 @@ export default function InboxScreen() {
             <MessageRow
               key={msg.id}
               msg={msg}
-              onPress={() => router.push(`/inbox/${msg.id}` as any)}
+              onPress={() => router.push({
+                pathname: '/inbox/[id]',
+                params: {
+                  id: msg.id,
+                  sender: msg.sender,
+                  avatarInitial: msg.avatarInitial,
+                  avatarColor: msg.avatarColor ?? '',
+                  isSystem: msg.isSystem ? '1' : '0',
+                },
+              } as any)}
             />
           ))
         )}

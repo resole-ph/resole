@@ -31,16 +31,15 @@ const BTN_SHADOW = (color: string) => ({
 });
 
 export default function ListingDetailScreen() {
-  const { id: rawId } = useLocalSearchParams<{ id: string }>();
+  const { id: rawId, action } = useLocalSearchParams<{ id: string; action?: string }>();
   const id = Number(rawId);
   const insets = useSafeAreaInsets();
 
-  const [showBuyModal, setShowBuyModal]     = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [offerPrice, setOfferPrice]         = useState('');
   const [offerNote, setOfferNote]           = useState('');
-  const [buyConfirmed, setBuyConfirmed]     = useState(false);
   const [offerSent, setOfferSent]           = useState(false);
+  const [autoActionHandled, setAutoActionHandled] = useState(false);
   const [listing, setListing]               = useState<Listing | null>(null);
   const [similarListings, setSimilarListings] = useState<Listing[] | null>(null);
   const [isLoading, setIsLoading]           = useState(true);
@@ -68,6 +67,25 @@ export default function ListingDetailScreen() {
       .then((user) => setCurrentUserId(user.id))
       .catch((error) => console.error('Failed to load current user:', error));
   }, [id]);
+
+  useEffect(() => {
+    if (autoActionHandled || !listing || !action) return;
+    if (currentUserId && listing.seller.id === currentUserId) {
+      setAutoActionHandled(true);
+      return;
+    }
+
+    const canOfferNow = listing.listingMode !== 'Swap';
+    const canSwapNow  = listing.listingMode === 'Swap' || listing.listingMode === 'Both';
+
+    if (action === 'offer' && canOfferNow) {
+      setOfferPrice(String(listing.price));
+      setShowOfferModal(true);
+    } else if (action === 'swap' && canSwapNow) {
+      handleSwap();
+    }
+    setAutoActionHandled(true);
+  }, [listing, action, currentUserId, autoActionHandled]);
 
   if (isLoading) {
     return (
@@ -98,7 +116,8 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const isSwappable   = listing.listingMode === 'Swap';
+  const canOffer      = listing.listingMode !== 'Swap';
+  const canSwap        = listing.listingMode === 'Swap' || listing.listingMode === 'Both';
   const conditionColor = CONDITION_COLORS[listing.condition];
   const isOwnListing  = !!currentUserId && listing.seller.id === currentUserId;
 
@@ -280,28 +299,7 @@ export default function ListingDetailScreen() {
             <Ionicons name="person-outline" size={18} color="#6B7280" />
             <Text className="text-gray-500 font-bold text-base ml-2">This is your listing</Text>
           </View>
-        ) : isSwappable ? (
-          <View className="flex-row gap-3">
-            <TouchableOpacity
-              className="flex-1 rounded-2xl py-4 items-center justify-center flex-row"
-              activeOpacity={0.85}
-              onPress={() => setShowBuyModal(true)}
-              style={{ backgroundColor: '#059669', ...BTN_SHADOW('#059669') }}
-            >
-              <Ionicons name="bag-handle-outline" size={18} color="#fff" />
-              <Text className="text-white font-bold text-base ml-2">Buy Now</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="flex-1 rounded-2xl py-4 items-center flex-row justify-center"
-              activeOpacity={0.85}
-              onPress={handleSwap}
-              style={{ backgroundColor: '#7C3AED', ...BTN_SHADOW('#7C3AED') }}
-            >
-              <Ionicons name="swap-horizontal" size={18} color="#fff" />
-              <Text className="text-white font-bold text-base ml-2">Swap Offer</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
+        ) : canOffer && canSwap ? (
           <View className="flex-row gap-3">
             <TouchableOpacity
               className="flex-1 rounded-2xl py-4 items-center justify-center flex-row"
@@ -313,64 +311,37 @@ export default function ListingDetailScreen() {
               <Text className="text-white font-bold text-base ml-2">Make Offer</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 rounded-2xl py-4 items-center justify-center flex-row"
+              className="flex-1 rounded-2xl py-4 items-center flex-row justify-center"
               activeOpacity={0.85}
-              onPress={() => setShowBuyModal(true)}
-              style={{ backgroundColor: '#059669', ...BTN_SHADOW('#059669') }}
+              onPress={handleSwap}
+              style={{ backgroundColor: '#7C3AED', ...BTN_SHADOW('#7C3AED') }}
             >
-              <Ionicons name="bag-handle-outline" size={18} color="#fff" />
-              <Text className="text-white font-bold text-base ml-2">Buy Now</Text>
+              <Ionicons name="swap-horizontal" size={18} color="#fff" />
+              <Text className="text-white font-bold text-base ml-2">Offer Swap</Text>
             </TouchableOpacity>
           </View>
+        ) : canSwap ? (
+          <TouchableOpacity
+            className="rounded-2xl py-4 items-center flex-row justify-center"
+            activeOpacity={0.85}
+            onPress={handleSwap}
+            style={{ backgroundColor: '#7C3AED', ...BTN_SHADOW('#7C3AED') }}
+          >
+            <Ionicons name="swap-horizontal" size={18} color="#fff" />
+            <Text className="text-white font-bold text-base ml-2">Offer Swap</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            className="rounded-2xl py-4 items-center justify-center flex-row"
+            activeOpacity={0.85}
+            onPress={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
+            style={{ backgroundColor: '#D97706', ...BTN_SHADOW('#D97706') }}
+          >
+            <Ionicons name="pricetag-outline" size={18} color="#fff" />
+            <Text className="text-white font-bold text-base ml-2">Make Offer</Text>
+          </TouchableOpacity>
         )}
       </View>
-
-      {/* ── Buy Now modal ── */}
-      <Modal visible={showBuyModal} transparent animationType="slide" onRequestClose={() => setShowBuyModal(false)}>
-        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setShowBuyModal(false)} />
-        <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: Math.max(insets.bottom, 24) }}>
-          {/* Handle */}
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 20 }} />
-
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 16 }}>Order Summary</Text>
-
-          {/* Item row */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 16, padding: 12, marginBottom: 20 }}>
-            <Image source={{ uri: listing.imageUrl }} style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: '#F3F4F6' }} resizeMode="cover" />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 2 }}>{listing.brand}</Text>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }} numberOfLines={2}>{listing.model}</Text>
-              {listing.size && <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Size: {listing.size}</Text>}
-            </View>
-          </View>
-
-          {/* Price breakdown */}
-          <View style={{ gap: 10, marginBottom: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 14, color: '#6B7280' }}>Item price</Text>
-              <Text style={{ fontSize: 14, color: '#111827', fontWeight: '500' }}>₱{listing.price.toLocaleString()}</Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 14, color: '#6B7280' }}>Meet-up / shipping</Text>
-              <Text style={{ fontSize: 14, color: '#6B7280' }}>To be arranged</Text>
-            </View>
-            <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>Total</Text>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#059669' }}>₱{listing.price.toLocaleString()}</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            onPress={handleSendOffer}
-            style={{ backgroundColor: buyConfirmed ? '#059669' : '#059669', borderRadius: 18, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, ...BTN_SHADOW('#059669') }}
-            activeOpacity={0.85}
-          >
-            <Ionicons name={buyConfirmed ? 'checkmark-circle' : 'bag-handle-outline'} size={20} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{buyConfirmed ? 'Order Placed!' : 'Confirm Purchase'}</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
 
       {/* ── Make Offer modal ── */}
       <Modal visible={showOfferModal} transparent animationType="slide" onRequestClose={() => setShowOfferModal(false)}>

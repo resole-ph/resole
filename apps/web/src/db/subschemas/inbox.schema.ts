@@ -42,6 +42,8 @@ export const message = pgTable('message', {
   conversationId: integer('conversation_id')
     .notNull()
     .references(() => conversation.id),
+  transactionId: integer('transaction_id')
+    .references(() => transaction.id),
   replyTo: integer('reply_to').references((): AnyPgColumn => message.id, {
     onDelete: 'cascade',
   }),
@@ -57,4 +59,5 @@ export const message = pgTable('message', {
   check('message_reply_check', sql`${table.id} != ${table.replyTo}`),
   index('message_user_id_idx').on(table.userId),
   index('message_conversation_id_idx').on(table.conversationId),
+  index('message_transaction_id_idx').on(table.transactionId),
 ]);

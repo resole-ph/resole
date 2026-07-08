@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { createMessage, getConversationById } from '@/features/inbox/services/service';
+import { createNotification } from '@/features/notifications/services/service';
 
 function parseConversationId(rawId: string) {
   const conversationId = Number.parseInt(rawId, 10);
@@ -47,6 +48,17 @@ export async function POST(
   if (!message) {
     return NextResponse.json({ error: 'Failed to create message' }, { status: 400 })
   }
+
+  const recipientOfNotification = isLister ? conversation.recipientId : conversation.listerId;
+  await createNotification({
+    userId: recipientOfNotification,
+    category: 'offer',
+    title: 'New message',
+    body: body.content?.slice(0, 200) || 'You have a new message.',
+    actionUrl: `/inbox/o${conversation.id}`,
+    entityType: 'conversation',
+    entityId: String(conversation.id),
+  });
 
   return NextResponse.json({
     message: message
