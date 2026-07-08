@@ -80,8 +80,16 @@ export default function FavouritesScreen() {
   const saved = items.filter((i) => i.saved);
 
   const handleToggle = async (id: number) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, saved: !i.saved } : i)));
-    await ListingService.unfavoriteListing(id);
+    try {
+      await ListingService.unfavoriteListing(item.listingId);
+    } catch (error) {
+      console.error('Failed to unfavorite listing:', error);
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, saved: !i.saved } : i)));
+    }
   };
 
   return (

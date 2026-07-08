@@ -1,5 +1,6 @@
 export type FavItem = {
   id: number;
+  listingId: number;
   model: string;
   brand: string;
   size: string;

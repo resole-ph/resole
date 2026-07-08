@@ -21,6 +21,8 @@ interface BrowseFeedProps {
   /** Only used when `listings` isn't provided (self-fetching mode). */
   brand?: string | null;
   search?: string;
+  /** When true, only listings the current user has saved are shown. */
+  favoritesOnly?: boolean;
   showFlashSale?: boolean;
   showFilters?: boolean;
   totalCount?: number;
@@ -36,6 +38,7 @@ export default function BrowseFeed({
   listings: listingsProp,
   brand,
   search,
+  favoritesOnly = false,
   showFlashSale = false,
   showFilters = false,
   totalCount,
@@ -47,8 +50,12 @@ export default function BrowseFeed({
   const [countdown, setCountdown] = useState({ h: 3, m: 45, s: 22 });
   const [fetchedListings, setFetchedListings] = useState<Listing[]>([])
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
   const listings = listingsProp ?? fetchedListings;
+  const visibleListings = favoritesOnly
+    ? listings.filter((listing) => savedIds.has(listing.id))
+    : listings;
 
   useEffect(() => {
     if (!showFlashSale) return;
@@ -86,6 +93,41 @@ export default function BrowseFeed({
       .then((user) => setCurrentUserId(user.id))
       .catch((error) => console.error('Failed to load current user:', error));
   }, [])
+
+  useEffect(() => {
+    ListingService.getFavouriteListingIds()
+      .then((ids) => setSavedIds(new Set(ids.map(String))))
+      .catch((error) => console.error('Failed to load saved listings:', error));
+  }, [])
+
+  const handleSave = async (listing: Listing) => {
+    const wasSaved = savedIds.has(listing.id);
+
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (wasSaved) next.delete(listing.id);
+      else next.add(listing.id);
+      return next;
+    });
+
+    try {
+      if (wasSaved) {
+        await ListingService.unfavoriteListing(Number(listing.id));
+      } else {
+        await ListingService.favoriteListing(Number(listing.id));
+      }
+    } catch (error) {
+      console.error('Failed to update saved listing:', error);
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.add(listing.id);
+        else next.delete(listing.id);
+        return next;
+      });
+    }
+
+    onSaveListing?.(listing);
+  };
 
   const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -159,16 +201,27 @@ export default function BrowseFeed({
       )}
 
       {/* 2-column grid */}
-      {listings.length === 0 ? (
+      {visibleListings.length === 0 ? (
         <View className="items-center py-10">
-          <Ionicons name="search-outline" size={32} color="#D1D5DB" />
-          <Text className="text-gray-400 text-sm mt-2">No listings found</Text>
+          <Ionicons
+            name={favoritesOnly ? 'heart-outline' : 'search-outline'}
+            size={32}
+            color="#D1D5DB"
+          />
+          <Text className="text-gray-400 text-sm mt-2">
+            {favoritesOnly ? 'No favorites yet' : 'No listings found'}
+          </Text>
         </View>
       ) : (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 }}>
-          {listings.map((listing) => (
+          {visibleListings.map((listing) => (
             <View key={listing.id} style={{ width: '50%', padding: 5 }}>
-              <ListingCard listing={listing} onSave={onSaveListing} currentUserId={currentUserId} />
+              <ListingCard
+                listing={listing}
+                onSave={handleSave}
+                isSaved={savedIds.has(listing.id)}
+                currentUserId={currentUserId}
+              />
             </View>
           ))}
         </View>

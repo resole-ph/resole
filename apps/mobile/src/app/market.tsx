@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import Header from '@/components/organisms/Header';
 import SearchBar from '@/components/organisms/SearchBar';
+import FavoritesToggle from '@/components/organisms/FavoritesToggle';
 import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import HeroBanner from '@/components/organisms/HeroBanner';
@@ -17,6 +18,7 @@ export default function MarketScreen() {
   const [swapListings, setSwapListings] = useState<Listing[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   useEffect(() => {
     const filters = { brand: selectedBrand ?? undefined, search: searchQuery };
@@ -48,11 +50,13 @@ export default function MarketScreen() {
       <Header branded showInbox onInboxPress={() => router.push('/inbox' as any)} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SearchBar onSearch={setSearchQuery} />
+        <FavoritesToggle active={favoritesOnly} onToggle={() => setFavoritesOnly((prev) => !prev)} />
         <CategoriesRow onBrandPress={setSelectedBrand} />
         <BrowseFeed
           title="For Sale"
           subtitle="Grab your pair at the best price"
           listings={saleListings}
+          favoritesOnly={favoritesOnly}
           showFlashSale
           showFilters
           totalCount={saleListings.length}
@@ -61,6 +65,7 @@ export default function MarketScreen() {
           title="Swap Board"
           subtitle="Trade kicks with the community"
           listings={swapListings}
+          favoritesOnly={favoritesOnly}
         />
         <HeroBanner
           tag="LIMITED OFFER"

@@ -4,6 +4,7 @@ import { Redirect, useRouter } from 'expo-router';
 import BottomNav from '@/components/organisms/BottomNav';
 import Header from '@/components/organisms/Header';
 import SearchBar from '@/components/organisms/SearchBar';
+import FavoritesToggle from '@/components/organisms/FavoritesToggle';
 import HeroBanner from '@/components/organisms/HeroBanner';
 import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
@@ -21,6 +22,7 @@ export default function HomeScreen() {
   const [user, setUser] = useState<any>({ name: 'Resoler' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -73,14 +75,16 @@ export default function HomeScreen() {
           <Text className="text-xs text-gray-600">Preview Onboarding</Text>
         </TouchableOpacity>
         <SearchBar onSearch={setSearchQuery} />
-        <HeroBanner />
+        <FavoritesToggle active={favoritesOnly} onToggle={() => setFavoritesOnly((prev) => !prev)} />
+        <HeroBanner onPress={() => router.push('/sell' as any)} />
         <CategoriesRow onBrandPress={setSelectedBrand} />
         <CharitiesSection />
         <BrowseFeed
-          title={searchQuery ? `Results for "${searchQuery}"` : 'Listings'}
-          subtitle={selectedBrand ? `Filtered by ${selectedBrand}` : 'Kickstart your day'}
+          title={favoritesOnly ? 'Your Favorites' : searchQuery ? `Results for "${searchQuery}"` : 'Listings'}
+          subtitle={favoritesOnly ? 'Listings you\'ve saved' : selectedBrand ? `Filtered by ${selectedBrand}` : 'Kickstart your day'}
           brand={selectedBrand}
           search={searchQuery}
+          favoritesOnly={favoritesOnly}
         />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />

@@ -1,6 +1,7 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router'; 
+import { router } from 'expo-router';
+import { ListingService } from '@/features/listing/services/listing.service';
 
 export interface Listing {
   id: string;
@@ -41,6 +42,7 @@ export interface Listing {
 interface ListingCardProps {
   listing: Listing;
   onSave?: (listing: Listing) => void;
+  isSaved?: boolean;
   currentUserId?: string;
 }
 
@@ -62,11 +64,12 @@ const CONDITION_COLORS: Record<Listing['condition'], string> = {
   'Poor':     '#EF4444',
 };
 
-export default function ListingCard({ listing, onSave, currentUserId }: ListingCardProps) {
+export default function ListingCard({ listing, onSave, isSaved, currentUserId }: ListingCardProps) {
   // Only handle Swap and Sale on the browse card, fallback gracefully if Hot is passed
   const badge = listing.listingMode && listing.listingMode !== 'Hot' ? BADGE_STYLES[listing.listingMode] : null;
   const conditionColor = CONDITION_COLORS[listing.condition];
   const isOwnListing = !!currentUserId && listing.seller.id === currentUserId;
+  const daysLeft = listing.daysLeft ?? (listing.createdAt ? ListingService.getDaysLeft(listing.createdAt) : undefined);
 
   const handlePress = () => {
     router.push({
@@ -97,6 +100,20 @@ export default function ListingCard({ listing, onSave, currentUserId }: ListingC
           resizeMode="cover"
         />
 
+        {/* Days left badge */}
+        {daysLeft !== undefined && (
+          <View
+            className="absolute top-2 left-2 flex-row items-center rounded-full px-2 py-1"
+            style={{ backgroundColor: 'rgba(255,255,255,0.95)' }}
+          >
+            <View
+              className="w-1.5 h-1.5 rounded-full mr-1"
+              style={{ backgroundColor: daysLeft <= 3 ? '#EF4444' : '#10B981' }}
+            />
+            <Text style={{ color: '#374151', fontSize: 9, fontWeight: '700' }}>{daysLeft}d left</Text>
+          </View>
+        )}
+
         {/* Type badge */}
         {badge && (
           <View
@@ -125,10 +142,14 @@ export default function ListingCard({ listing, onSave, currentUserId }: ListingC
           <TouchableOpacity
             className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white items-center justify-center"
             style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 }}
-            onPress={() => onSave?.(listing)}
+            onPress={(e) => { e.stopPropagation(); onSave?.(listing); }}
             activeOpacity={0.7}
           >
-            <Ionicons name="heart-outline" size={14} color="#6B7280" />
+            <Ionicons
+              name={isSaved ? 'heart' : 'heart-outline'}
+              size={14}
+              color={isSaved ? '#EF4444' : '#6B7280'}
+            />
           </TouchableOpacity>
         )}
       </View>

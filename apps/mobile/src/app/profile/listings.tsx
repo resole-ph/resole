@@ -57,8 +57,8 @@ function ActiveCard({
         <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
           {item.model}
         </Text>
-        <Text className="text-gray-400 text-xs mt-0.5">{item.size}</Text>
-        <Text className="text-blue-600 font-bold text-sm mt-1">{item.price}</Text>
+        <Text className="text-gray-400 text-xs mt-0.5">Size: {item.size}</Text>
+        <Text className="text-blue-600 font-bold text-sm mt-1">Price: ₱{item.price.toLocaleString()}</Text>
         <View className="flex-row items-center mt-1">
           <View className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1" />
           <Text className="text-gray-400 text-xs">{item.daysLeft}d left</Text>
@@ -112,7 +112,8 @@ function PendingCard({
           <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
             {item.model}
           </Text>
-          <Text className="text-gray-400 text-xs mt-0.5">{item.size}</Text>
+          <Text className="text-gray-400 text-xs mt-0.5">Size: {item.size}</Text>
+          <Text className="text-blue-600 font-bold text-sm mt-1">Price: ₱{item.price.toLocaleString()}</Text>
           <View className="flex-row items-center mt-1">
             <View className="w-1.5 h-1.5 rounded-full bg-gray-300 mr-1" />
             <Text className="text-gray-400 text-xs">Removed from market</Text>

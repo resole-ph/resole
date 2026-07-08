@@ -17,7 +17,7 @@ function buildListingQuery(params: Record<string, string | undefined>): string {
 }
 
 export const ListingService = {
-  async getDaysLeft(date: Date | string): Promise<number> {
+  getDaysLeft(date: Date | string): number {
     const LISTING_DURATION_DAYS = 30;
     const now = new Date().getTime();
     const listing = new Date(date).getTime();
@@ -65,7 +65,7 @@ export const ListingService = {
 
     return res.favourites.map((item: any) => {
       const details = item.details;
-      return { ...details, saved: true, imageUrl: item.listing?.imageUrlTop };
+      return { ...details, listingId: item.listing?.id, saved: true, imageUrl: item.listing?.imageUrlTop };
     });
   },
 
@@ -85,6 +85,11 @@ export const ListingService = {
     });
 
     return res.shoeListings;
+  },
+
+  async getFavouriteListingIds(): Promise<number[]> {
+    const favourites = await this.getUserFavourites();
+    return favourites.map((item) => item.listingId).filter((id): id is number => id != null);
   },
 
   async favoriteListing(id: number): Promise<undefined> {
