@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
 import { and, eq, getTableColumns, isNull } from 'drizzle-orm';
-import { referal, rating, save, user, shoe, shoeListing, sale, transaction } from '@/db/schema';
+import { referal, rating, save, user, shoe, shoeListing } from '@/db/schema';
 import { 
   Referal,
   CreateReferal,
@@ -339,7 +339,7 @@ export async function getFavouriteListingsByUserId(userId: string) {
           model: shoe.model,
           brand: shoe.brand,
           size: shoeListing.size,
-          price: sale.price,
+          price: shoeListing.value,
           colorway: shoeListing.colorway,
           savedAt: save.createdAt,
         },
@@ -351,8 +351,6 @@ export async function getFavouriteListingsByUserId(userId: string) {
       .innerJoin(shoeListing, eq(save.listingId, shoeListing.id))
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .leftJoin(transaction, eq(shoeListing.id, transaction.listingId))
-      .leftJoin(sale, eq(transaction.id, sale.transactionId))
       .where(and(eq(save.userId, userId), isNull(save.removedAt)));
 
     return rows;

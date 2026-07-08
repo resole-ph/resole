@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { ListingService } from '@/features/listing/services/listing.service';
@@ -24,15 +24,24 @@ const CARD_SHADOW = {
 //   { id: '8', name: 'Gel-Kayano 14', brand: 'Asics', size: 'US 9.5', price: '₱8,500', color: '#F0FDF4', saved: true },
 // ];
 
+function daysAgo(date: Date | string): number {
+  const elapsed = Date.now() - new Date(date).getTime();
+  return Math.max(Math.floor(elapsed / (1000 * 60 * 60 * 24)), 0);
+}
+
 function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: number) => void }) {
   return (
     <View className="bg-white rounded-2xl p-3 mb-3 flex-1" style={CARD_SHADOW}>
       {/* Image area */}
       <View
-        className="w-full rounded-xl mb-2 items-center justify-center"
+        className="w-full rounded-xl mb-2 items-center justify-center overflow-hidden"
         style={{ backgroundColor: item.colorway, height: 96 }}
       >
-        <Ionicons name="footsteps-outline" size={28} color="#9CA3AF" />
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="cover" />
+        ) : (
+          <Ionicons name="footsteps-outline" size={28} color="#9CA3AF" />
+        )}
       </View>
 
       {/* Heart button */}
@@ -55,12 +64,20 @@ function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: number) => 
         />
       </TouchableOpacity>
 
-      <Text className="text-gray-500 text-xs">{item.brand}</Text>
+      <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>
+        {item.brand}
+      </Text>
       <Text className="text-gray-900 font-semibold text-sm mt-0.5" numberOfLines={1}>
         {item.model}
       </Text>
-      <Text className="text-gray-400 text-xs">{item.size}</Text>
-      <Text className="text-blue-600 font-bold text-sm mt-1">{item.price}</Text>
+      <Text className="text-gray-400 text-xs mt-0.5">Size: {item.size}</Text>
+      <Text className="text-blue-600 font-bold text-sm mt-1">
+        Price: ₱{Number(item.price ?? 0).toLocaleString()}
+      </Text>
+      <View className="flex-row items-center mt-1">
+        <View className="w-1.5 h-1.5 rounded-full bg-red-400 mr-1" />
+        <Text className="text-gray-400 text-xs">Saved {daysAgo(item.savedAt)}d ago</Text>
+      </View>
     </View>
   );
 }

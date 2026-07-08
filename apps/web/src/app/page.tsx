@@ -39,12 +39,12 @@ const CATEGORIES = [
 const BRANDS = ["Nike", "Adidas", "Jordan Brand", "New Balance", "Asics", "Salomon", "Puma"];
 
 const CHARITIES = [
-  { id: "gawad-kalinga", name: "Gawad Kalinga", cause: "Community building", image: "/charity1.jpg" },
-  { id: "red-cross", name: "Philippine Red Cross", cause: "Disaster relief", image: "/charity2.jpg" },
-  { id: "wwf", name: "WWF Philippines", cause: "Environment & wildlife", image: "/charity3.jpg" },
-  { id: "unicef", name: "UNICEF Philippines", cause: "Children's welfare", image: "/charity1.jpg" },
-  { id: "caritas", name: "Caritas Philippines", cause: "Poverty alleviation", image: "/charity2.jpg" },
-  { id: "save-children", name: "Save the Children", cause: "Child education", image: "/charity3.jpg" },
+  { id: "gawad-kalinga", name: "Gawad Kalinga", cause: "Community building", image: "/charity-gawad-kalinga.jpg" },
+  { id: "red-cross", name: "Philippine Red Cross", cause: "Disaster relief", image: "/charity-red-cross.png" },
+  { id: "wwf", name: "WWF Philippines", cause: "Environment & wildlife", image: "/charity-wwf.jpg" },
+  { id: "unicef", name: "UNICEF Philippines", cause: "Children's welfare", image: "/charity-unicef.png" },
+  { id: "caritas", name: "Caritas Philippines", cause: "Poverty alleviation", image: "/charity-caritas.png" },
+  { id: "save-children", name: "Save the Children", cause: "Child education", image: "/charity-save-children.png" },
 ];
 
 const LISTINGS = [
@@ -277,7 +277,7 @@ function CharityCard({ charity, selected, onClick }) {
       <img
         src={charity.image}
         alt={charity.name}
-        style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 12, marginBottom: 10 }}
+        style={{ width: "100%", height: 90, objectFit: "contain", borderRadius: 12, marginBottom: 10, background: "#F9FAFB" }}
       />
       <div style={{ fontSize: 13.5, fontWeight: 700, color: selected ? "#1D4ED8" : COLORS.textMain, marginBottom: 2 }}>
         {charity.name}

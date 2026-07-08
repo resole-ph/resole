@@ -13,9 +13,12 @@ const CHARITIES: Charity[] = [
 ];
 
 const CHARITY_IMAGES = [
-  require('../../../assets/charity1.jpg'),
-  require('../../../assets/charity2.jpg'),
-  require('../../../assets/charity3.jpg'),
+  require('../../../assets/charity-gawad-kalinga.jpg'),
+  require('../../../assets/charity-red-cross.png'),
+  require('../../../assets/charity-wwf.jpg'),
+  require('../../../assets/charity-unicef.png'),
+  require('../../../assets/charity-caritas.png'),
+  require('../../../assets/charity-save-children.png'),
 ];
 
 export default function CharitiesSection() {
@@ -61,8 +64,8 @@ export default function CharitiesSection() {
               {/* Logo */}
               <Image
                 source={CHARITY_IMAGES[index % CHARITY_IMAGES.length]}
-                style={{ width: '100%', height: 80, borderRadius: 12, marginBottom: 10 }}
-                resizeMode="cover"
+                style={{ width: '100%', height: 80, borderRadius: 12, marginBottom: 10, backgroundColor: '#F9FAFB' }}
+                resizeMode="contain"
               />
 
               {/* Name + cause */}
