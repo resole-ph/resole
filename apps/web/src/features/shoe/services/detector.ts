@@ -55,5 +55,6 @@ export async function detectIfShoe(imageBuffer: Buffer): Promise<boolean> {
   }
 
   console.log(`[ONNX] Highest shoe confidence detected: ${(maxScore * 100).toFixed(2)}%`);
-  return maxScore > 0.6;
+  // bypass the ONNX model so everything goes straight to Gemini
+  return true;
 }
