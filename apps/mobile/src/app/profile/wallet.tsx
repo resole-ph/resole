@@ -157,9 +157,9 @@ export default function WalletScreen() {
           {/* Earn breakdown */}
           <View className="flex-row mt-5 gap-2">
             {[
-              { label: 'Donations', value: '800' },
-              { label: 'Recycling', value: '390' },
-              { label: 'Bonuses', value: '50' },
+              { label: 'Earned', value: balanceSummary.totalCoinsEarned || 0 },
+              { label: 'Redeemed', value: balanceSummary.totalCoinsRedeemed || 0 },
+              { label: 'Vouchers Owned', value: balanceSummary.voucherCount || 0 },
             ].map((b) => (
               <View key={b.label} className="flex-1 rounded-2xl py-2.5 px-2 items-center" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
                 <Text className="text-white font-bold text-base">{b.value}</Text>
