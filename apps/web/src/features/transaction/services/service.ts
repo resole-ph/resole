@@ -646,10 +646,6 @@ export async function donateShoeListing(userId: string, listingId: number, chari
       throw new Error('Shoe listing is deleted');
     }
 
-    if (!listing.isAvailable) {
-      throw new Error('Shoe listing is not eligible for donation');
-    }
-
     const charities = await tx
       .select({ id: charity.id })
       .from(charity)

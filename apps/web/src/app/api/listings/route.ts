@@ -17,18 +17,22 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section');
+  const filters = {
+    brand: searchParams.get('brand') ?? undefined,
+    search: searchParams.get('search') ?? undefined,
+  };
 
   let shoeListings;
-  
+
   switch (section) {
     case 'sale-board':
-      shoeListings = await getAllShoeListingForSale();
+      shoeListings = await getAllShoeListingForSale(filters);
       break;
     case 'swap-board':
-      shoeListings = await getAllShoeListingForSwap();
+      shoeListings = await getAllShoeListingForSwap(filters);
       break;
     default:
-      shoeListings = await getAllShoeListing();
+      shoeListings = await getAllShoeListing(filters);
       break;
   }
 

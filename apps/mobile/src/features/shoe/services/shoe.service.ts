@@ -3,13 +3,13 @@ import { apiFetch } from '@/lib/api-client';
 
 export const ShoeService = {
   async getShoeBrands(): Promise<Brand[]> {
-    const brands = await apiFetch<string[]>(`api/listings/brands`, {
+    const res = await apiFetch<{ brands: string[] }>(`/api/listings/brands`, {
       method: 'GET'
     });
 
-    return brands.map((item: string) => {
+    return res.brands.map((item: string) => {
       return {
-        id: item.toLowerCase().replace(" ", "-"),
+        id: item,
         label: item
       }
     });

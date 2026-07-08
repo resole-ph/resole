@@ -16,7 +16,7 @@ const CATEGORIES: Category[] = [
 
 interface CategoriesRowProps {
   onCategoryPress?: (categoryId: string) => void;
-  onBrandPress?: (brandId: string) => void;
+  onBrandPress?: (brandId: string | null) => void;
   onSeeAll?: () => void;
 }
 
@@ -24,11 +24,15 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress, onSeeAll 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [activeCatId, setActiveCatId] = useState<string | null>(null);
   const [activeBrandId, setActiveBrandId] = useState<string | null>(null);
-  
+
   useEffect(() => {
     const getBrands = async () => {
-      const data = await ShoeService.getShoeBrands();
-      setBrands(data);
+      try {
+        const data = await ShoeService.getShoeBrands();
+        setBrands(data);
+      } catch (error) {
+        console.error('Failed to load shoe brands:', error);
+      }
     }
 
     getBrands();
@@ -40,8 +44,9 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress, onSeeAll 
   };
 
   const handleBrandPress = (id: string) => {
-    setActiveBrandId(prev => (prev === id ? null : id));
-    onBrandPress?.(id);
+    const next = activeBrandId === id ? null : id;
+    setActiveBrandId(next);
+    onBrandPress?.(next);
   };
 
   return (

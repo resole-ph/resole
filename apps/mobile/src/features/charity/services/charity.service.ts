@@ -9,7 +9,7 @@ export const CharityService = {
 
     return res.charities.map((item: any): Charity => {
       return {
-        id: item.name.toLowerCase().replace(" ", "-"),
+        id: item.id,
         name: item.name,
         cause: item.cause
       }

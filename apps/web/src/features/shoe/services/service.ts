@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count } from 'drizzle-orm';
+import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count, ilike } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user, shoeAnalysis } from '@/db/schema';
 import {
   Shoe,
@@ -137,7 +137,33 @@ export async function getAllShoePrice() {
   }
 }
 
-export async function getAllShoeListing() {
+export type ShoeListingFilters = {
+  brand?: string;
+  search?: string;
+};
+
+function buildShoeListingFilters(filters?: ShoeListingFilters) {
+  const conditions = [];
+
+  if (filters?.brand) {
+    conditions.push(ilike(shoe.brand, filters.brand));
+  }
+
+  if (filters?.search) {
+    const term = `%${filters.search}%`;
+    conditions.push(
+      or(
+        ilike(shoe.brand, term),
+        ilike(shoe.model, term),
+        ilike(shoeListing.colorway, term)
+      )!
+    );
+  }
+
+  return conditions;
+}
+
+export async function getAllShoeListing(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
@@ -148,10 +174,10 @@ export async function getAllShoeListing() {
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(eq(shoeListing.isAvailable, true))
+      .where(and(eq(shoeListing.isAvailable, true), ...buildShoeListingFilters(filters)))
       .orderBy(desc(shoeListing.updatedAt))
       .limit(20);
-    
+
     return rows as ShoeListing[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe listings.", error);
@@ -262,7 +288,7 @@ export async function getShoeBrands() {
   }
 }
 
-export async function getAllShoeListingForSale() {
+export async function getAllShoeListingForSale(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
@@ -273,8 +299,12 @@ export async function getAllShoeListingForSale() {
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')));
-    
+      .where(and(
+        eq(shoeListing.isAvailable, true),
+        or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')),
+        ...buildShoeListingFilters(filters)
+      ));
+
     return rows as ShoeListing[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe listings.", error);
@@ -282,7 +312,7 @@ export async function getAllShoeListingForSale() {
   }
 }
 
-export async function getAllShoeListingForSwap() {
+export async function getAllShoeListingForSwap(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
@@ -293,8 +323,12 @@ export async function getAllShoeListingForSwap() {
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')));
-    
+      .where(and(
+        eq(shoeListing.isAvailable, true),
+        or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')),
+        ...buildShoeListingFilters(filters)
+      ));
+
     return rows as ShoeListing[] ?? null;
   } catch (error) {
     console.error("Error fetching shoe listings.", error);
@@ -492,13 +526,15 @@ export async function deleteShoeListing(id: number) {
   }
 }
 
+// Removing a listing takes it off the market (isAvailable: false) but keeps it
+// recoverable — the user can re-list it or donate it from the "Removed" tab.
+// deletedAt is reserved for a permanent purge, which isn't exposed to users yet.
 export async function deleteUserShoeListing(userId: string, id: number) {
   try {
     const result = await db
       .update(shoeListing)
       .set({
         isAvailable: false,
-        deletedAt: new Date(),
         updatedAt: new Date()
       })
       .where(and(eq(shoeListing.id, id), eq(shoeListing.userId, userId)))

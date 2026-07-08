@@ -1,5 +1,5 @@
 export interface Charity {
-  id: string,
+  id: number,
   name: string,
   cause: string,
 }

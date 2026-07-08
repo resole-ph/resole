@@ -97,6 +97,13 @@ function getEditableShoeListingFields(body: Record<string, unknown>) {
     updateData.isRefurbished = body.isRefurbished;
   }
 
+  if (body.isAvailable !== undefined) {
+    if (typeof body.isAvailable !== 'boolean') {
+      throw new Error('Invalid availability value');
+    }
+    updateData.isAvailable = body.isAvailable;
+  }
+
   if (body.listingMode !== undefined) {
     if (body.listingMode !== 'Sale' && body.listingMode !== 'Swap' && body.listingMode !== 'Both') {
       throw new Error('Invalid listing mode');
@@ -158,6 +165,10 @@ export async function PATCH(
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No editable listing fields provided' }, { status: 400 });
+    }
+
+    if (updateData.isAvailable === true && shoeListing.deletedAt) {
+      return NextResponse.json({ error: 'Cannot re-list a deleted shoe listing' }, { status: 400 });
     }
 
     const updatedShoeListing = await updateShoeListing(updateData, shoeListingId);

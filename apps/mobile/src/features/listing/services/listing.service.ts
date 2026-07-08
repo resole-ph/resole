@@ -2,6 +2,20 @@ import { Listing } from '@/components/molecules/ListingCard';
 import { FavItem } from '../types/listing.types';
 import { apiFetch } from '@/lib/api-client';
 
+export interface ListingFilters {
+  brand?: string;
+  search?: string;
+}
+
+function buildListingQuery(params: Record<string, string | undefined>): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) query.set(key, value);
+  }
+  const queryString = query.toString();
+  return queryString ? `?${queryString}` : '';
+}
+
 export const ListingService = {
   async getDaysLeft(date: Date | string): Promise<number> {
     const LISTING_DURATION_DAYS = 30;
@@ -10,9 +24,10 @@ export const ListingService = {
     const daysElapsed = (now - listing) / (1000 * 60 * 60 * 24);
     return Math.max(Math.round(LISTING_DURATION_DAYS - daysElapsed), 0);
   },
-  
-  async getListings(): Promise<Listing[]> {
-    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings`, {
+
+  async getListings(filters?: ListingFilters): Promise<Listing[]> {
+    const query = buildListingQuery({ brand: filters?.brand, search: filters?.search });
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings${query}`, {
       method: 'GET'
     });
 
@@ -54,16 +69,18 @@ export const ListingService = {
     });
   },
 
-  async getSwapListings(): Promise<Listing[]> {
-    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings?section=swap-board`, {
+  async getSwapListings(filters?: ListingFilters): Promise<Listing[]> {
+    const query = buildListingQuery({ section: 'swap-board', brand: filters?.brand, search: filters?.search });
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings${query}`, {
       method: 'GET'
     });
 
     return res.shoeListings;
   },
 
-  async getSaleListings(): Promise<Listing[]> {
-    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings?section=swap-board`, {
+  async getSaleListings(filters?: ListingFilters): Promise<Listing[]> {
+    const query = buildListingQuery({ section: 'sale-board', brand: filters?.brand, search: filters?.search });
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings${query}`, {
       method: 'GET'
     });
 
@@ -85,6 +102,20 @@ export const ListingService = {
   async deleteListing(id: number): Promise<undefined> {
     await apiFetch<undefined>(`/api/listings/${id}`, {
       method: 'DELETE'
+    });
+  },
+
+  async relistListing(id: number): Promise<undefined> {
+    await apiFetch<undefined>(`/api/listings/${id}`, {
+      method: 'PATCH',
+      body: { isAvailable: true },
+    });
+  },
+
+  async donateListing(id: number, charityId: number): Promise<undefined> {
+    await apiFetch<undefined>(`/api/listings/${id}/donate`, {
+      method: 'POST',
+      body: { charityId },
     });
   }
 }

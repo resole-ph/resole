@@ -4,12 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Charity } from '@/features/charity/types/charity.types';
 
 const CHARITIES: Charity[] = [
-  { id: 'gawad-kalinga', name: 'Gawad Kalinga', cause: 'Community building' },
-  { id: 'red-cross', name: 'Philippine Red Cross', cause: 'Disaster relief' },
-  { id: 'wwf', name: 'WWF Philippines', cause: 'Environment & wildlife' },
-  { id: 'unicef', name: 'UNICEF Philippines', cause: "Children's welfare" },
-  { id: 'caritas', name: 'Caritas Philippines', cause: 'Poverty alleviation' },
-  { id: 'save-children', name: 'Save the Children', cause: 'Child education' },
+  { id: 1, name: 'Gawad Kalinga', cause: 'Community building' },
+  { id: 2, name: 'Philippine Red Cross', cause: 'Disaster relief' },
+  { id: 3, name: 'WWF Philippines', cause: 'Environment & wildlife' },
+  { id: 4, name: 'UNICEF Philippines', cause: "Children's welfare" },
+  { id: 5, name: 'Caritas Philippines', cause: 'Poverty alleviation' },
+  { id: 6, name: 'Save the Children', cause: 'Child education' },
 ];
 
 const CHARITY_IMAGES = [
@@ -19,7 +19,7 @@ const CHARITY_IMAGES = [
 ];
 
 export default function CharitiesSection() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   return (
     <View className="mb-6">

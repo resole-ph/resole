@@ -65,8 +65,9 @@ function MyListingsCard({ onPress }: { onPress: () => void }) {
       .catch((error) => console.error('Failed to load listings:', error));
   }, []);
 
-  const previews = listings.slice(0, PREVIEW_COUNT);
-  const remaining = Math.max((summary?.total ?? listings.length) - previews.length, 0);
+  const activeListings = listings.filter((item) => item.isAvailable !== false);
+  const previews = activeListings.slice(0, PREVIEW_COUNT);
+  const remaining = Math.max((summary?.active ?? activeListings.length) - previews.length, 0);
 
   return (
     <TouchableOpacity

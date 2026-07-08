@@ -59,7 +59,7 @@ export async function POST(
     return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
   }
 
-  if (shoeListing.user.id !== currentUser.user.id) {
+  if (shoeListing.seller.id !== currentUser.user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

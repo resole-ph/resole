@@ -38,7 +38,13 @@ export default function SearchBar({ onSearch, onFocus }: SearchBarProps) {
         />
 
         {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} activeOpacity={0.6}>
+          <TouchableOpacity
+            onPress={() => {
+              setQuery('');
+              onSearch?.('');
+            }}
+            activeOpacity={0.6}
+          >
             <Ionicons name="close-circle" size={18} color="#9CA3AF" />
           </TouchableOpacity>
         )}

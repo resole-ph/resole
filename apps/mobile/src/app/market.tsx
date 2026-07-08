@@ -15,28 +15,40 @@ export default function MarketScreen() {
 
   const [saleListings, setSaleListings] = useState<Listing[]>([]);
   const [swapListings, setSwapListings] = useState<Listing[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
   useEffect(() => {
+    const filters = { brand: selectedBrand ?? undefined, search: searchQuery };
+
     const fetchSaleListings = async () => {
-      const listings = await ListingService.getSaleListings();
-      setSaleListings(listings);
+      try {
+        const listings = await ListingService.getSaleListings(filters);
+        setSaleListings(listings);
+      } catch {
+        setSaleListings([]);
+      }
     }
 
     const fetchSwapListings = async () => {
-      const listings = await ListingService.getSwapListings();
-      setSwapListings(listings);
+      try {
+        const listings = await ListingService.getSwapListings(filters);
+        setSwapListings(listings);
+      } catch {
+        setSwapListings([]);
+      }
     }
 
     fetchSaleListings();
     fetchSwapListings();
-  })
+  }, [searchQuery, selectedBrand])
 
   return (
     <View className="flex-1 bg-gray-50">
       <Header branded showInbox onInboxPress={() => router.push('/inbox' as any)} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <SearchBar />
-        <CategoriesRow />
+        <SearchBar onSearch={setSearchQuery} />
+        <CategoriesRow onBrandPress={setSelectedBrand} />
         <BrowseFeed
           title="For Sale"
           subtitle="Grab your pair at the best price"

@@ -19,6 +19,8 @@ export default function HomeScreen() {
     () => useOnboardingStore.persist.hasHydrated()
   );
   const [user, setUser] = useState<any>({ name: 'Resoler' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -70,11 +72,16 @@ export default function HomeScreen() {
         >
           <Text className="text-xs text-gray-600">Preview Onboarding</Text>
         </TouchableOpacity>
-        <SearchBar />
+        <SearchBar onSearch={setSearchQuery} />
         <HeroBanner />
-        <CategoriesRow />
+        <CategoriesRow onBrandPress={setSelectedBrand} />
         <CharitiesSection />
-        <BrowseFeed />
+        <BrowseFeed
+          title={searchQuery ? `Results for "${searchQuery}"` : 'Listings'}
+          subtitle={selectedBrand ? `Filtered by ${selectedBrand}` : 'Kickstart your day'}
+          brand={selectedBrand}
+          search={searchQuery}
+        />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
     </View>

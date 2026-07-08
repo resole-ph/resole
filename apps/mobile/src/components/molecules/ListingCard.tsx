@@ -26,6 +26,7 @@ export interface Listing {
   updatedAt: Date;
   deletedAt?: Date;
   daysLeft?: number;
+  isAvailable?: boolean;
   seller: {
     id?: string;
     name: string;

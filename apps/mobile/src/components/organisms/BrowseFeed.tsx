@@ -16,7 +16,11 @@ const CARD_SHADOW = {
 interface BrowseFeedProps {
   title?: string;
   subtitle?: string;
+  /** When provided, the feed renders this list instead of fetching its own. */
   listings?: Listing[];
+  /** Only used when `listings` isn't provided (self-fetching mode). */
+  brand?: string | null;
+  search?: string;
   showFlashSale?: boolean;
   showFilters?: boolean;
   totalCount?: number;
@@ -29,6 +33,9 @@ interface BrowseFeedProps {
 export default function BrowseFeed({
   title = 'Listings',
   subtitle = 'Kickstart your day',
+  listings: listingsProp,
+  brand,
+  search,
   showFlashSale = false,
   showFilters = false,
   totalCount,
@@ -38,8 +45,10 @@ export default function BrowseFeed({
   onSaveListing,
 }: BrowseFeedProps) {
   const [countdown, setCountdown] = useState({ h: 3, m: 45, s: 22 });
-  const [listings, setListings] = useState<Listing[]>([])
+  const [fetchedListings, setFetchedListings] = useState<Listing[]>([])
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+
+  const listings = listingsProp ?? fetchedListings;
 
   useEffect(() => {
     if (!showFlashSale) return;
@@ -57,17 +66,22 @@ export default function BrowseFeed({
   }, [showFlashSale]);
 
   useEffect(() => {
+    // Controlled mode: the parent already fetched `listings`, so skip the self-fetch.
+    if (listingsProp) return;
+
     const fetchListings = async () => {
       try {
-        const data = await ListingService.getListings();
-        setListings(Array.isArray(data) ? data : []);
+        const data = await ListingService.getListings({ brand: brand ?? undefined, search });
+        setFetchedListings(Array.isArray(data) ? data : []);
       } catch {
-        setListings([]);
+        setFetchedListings([]);
       }
     }
 
     fetchListings();
+  }, [listingsProp, brand, search])
 
+  useEffect(() => {
     UserService.getUserInfo()
       .then((user) => setCurrentUserId(user.id))
       .catch((error) => console.error('Failed to load current user:', error));
@@ -145,13 +159,20 @@ export default function BrowseFeed({
       )}
 
       {/* 2-column grid */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 }}>
-        {listings.map((listing) => (
-          <View key={listing.id} style={{ width: '50%', padding: 5 }}>
-            <ListingCard listing={listing} onSave={onSaveListing} currentUserId={currentUserId} />
-          </View>
-        ))}
-      </View>
+      {listings.length === 0 ? (
+        <View className="items-center py-10">
+          <Ionicons name="search-outline" size={32} color="#D1D5DB" />
+          <Text className="text-gray-400 text-sm mt-2">No listings found</Text>
+        </View>
+      ) : (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 }}>
+          {listings.map((listing) => (
+            <View key={listing.id} style={{ width: '50%', padding: 5 }}>
+              <ListingCard listing={listing} onSave={onSaveListing} currentUserId={currentUserId} />
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }

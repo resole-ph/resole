@@ -16,6 +16,7 @@ export function serializeShoeListing(row: ShoeListing) {
     imageUrlSole: row.imageUrlSole,
     imageUrlInsole: row.imageUrlInsole,
     listingMode: row.listingMode,
+    isAvailable: row.isAvailable,
     description: row.description ?? undefined,
     size: String(row.size),
     colorway: row.colorway,
