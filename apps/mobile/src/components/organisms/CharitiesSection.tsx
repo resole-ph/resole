@@ -1,54 +1,27 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Charity } from '@/features/charity/types/charity.types';
-import { CharityService } from '@/features/charity/services/charity.service';
 
-interface CharityDisplayProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
-  iconBg: string;
+interface Charity {
+  id: string;
+  name: string;
+  cause: string;
 }
 
-type CharityDetails = Charity & CharityDisplayProps;
+const CHARITIES: Charity[] = [
+  { id: 'gawad-kalinga', name: 'Gawad Kalinga', cause: 'Community building' },
+  { id: 'red-cross', name: 'Philippine Red Cross', cause: 'Disaster relief' },
+  { id: 'wwf', name: 'WWF Philippines', cause: 'Environment & wildlife' },
+  { id: 'unicef', name: 'UNICEF Philippines', cause: "Children's welfare" },
+  { id: 'caritas', name: 'Caritas Philippines', cause: 'Poverty alleviation' },
+  { id: 'save-children', name: 'Save the Children', cause: 'Child education' },
+];
 
-export const CHARITY_TYPES = {
-  'Community building': {
-    icon: 'home-outline',
-    iconColor: '#F59E0B',
-    iconBg: '#FEF3C7',
-  },
-  'Disaster relief': {
-    icon: 'medkit-outline',
-    iconColor: '#EF4444',
-    iconBg: '#FEE2E2',
-  },
-  'Environment & wildlife': {
-    icon: 'leaf-outline',
-    iconColor: '#10B981',
-    iconBg: '#D1FAE5',
-  },
-  "Children's welfare": {
-    icon: 'happy-outline',
-    iconColor: '#3B82F6',
-    iconBg: '#DBEAFE',
-  },
-  'Poverty alleviation': {
-    icon: 'heart-outline',
-    iconColor: '#8B5CF6',
-    iconBg: '#EDE9FE',
-  },
-  'Child education': {
-    icon: 'school-outline',
-    iconColor: '#EC4899',
-    iconBg: '#FCE7F3',
-  },
-  'Other': {
-    icon: 'ellipsis-horizontal-outline',
-    iconColor: "#929292",
-    iconBg: '#FFFFFF'
-  }
-} as const;
+const CHARITY_IMAGES = [
+  require('../../../assets/charity1.jpg'),
+  require('../../../assets/charity2.jpg'),
+  require('../../../assets/charity3.jpg'),
+];
 
 export default function CharitiesSection() {
   const [charities, setCharities] = useState<CharityDetails[]>([]);
@@ -86,7 +59,7 @@ export default function CharitiesSection() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
       >
-        {charities.map((charity) => {
+        {CHARITIES.map((charity, index) => {
           const selected = selectedId === charity.id;
           return (
             <TouchableOpacity
@@ -107,20 +80,12 @@ export default function CharitiesSection() {
                 elevation: 2,
               }}
             >
-              {/* Icon */}
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  backgroundColor: charity.iconBg,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 10,
-                }}
-              >
-                <Ionicons name={charity.icon} size={20} color={charity.iconColor} />
-              </View>
+              {/* Logo */}
+              <Image
+                source={CHARITY_IMAGES[index % CHARITY_IMAGES.length]}
+                style={{ width: '100%', height: 80, borderRadius: 12, marginBottom: 10 }}
+                resizeMode="cover"
+              />
 
               {/* Name + cause */}
               <Text

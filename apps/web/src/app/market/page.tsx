@@ -165,9 +165,6 @@ function ListingCard({ item }: { item: SneakerItem }) {
     >
       <div style={{ position: "relative", aspectRatio: "1/1", background: "#F3F4F6" }}>
         <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <div style={{ position: "absolute", top: 8, left: 8, background: `${COLORS.amber}1A`, color: COLORS.amber, fontSize: 10, fontWeight: 700, borderRadius: 9999, padding: "3px 8px" }}>
-          AI {item.score}
-        </div>
         <button onClick={(e) => { e.stopPropagation(); setSaved((s) => !s); }} style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 9999, background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <span className="material-symbols-outlined" style={{ fontSize: 13, color: saved ? COLORS.red : "#6B7280", fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
         </button>
@@ -197,39 +194,6 @@ export default function MarketPage() {
   return (
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'); @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined'); * { box-sizing: border-box; }`}</style>
-
-      {/* Header */}
-      <header style={{ position: "sticky", top: 0, zIndex: 20, background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "14px 24px", display: "flex", alignItems: "center", gap: 32 }}>
-          <span onClick={() => router.push('/')} style={{ fontWeight: 800, fontSize: 20, color: COLORS.primary, letterSpacing: "-0.02em", cursor: "pointer" }}>Resole</span>
-          <nav style={{ display: "flex", gap: 24, flex: 1 }}>
-            {["Home", "Market", "Sell", "Rewards"].map((item) => (
-              <span 
-                key={item} 
-                onClick={() => router.push(item === "Home" ? "/" : `/${item.toLowerCase()}`)}
-                style={{ fontSize: 14.5, fontWeight: item === "Market" ? 700 : 500, color: item === "Market" ? COLORS.primary : COLORS.textMuted, cursor: "pointer" }}
-              >
-                {item}
-              </span>
-            ))}
-          </nav>
-          <div style={{ flex: 1, maxWidth: 420, display: "flex", alignItems: "center", gap: 8, background: COLORS.inputBg, borderRadius: 9999, padding: "9px 16px" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 15, color: COLORS.textFaint }}>search</span>
-            <input 
-              type="text"
-              placeholder="Search sneakers..."
-              style={{ background: "transparent", border: "none", outline: "none", fontSize: 13.5, color: COLORS.textMain, width: "100%" }}
-            />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {["notifications","person"].map((icon, i) => (
-              <button key={i} style={{ width: 34, height: 34, borderRadius: 9999, border: `1px solid ${COLORS.border}`, background: COLORS.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 16, color: COLORS.textMuted }}>{icon}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
 
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 24px 64px" }}>
         {/* Filter bar */}

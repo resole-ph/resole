@@ -1,10 +1,6 @@
 'use client';
 
 import { useState } from "react";
-// app/page.tsx
-'use client';
-
-import { useState } from "react";
 import { useAuthGate } from "@/providers/AuthGateProvider";
 
 /* ---------------------------------------------------------
@@ -30,7 +26,26 @@ const CARD_SHADOW = "0px 4px 20px rgba(0,0,0,0.05)";
 /* ---------------------------------------------------------
    Mock data
 --------------------------------------------------------- */
-const CATEGORIES = ["Running", "Basketball", "Lifestyle", "Skate", "Training", "Casual"];
+const CATEGORIES = [
+  { label: "Running", icon: "directions_run", iconColor: "#F59E0B" },
+  { label: "Basketball", icon: "sports_basketball", iconColor: "#EF4444" },
+  { label: "Lifestyle", icon: "wb_sunny", iconColor: "#8B5CF6" },
+  { label: "Skate", icon: "trending_up", iconColor: "#10B981" },
+  { label: "Training", icon: "fitness_center", iconColor: "#3B82F6" },
+  { label: "Casual", icon: "checkroom", iconColor: "#EC4899" },
+  { label: "Other", icon: "more_horiz", iconColor: "#EC4899" },
+];
+
+const BRANDS = ["Nike", "Adidas", "Jordan Brand", "New Balance", "Asics", "Salomon", "Puma"];
+
+const CHARITIES = [
+  { id: "gawad-kalinga", name: "Gawad Kalinga", cause: "Community building", image: "/charity1.jpg" },
+  { id: "red-cross", name: "Philippine Red Cross", cause: "Disaster relief", image: "/charity2.jpg" },
+  { id: "wwf", name: "WWF Philippines", cause: "Environment & wildlife", image: "/charity3.jpg" },
+  { id: "unicef", name: "UNICEF Philippines", cause: "Children's welfare", image: "/charity1.jpg" },
+  { id: "caritas", name: "Caritas Philippines", cause: "Poverty alleviation", image: "/charity2.jpg" },
+  { id: "save-children", name: "Save the Children", cause: "Child education", image: "/charity3.jpg" },
+];
 
 const LISTINGS = [
   {
@@ -39,7 +54,6 @@ const LISTINGS = [
     name: "990v5 Core Grey",
     condition: "VNDS Condition",
     price: "9,200",
-    score: "95%",
     tag: null,
     seller: "M",
     image:
@@ -51,7 +65,6 @@ const LISTINGS = [
     name: "Air Jordan 1 Panda",
     condition: "Excellent",
     price: "12,500",
-    score: "88%",
     tag: "SALE",
     seller: "A",
     image:
@@ -63,7 +76,6 @@ const LISTINGS = [
     name: "Ultraboost 1.0 DNA",
     condition: "Brand New",
     price: "8,400",
-    score: "99%",
     tag: null,
     seller: "S",
     image:
@@ -75,7 +87,6 @@ const LISTINGS = [
     name: "Dunk Low 'What The'",
     condition: "Gently Used",
     price: "15,800",
-    score: "82%",
     tag: "SALE",
     seller: "R",
     image:
@@ -83,20 +94,17 @@ const LISTINGS = [
   },
 ];
 
-const STATS = [
-  { label: "Pairs saved", value: "12.4k", color: COLORS.green, icon: "bookmark" },
-  { label: "Your coins", value: "248", color: COLORS.amber, icon: "add" },
-  { label: "Streak", value: "7d", color: COLORS.red, icon: "favorite" },
-];
-
 /* ---------------------------------------------------------
    Small building blocks
 --------------------------------------------------------- */
-function Pill({ children, active, onClick }) {
+function Pill({ children, icon, iconColor, active, onClick }) {
   return (
     <button
       onClick={onClick}
       style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
         borderRadius: 9999,
         padding: "8px 18px",
         fontSize: 13.5,
@@ -110,48 +118,13 @@ function Pill({ children, active, onClick }) {
         transition: "all 0.15s ease",
       }}
     >
-      {children}
-    </button>
-  );
-}
-
-function StatCard({ label, value, color, icon }) {
-  return (
-    <div
-      style={{
-        background: COLORS.surface,
-        borderRadius: 16,
-        padding: 16,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        boxShadow: CARD_SHADOW,
-        flex: 1,
-      }}
-    >
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 9999,
-          background: `${color}33`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: 18, color: color }}>
+      {icon && (
+        <span className="material-symbols-outlined" style={{ fontSize: 15, color: active ? "#fff" : iconColor }}>
           {icon}
         </span>
-      </div>
-      <div>
-        <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 17, color: COLORS.textMain, lineHeight: 1.15 }}>
-          {value}
-        </div>
-        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: COLORS.textFaint }}>{label}</div>
-      </div>
-    </div>
+      )}
+      {children}
+    </button>
   );
 }
 
@@ -205,11 +178,8 @@ function ListingCard({ listing }) {
           alt={`${listing.brand} ${listing.name}`}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
-        <div style={{ position: "absolute", top: 10, left: 10 }}>
-          <Badge color={COLORS.amber}>{listing.score}</Badge>
-        </div>
         {listing.tag && (
-          <div style={{ position: "absolute", top: 38, left: 10 }}>
+          <div style={{ position: "absolute", top: 10, left: 10 }}>
             <Badge color={COLORS.green}>{listing.tag}</Badge>
           </div>
         )}
@@ -286,11 +256,87 @@ function ListingCard({ listing }) {
   );
 }
 
+function CharityCard({ charity, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: 160,
+        textAlign: "left",
+        flexShrink: 0,
+        background: selected ? "#EFF6FF" : COLORS.surface,
+        borderRadius: 16,
+        padding: 12,
+        border: selected ? `1.5px solid ${COLORS.primary}` : `1.5px solid ${COLORS.border}`,
+        boxShadow: CARD_SHADOW,
+        cursor: "pointer",
+        position: "relative",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <img
+        src={charity.image}
+        alt={charity.name}
+        style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 12, marginBottom: 10 }}
+      />
+      <div style={{ fontSize: 13.5, fontWeight: 700, color: selected ? "#1D4ED8" : COLORS.textMain, marginBottom: 2 }}>
+        {charity.name}
+      </div>
+      <div style={{ fontSize: 11.5, color: COLORS.textFaint }}>{charity.cause}</div>
+
+      {selected && (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            width: 20,
+            height: 20,
+            borderRadius: 9999,
+            background: COLORS.primary,
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 13 }}>check</span>
+        </div>
+      )}
+    </button>
+  );
+}
+
+function CharitiesSection({ selectedCharity, onSelect }) {
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 16 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: 0 }}>Support a Cause</h3>
+        <p style={{ fontSize: 13, color: COLORS.textFaint, margin: "2px 0 0" }}>
+          Pick a charity — donation proceeds go straight to them.
+        </p>
+      </div>
+      <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
+        {CHARITIES.map((charity) => (
+          <CharityCard
+            key={charity.id}
+            charity={charity}
+            selected={selectedCharity === charity.id}
+            onClick={() => onSelect(selectedCharity === charity.id ? null : charity.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------
    Page
 --------------------------------------------------------- */
 export default function ResoleHome({ userName = "Miguel" }) {
   const [activeCategory, setActiveCategory] = useState("Lifestyle");
+  const [activeBrand, setActiveBrand] = useState(null);
+  const [selectedCharity, setSelectedCharity] = useState(null);
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
@@ -319,9 +365,6 @@ export default function ResoleHome({ userName = "Miguel" }) {
             padding: "60px 60px",
             marginBottom: 32,
             minHeight: 360,
-            padding: "60px 60px", // Increased padding from 40px
-            marginBottom: 32,
-            minHeight: 360, // Increased minHeight from 260
             display: "flex",
             alignItems: "center",
           }}
@@ -341,7 +384,6 @@ export default function ResoleHome({ userName = "Miguel" }) {
                 border: "none",
                 borderRadius: 9999,
                 padding: "14px 28px",
-                padding: "14px 28px", // Slightly bigger CTA button
                 fontSize: 15,
                 fontWeight: 700,
                 display: "inline-flex",
@@ -366,39 +408,11 @@ export default function ResoleHome({ userName = "Miguel" }) {
               bottom: -40,
               width: 560,
               height: 560,
-              width: 560, // Scaled up from 460
-              height: 560, // Scaled up from 460
               objectFit: "contain",
               transform: "rotate(-10deg)",
               filter: "drop-shadow(0 25px 35px rgba(0,0,0,0.4))",
             }}
           />
-        </div>
-
-        {/* Stats row */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 36, position: "relative" }}>
-          {STATS.map((s) => (
-            <StatCard key={s.label} {...s} />
-          ))}
-          <button
-            aria-label="Add"
-            style={{
-              width: 54,
-              height: 54,
-              borderRadius: 9999,
-              background: COLORS.primary,
-              border: "none",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              boxShadow: "0px 6px 16px rgba(37,99,235,0.35)",
-              flexShrink: 0,
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>add</span>
-          </button>
         </div>
 
         {/* Categories */}
@@ -408,10 +422,33 @@ export default function ResoleHome({ userName = "Miguel" }) {
             See all
           </button>
         </div>
-        <div style={{ display: "flex", gap: 10, marginBottom: 36, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 28, flexWrap: "wrap" }}>
           {CATEGORIES.map((c) => (
-            <Pill key={c} active={activeCategory === c} onClick={() => setActiveCategory(c)}>
-              {c}
+            <Pill
+              key={c.label}
+              icon={c.icon}
+              iconColor={c.iconColor}
+              active={activeCategory === c.label}
+              onClick={() => setActiveCategory(activeCategory === c.label ? null : c.label)}
+            >
+              {c.label}
+            </Pill>
+          ))}
+        </div>
+
+        {/* Charities */}
+        <CharitiesSection selectedCharity={selectedCharity} onSelect={setSelectedCharity} />
+
+        {/* Brands */}
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: "0 0 16px" }}>Brands</h3>
+        <div style={{ display: "flex", gap: 10, marginBottom: 36, flexWrap: "wrap" }}>
+          {BRANDS.map((b) => (
+            <Pill
+              key={b}
+              active={activeBrand === b}
+              onClick={() => setActiveBrand(activeBrand === b ? null : b)}
+            >
+              {b}
             </Pill>
           ))}
         </div>

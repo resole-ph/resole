@@ -10,6 +10,13 @@ const ANGLE_LABELS: Record<PhotoAngle, string> = {
   insole: 'Insole',
 };
 
+const ANGLE_ICONS: Record<PhotoAngle, string> = {
+  top: 'arrow_circle_up',
+  side: 'arrow_circle_right',
+  sole: 'footprint',
+  insole: 'layers',
+};
+
 interface PhotoDropzoneProps {
   angle: PhotoAngle;
   photo: SellPhoto | null;
@@ -34,10 +41,10 @@ export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: Phot
         handleFiles(e.dataTransfer.files);
       }}
       className={[
-        'relative aspect-square rounded-xl border-2 border-dashed overflow-hidden flex flex-col items-center justify-center gap-1 transition-colors',
+        'relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-1 transition-colors',
         photo
-          ? 'border-transparent'
-          : 'border-outline-variant hover:border-primary cursor-pointer bg-surface-container-low',
+          ? ''
+          : 'border-[1.5px] border-dashed border-outline-variant hover:border-primary cursor-pointer bg-surface-container-low',
       ].join(' ')}
     >
       <input
@@ -56,7 +63,7 @@ export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: Phot
             alt={ANGLE_LABELS[angle]}
             className="w-full h-full object-cover"
           />
-          <div className="absolute bottom-2 left-2 bg-black/55 rounded-full px-2.5 py-1">
+          <div className="absolute top-2 left-2 bg-black/50 rounded-full px-2.5 py-1">
             <span className="text-white text-[11px] font-semibold">{ANGLE_LABELS[angle]}</span>
           </div>
           <button
@@ -72,11 +79,16 @@ export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: Phot
         </>
       ) : (
         <>
-          <span className="material-symbols-outlined text-[28px] text-outline">
-            add_photo_alternate
-          </span>
-          <span className="text-[12px] font-semibold text-on-surface-variant">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+            <span className="material-symbols-outlined text-[20px] text-primary">
+              {ANGLE_ICONS[angle]}
+            </span>
+          </div>
+          <span className="text-[13px] font-medium text-on-surface">
             {ANGLE_LABELS[angle]}
+          </span>
+          <span className="text-[11px] text-on-surface-variant mt-0.5">
+            Click to upload
           </span>
         </>
       )}
