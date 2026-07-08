@@ -1,7 +1,9 @@
 import { db } from '@/config/db';
-import { eq, getTableColumns } from 'drizzle-orm';
+import { and, eq, getTableColumns, inArray } from 'drizzle-orm';
 import { ticket, user } from '@/db/schema';
 import { Ticket, CreateTicket, UpdateTicket } from '@/features/ticket/types/types';
+
+const ACTIVE_TRANSACTION_TICKET_STATUSES = ['open', 'in_progress'] as const;
 
 export async function createTicket(data: CreateTicket) {
   try {
@@ -13,6 +15,27 @@ export async function createTicket(data: CreateTicket) {
     return getTicketById(result[0].id);
   } catch (error) {
     console.error("Error creating ticket.", error);
+    return null;
+  }
+}
+
+export async function getActiveTransactionTicket(transactionId: number, issue: string) {
+  try {
+    const rows = await db
+      .select()
+      .from(ticket)
+      .where(
+        and(
+          eq(ticket.transactionId, transactionId),
+          eq(ticket.issue, issue),
+          inArray(ticket.status, ACTIVE_TRANSACTION_TICKET_STATUSES)
+        )
+      )
+      .limit(1);
+
+    return rows[0] ?? null;
+  } catch (error) {
+    console.error("Error fetching active transaction ticket.", error);
     return null;
   }
 }
