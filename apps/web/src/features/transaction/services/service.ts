@@ -879,8 +879,11 @@ export async function getWalletTransactionsByUserId(userId: string) {
         type: transaction.type,
         coinsEarned: transaction.coinsEarned,
         createdAt: transaction.createdAt,
+        isLister: sql<boolean>`${userId} = ${shoeListing.userId}`,
         listing: {
           id: shoeListing.id,
+          brand: shoe.brand,
+          model: shoe.model,
           colorway: shoeListing.colorway,
           value: shoeListing.value,
           userId: shoeListing.userId,
@@ -888,6 +891,7 @@ export async function getWalletTransactionsByUserId(userId: string) {
       })
       .from(transaction)
       .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .where(
         and(
           or(eq(transaction.recipientId, userId), eq(shoeListing.userId, userId)),
@@ -908,6 +912,8 @@ export async function getWalletTransactionsByUserId(userId: string) {
         },
         listing: {
           id: shoeListing.id,
+          brand: shoe.brand,
+          model: shoe.model,
           colorway: shoeListing.colorway,
           value: shoeListing.value,
           userId: shoeListing.userId,
@@ -917,6 +923,7 @@ export async function getWalletTransactionsByUserId(userId: string) {
       .innerJoin(sale, eq(redemption.saleId, sale.id))
       .innerJoin(transaction, eq(sale.transactionId, transaction.id))
       .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .where(eq(transaction.recipientId, userId));
 
     const voucherRedemptions = await db
@@ -945,7 +952,8 @@ export async function getWalletTransactionsByUserId(userId: string) {
         amount: item.coinsEarned ?? 0,
         createdAt: item.createdAt,
         listing: item.listing,
-      })),
+      }))
+      .filter(item => item.amount !== 0),
       ...saleRedemptions.map((item) => ({
         id: `redemption-${item.id}`,
         sourceId: item.id,
@@ -998,7 +1006,10 @@ export async function getActiveRedeemOptions() {
       })
       .from(voucher)
       .where(gt(voucher.expiresAt, new Date()))
-      .orderBy(desc(voucher.createdAt));
+      .orderBy(
+        desc(voucher.createdAt),
+        desc(voucher.amount)
+      );
 
     return rows.map((row) => ({
       ...row,
