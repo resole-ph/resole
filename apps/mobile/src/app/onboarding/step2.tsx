@@ -1,6 +1,6 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
 import OnboardingProgress from '@/components/molecules/OnboardingProgress';
@@ -15,48 +15,12 @@ export default function Step2Screen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View
-        className="bg-surface-container-high items-center justify-center"
-        style={{ flex: 1 }}
-      >
-        {/* Dotted grid background */}
-        <View className="absolute inset-0 opacity-40">
-          {Array.from({ length: 12 }, (_, row) => (
-            <View key={row} className="flex-row" style={{ flex: 1 }}>
-              {Array.from({ length: 8 }, (_, col) => (
-                <View
-                  key={col}
-                  style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <View
-                    style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#9CA3AF' }}
-                  />
-                </View>
-              ))}
-            </View>
-          ))}
-        </View>
-
-        <View style={{ alignItems: 'center', gap: 24 }}>
-          <Text style={{ fontSize: 80 }}>🤖</Text>
-
-          {/* Valuation Complete chip */}
-          <View
-            className="flex-row items-center gap-2 rounded-full px-4 py-2 bg-surface"
-            style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.08,
-              shadowRadius: 12,
-              elevation: 4,
-            }}
-          >
-            <Ionicons name="checkmark-circle" size={16} color="#0054d3" />
-            <Text className="font-label-md text-label-md text-on-surface uppercase tracking-widest">
-              Valuation Complete
-            </Text>
-          </View>
-        </View>
+      <View style={{ flex: 1 }}>
+        <Image
+          source={require('../../../assets/onboarding-step2.png')}
+          className="w-full h-full"
+          resizeMode="cover"
+        />
 
         <View className="absolute inset-0">
           <OnboardingHeader showBack onBack={() => router.back()} onSkip={handleSkip} />
