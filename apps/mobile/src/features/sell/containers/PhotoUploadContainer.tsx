@@ -24,13 +24,13 @@ const ANGLE_LABELS: Record<PhotoAngle, string> = {
 /** Max width photos are resized to before upload. Cuts file size drastically
  * with no visible quality loss for AI valuation, since raw camera photos come
  * in at full sensor resolution (often 3000px+ wide, several MB each). */
-const UPLOAD_MAX_WIDTH = 1280;
+const UPLOAD_MAX_WIDTH = 800;
 
 async function compressForUpload(uri: string): Promise<string> {
   const result = await ImageManipulator.manipulateAsync(
     uri,
     [{ resize: { width: UPLOAD_MAX_WIDTH } }],
-    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+    { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
   );
   return result.uri;
 }
