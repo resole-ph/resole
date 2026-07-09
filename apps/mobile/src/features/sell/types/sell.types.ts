@@ -1,0 +1,56 @@
+export type PhotoAngle = 'top' | 'side' | 'soles' | 'insoles';
+
+export type SellStep = 'photos' | 'aiResults' | 'editListing' | 'review' | 'confirmation';
+
+export type ConditionLabel = 'Like New' | 'Worn' | 'Good' | 'Fair' | 'Poor';
+
+export type ListingMode = 'sell' | 'swap' | 'both';
+
+export interface SellPhoto {
+  angle: PhotoAngle;
+  uri: string;
+  uploaded: boolean;
+  remoteUrl?: string;
+}
+
+export interface AiAnalysisResult {
+  brand: string;
+  model: string;
+  colorway: string;
+  size: string;
+  year: number;
+  conditionLabel: ConditionLabel;
+  conditionRating: number;
+  suggestedPriceLow: number;
+  suggestedPriceHigh: number;
+  suggestedPrice: number;
+  currency: 'PHP';
+}
+
+export interface ListingFormData {
+  brand: string;
+  model: string;
+  colorway: string;
+  size: string;
+  year: string;
+  conditionRating: number;
+  conditionLabel: ConditionLabel;
+  price: string;
+  description: string;
+  mode: ListingMode;
+}
+
+export interface UploadPhotosResult {
+  photos: Array<{ angle: PhotoAngle; remoteUrl: string }>;
+}
+
+export interface PublishListingPayload {
+  photos: Array<{ angle: PhotoAngle; remoteUrl: string }>;
+  form: ListingFormData;
+  aiAnalysisId: string;
+}
+
+export interface PublishListingResult {
+  listingId: string;
+  listingUrl: string;
+}

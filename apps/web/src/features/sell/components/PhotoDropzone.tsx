@@ -1,0 +1,97 @@
+'use client';
+
+import { useRef } from 'react';
+import type { PhotoAngle, SellPhoto } from '../types/sell.types';
+
+const ANGLE_LABELS: Record<PhotoAngle, string> = {
+  top: 'Top View',
+  side: 'Side View',
+  sole: 'Sole',
+  insole: 'Insole',
+};
+
+const ANGLE_ICONS: Record<PhotoAngle, string> = {
+  top: 'arrow_circle_up',
+  side: 'arrow_circle_right',
+  sole: 'footprint',
+  insole: 'layers',
+};
+
+interface PhotoDropzoneProps {
+  angle: PhotoAngle;
+  photo: SellPhoto | null;
+  onSelect: (angle: PhotoAngle, file: File) => void;
+  onRemove: (angle: PhotoAngle) => void;
+}
+
+export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: PhotoDropzoneProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleFiles(files: FileList | null) {
+    const file = files?.[0];
+    if (file) onSelect(angle, file);
+  }
+
+  return (
+    <div
+      onClick={() => !photo && inputRef.current?.click()}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        handleFiles(e.dataTransfer.files);
+      }}
+      className={[
+        'relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-1 transition-colors',
+        photo
+          ? ''
+          : 'border-[1.5px] border-dashed border-outline-variant hover:border-primary cursor-pointer bg-surface-container-low',
+      ].join(' ')}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+      />
+
+      {photo ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photo.previewUrl}
+            alt={ANGLE_LABELS[angle]}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute top-2 left-2 bg-black/50 rounded-full px-2.5 py-1">
+            <span className="text-white text-[11px] font-semibold">{ANGLE_LABELS[angle]}</span>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(angle);
+            }}
+            aria-label={`Remove ${ANGLE_LABELS[angle]} photo`}
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+            <span className="material-symbols-outlined text-[20px] text-primary">
+              {ANGLE_ICONS[angle]}
+            </span>
+          </div>
+          <span className="text-[13px] font-medium text-on-surface">
+            {ANGLE_LABELS[angle]}
+          </span>
+          <span className="text-[11px] text-on-surface-variant mt-0.5">
+            Click to upload
+          </span>
+        </>
+      )}
+    </div>
+  );
+}

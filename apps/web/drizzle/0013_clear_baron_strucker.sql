@@ -1,0 +1,2 @@
+CREATE TYPE "public"."cause_enum" AS ENUM('Community building', 'Disaster relief', 'Environment & wildlife', 'Children''s welfare', 'Poverty alleviation', 'Child education', 'Other');--> statement-breakpoint
+ALTER TABLE "charity" ADD COLUMN "cause" "cause_enum" DEFAULT 'Other' NOT NULL;
