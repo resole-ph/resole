@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { View, Text, PanResponder, LayoutChangeEvent } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 
 const THUMB_SIZE = 24;
 const TRACK_HEIGHT = 10;
@@ -53,6 +53,17 @@ function messageFor(tone: 'good' | 'warn' | 'bad', aiValue: number) {
   }
 }
 
+function valueToX(v: number, min: number, max: number, w: number) {
+  if (max === min) return 0;
+  return ((v - min) / (max - min)) * w;
+}
+
+function xToValue(x: number, min: number, max: number, w: number) {
+  if (w === 0) return min;
+  const raw = (x / w) * (max - min) + min;
+  return Math.round(Math.max(min, Math.min(max, raw)) * 10) / 10;
+}
+
 interface ConditionSliderProps {
   value: number;
   min: number;
@@ -68,21 +79,24 @@ export default function ConditionSlider({ value, min, max, aiValue, onChange }: 
   const [displayValue, setDisplayValue] = useState(value);
   const [width, setWidth] = useState(0);
 
-  function valueToX(v: number, w: number) {
-    if (max === min) return 0;
-    return ((v - min) / (max - min)) * w;
-  }
-
-  function xToValue(x: number, w: number) {
-    if (w === 0) return min;
-    const raw = (x / w) * (max - min) + min;
-    return Math.round(Math.max(min, Math.min(max, raw)) * 10) / 10;
-  }
+  // PanResponder is created once and its callbacks close over whatever these
+  // refs point to *at call time* — keeping them in refs (updated every render)
+  // instead of reading `value`/`min`/`max`/`onChange` directly avoids the
+  // callbacks ever operating on stale, first-render values.
+  const minRef = useRef(min);
+  const maxRef = useRef(max);
+  const onChangeRef = useRef(onChange);
+  const committedValueRef = useRef(value);
+  const gestureStartXRef = useRef(0);
+  minRef.current = min;
+  maxRef.current = max;
+  onChangeRef.current = onChange;
+  committedValueRef.current = value;
 
   function onLayout(e: LayoutChangeEvent) {
     const w = e.nativeEvent.layout.width;
     trackWidth.current = w;
-    thumbX.value = valueToX(value, w);
+    thumbX.value = valueToX(value, min, max, w);
     setWidth(w);
   }
 
@@ -90,16 +104,21 @@ export default function ConditionSlider({ value, min, max, aiValue, onChange }: 
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {},
+      onPanResponderGrant: () => {
+        const w = trackWidth.current;
+        gestureStartXRef.current = valueToX(committedValueRef.current, minRef.current, maxRef.current, w);
+      },
       onPanResponderMove: (_, gestureState) => {
         const w = trackWidth.current;
         if (!w) return;
-        const startX = valueToX(value, w);
-        const newX = Math.max(0, Math.min(w, startX + gestureState.dx));
+        const newX = Math.max(0, Math.min(w, gestureStartXRef.current + gestureState.dx));
         thumbX.value = newX;
-        const newValue = xToValue(newX, w);
-        runOnJS(setDisplayValue)(newValue);
-        runOnJS(onChange)(newValue);
+        const newValue = xToValue(newX, minRef.current, maxRef.current, w);
+        if (newValue !== committedValueRef.current) {
+          committedValueRef.current = newValue;
+          setDisplayValue(newValue);
+          onChangeRef.current(newValue);
+        }
       },
       onPanResponderRelease: () => {},
     })
@@ -109,10 +128,19 @@ export default function ConditionSlider({ value, min, max, aiValue, onChange }: 
     transform: [{ translateX: thumbX.value - THUMB_SIZE / 2 }],
   }));
 
+  // Segment colors only depend on where the AI estimate sits, not on the
+  // dragged value, so they're computed once instead of on every drag frame.
+  const segments = useMemo(() => {
+    return Array.from({ length: SEGMENT_COUNT }, (_, i) => {
+      const segValue = min + ((i + 0.5) / SEGMENT_COUNT) * (max - min);
+      return colorForDeviation(deviationFor(segValue, aiValue, min, max));
+    });
+  }, [min, max, aiValue]);
+
   const deviation = deviationFor(displayValue, aiValue, min, max);
   const tone = toneFor(deviation);
   const toneColor = colorForDeviation(deviation);
-  const aiX = valueToX(aiValue, width);
+  const aiX = valueToX(aiValue, min, max, width);
 
   return (
     <View className="gap-1">
@@ -137,21 +165,17 @@ export default function ConditionSlider({ value, min, max, aiValue, onChange }: 
           className="flex-row rounded-full overflow-hidden"
           style={{ height: TRACK_HEIGHT }}
         >
-          {Array.from({ length: SEGMENT_COUNT }).map((_, i) => {
-            const segValue = min + ((i + 0.5) / SEGMENT_COUNT) * (max - min);
-            const segColor = colorForDeviation(deviationFor(segValue, aiValue, min, max));
-            return (
-              <View
-                key={i}
-                style={{
-                  flex: 1,
-                  backgroundColor: segColor,
-                  marginRight: i < SEGMENT_COUNT - 1 ? 1 : 0,
-                  opacity: 0.85,
-                }}
-              />
-            );
-          })}
+          {segments.map((segColor, i) => (
+            <View
+              key={i}
+              style={{
+                flex: 1,
+                backgroundColor: segColor,
+                marginRight: i < SEGMENT_COUNT - 1 ? 1 : 0,
+                opacity: 0.85,
+              }}
+            />
+          ))}
         </View>
 
         {/* AI estimate marker */}
