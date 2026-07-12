@@ -5,6 +5,18 @@ import SellStepHeader from '../components/SellStepHeader';
 import ConditionSlider from '../components/ConditionSlider';
 import PriceInput from '../components/PriceInput';
 import { useSellFlow } from '../hooks/useSellFlow';
+import type { ListingMode } from '../types/sell.types';
+
+function listingModeDescription(mode: ListingMode) {
+  switch (mode) {
+    case 'sell':
+      return "You're listing this pair for a fixed price — buyers can purchase it directly at the price you set below.";
+    case 'swap':
+      return "You're listing this pair for trade — other users can propose swapping their own pair for yours instead of paying cash.";
+    case 'both':
+      return "You're open to both — buyers can purchase this pair at your asking price or propose a swap, whichever works for them.";
+  }
+}
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -47,12 +59,12 @@ function StyledInput({
 
 export default function EditListingContainer() {
   const router = useRouter();
-  const { form, updateFormField, priceAllowedRange, conditionAllowedRange, ratingToLabel, setStep, goBack } = useSellFlow();
+  const { form, aiResult, updateFormField, priceAllowedRange, ratingToLabel, setStep, goBack } = useSellFlow();
 
   if (!form) return null;
 
   const { min: priceMin, max: priceMax } = priceAllowedRange();
-  const { min: condMin, max: condMax } = conditionAllowedRange();
+  const aiConditionRating = aiResult?.conditionRating ?? form.conditionRating;
 
   function handleConditionChange(v: number) {
     updateFormField('conditionRating', v);
@@ -144,13 +156,11 @@ export default function EditListingContainer() {
           </View>
           <ConditionSlider
             value={form.conditionRating}
-            min={condMin}
-            max={condMax}
+            min={1}
+            max={10}
+            aiValue={aiConditionRating}
             onChange={handleConditionChange}
           />
-          <Text className="font-label-md text-label-md text-on-surface-variant mt-2">
-            ±15% of AI-suggested rating
-          </Text>
         </View>
 
         {/* Price */}
@@ -232,6 +242,13 @@ export default function EditListingContainer() {
                 </TouchableOpacity>
               );
             })}
+          </View>
+
+          <View className="flex-row items-start gap-2 mt-3 p-3 rounded-xl bg-secondary-container">
+            <Ionicons name="information-circle-outline" size={16} color="#0054d3" style={{ marginTop: 1 }} />
+            <Text className="flex-1 font-label-md text-label-md text-primary">
+              {listingModeDescription(form.mode)}
+            </Text>
           </View>
         </View>
 
