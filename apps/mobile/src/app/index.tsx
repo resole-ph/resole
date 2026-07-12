@@ -78,7 +78,6 @@ export default function HomeScreen() {
         <FavoritesToggle active={favoritesOnly} onToggle={() => setFavoritesOnly((prev) => !prev)} />
         <HeroBanner onPress={() => router.push('/sell' as any)} />
         <CategoriesRow onBrandPress={setSelectedBrand} />
-        <CharitiesSection />
         <BrowseFeed
           title={favoritesOnly ? 'Your Favorites' : searchQuery ? `Results for "${searchQuery}"` : 'Listings'}
           subtitle={favoritesOnly ? 'Listings you\'ve saved' : selectedBrand ? `Filtered by ${selectedBrand}` : 'Kickstart your day'}
@@ -86,6 +85,7 @@ export default function HomeScreen() {
           search={searchQuery}
           favoritesOnly={favoritesOnly}
         />
+        <CharitiesSection />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
     </View>
