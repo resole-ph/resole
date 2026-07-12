@@ -93,14 +93,14 @@ export async function createShoeAnalysis(data: ShoeAnalysisResult) {
       colorway: data.colorway,
       size: data.size,
       year: data.year,
-      conditionScore: data.conditionScore,
+      conditionScore: data.conditionScore.toString(),
       description: data.description,
-      estimatedPrice: data.estimatedPrice.toString(), 
-      defects: data.defects, 
-      pricing: data.pricing, 
-  }).returning();
+      estimatedPrice: data.estimatedPrice.toString(),
+      defects: data.defects,
+      pricing: data.pricing,
+    }).returning();
 
-  return result[0];
+    return result[0];
   } catch (error) {
     console.error("Error creating shoe analysis.", error);
     return null;
@@ -174,7 +174,13 @@ export async function getAllShoeListing(filters?: ShoeListingFilters) {
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(and(eq(shoeListing.isAvailable, true), ...buildShoeListingFilters(filters)))
+      .where(
+        and(
+          eq(shoeListing.isAvailable, true), 
+          isNull(shoeListing.deletedAt), 
+          ...buildShoeListingFilters(filters)
+        )
+      )
       .orderBy(desc(shoeListing.updatedAt))
       .limit(20);
 
@@ -301,6 +307,7 @@ export async function getAllShoeListingForSale(filters?: ShoeListingFilters) {
       .innerJoin(user, eq(shoeListing.userId, user.id))
       .where(and(
         eq(shoeListing.isAvailable, true),
+        isNull(shoeListing.deletedAt),
         or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')),
         ...buildShoeListingFilters(filters)
       ));
@@ -325,6 +332,7 @@ export async function getAllShoeListingForSwap(filters?: ShoeListingFilters) {
       .innerJoin(user, eq(shoeListing.userId, user.id))
       .where(and(
         eq(shoeListing.isAvailable, true),
+        isNull(shoeListing.deletedAt),
         or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')),
         ...buildShoeListingFilters(filters)
       ));
@@ -446,7 +454,13 @@ export async function getShoeListingByModelName(model: string) {
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(eq(shoe.model, model));
+      .where(
+        and(
+          eq(shoeListing.isAvailable, true),
+          eq(shoe.model, model),
+          isNull(shoeListing.deletedAt)
+        )
+      );
     
     return rows as ShoeListing[] ?? null;
   } catch (error) {
