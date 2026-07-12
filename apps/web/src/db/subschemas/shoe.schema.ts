@@ -117,7 +117,7 @@ export const shoeAnalysis = pgTable('shoe_analysis', {
   colorway: text('colorway').notNull(),
   size: text('size').notNull(),
   year: integer('year').notNull(),
-  conditionScore: integer('condition_score').notNull(),
+  conditionScore: numeric('condition_score').notNull(),
   description: text('description').notNull(),
   defects: text('defects').array().notNull().default([]), 
   estimatedPrice: numeric('estimated_price').notNull(),
