@@ -75,7 +75,6 @@ export default function HomeScreen() {
           <Text className="text-xs text-gray-600">Preview Onboarding</Text>
         </TouchableOpacity>
         <SearchBar onSearch={setSearchQuery} />
-        <FavoritesToggle active={favoritesOnly} onToggle={() => setFavoritesOnly((prev) => !prev)} />
         <HeroBanner onPress={() => router.push('/sell' as any)} />
         <CategoriesRow onBrandPress={setSelectedBrand} />
         <BrowseFeed
@@ -84,6 +83,14 @@ export default function HomeScreen() {
           brand={selectedBrand}
           search={searchQuery}
           favoritesOnly={favoritesOnly}
+          onViewAll={() => router.push('/market' as any)}
+          headerRight={
+            <FavoritesToggle
+              compact
+              active={favoritesOnly}
+              onToggle={() => setFavoritesOnly((prev) => !prev)}
+            />
+          }
         />
         <CharitiesSection />
       </ScrollView>
