@@ -4,11 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 interface FavoritesToggleProps {
   active: boolean;
   onToggle: () => void;
+  /** Renders without the standalone page padding, for inline placement next to other controls. */
+  compact?: boolean;
 }
 
-export default function FavoritesToggle({ active, onToggle }: FavoritesToggleProps) {
+export default function FavoritesToggle({ active, onToggle, compact = false }: FavoritesToggleProps) {
   return (
-    <View className="px-5 pb-4">
+    <View className={compact ? undefined : 'px-5 pb-4'}>
       <TouchableOpacity
         onPress={onToggle}
         activeOpacity={0.75}

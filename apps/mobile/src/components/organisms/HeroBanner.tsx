@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -24,6 +25,26 @@ export default function HeroBanner({
   image = DEFAULT_IMAGE,
   onPress,
 }: HeroBannerProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+  const hasRetried = useRef(false);
+
+  // Each tab switch remounts this screen, so a fresh Image mount can still hit
+  // the same flaky network (e.g. right after login) that failed last time.
+  useEffect(() => {
+    setImageFailed(false);
+    hasRetried.current = false;
+  }, [image]);
+
+  const handleImageError = () => {
+    if (!hasRetried.current) {
+      hasRetried.current = true;
+      setRetryKey((k) => k + 1);
+    } else {
+      setImageFailed(true);
+    }
+  };
+
   return (
     <View className="mx-5 mb-4">
       <View
@@ -54,10 +75,12 @@ export default function HeroBanner({
           style={{ width: 120, height: 120, bottom: -40, left: -30, opacity: 0.35 }}
         />
 
-        {!rightIcon && image ? (
+        {!rightIcon && image && !imageFailed ? (
           <Image
-            source={{ uri: image }}
+            key={retryKey}
+            source={{ uri: image, cache: 'force-cache' }}
             resizeMode="contain"
+            onError={handleImageError}
             style={{
               position: 'absolute',
               right: -30,

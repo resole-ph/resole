@@ -30,6 +30,8 @@ interface BrowseFeedProps {
   onSort?: () => void;
   onViewAll?: () => void;
   onSaveListing?: (listing: Listing) => void;
+  /** Extra control rendered next to "View all" in the section header. */
+  headerRight?: React.ReactNode;
 }
 
 export default function BrowseFeed({
@@ -46,6 +48,7 @@ export default function BrowseFeed({
   onSort,
   onViewAll,
   onSaveListing,
+  headerRight,
 }: BrowseFeedProps) {
   const [countdown, setCountdown] = useState({ h: 3, m: 45, s: 22 });
   const [fetchedListings, setFetchedListings] = useState<Listing[]>([])
@@ -165,9 +168,7 @@ export default function BrowseFeed({
             <Text className="text-gray-900 font-bold text-base">{title}</Text>
             {subtitle ? <Text className="text-gray-400 text-xs mt-0.5">{subtitle}</Text> : null}
           </View>
-          <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
-            <Text className="text-blue-600 text-sm font-medium">View all</Text>
-          </TouchableOpacity>
+          {headerRight}
         </View>
       )}
 
@@ -213,18 +214,30 @@ export default function BrowseFeed({
           </Text>
         </View>
       ) : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 }}>
-          {visibleListings.map((listing) => (
-            <View key={listing.id} style={{ width: '50%', padding: 5 }}>
-              <ListingCard
-                listing={listing}
-                onSave={handleSave}
-                isSaved={savedIds.has(listing.id)}
-                currentUserId={currentUserId}
-              />
-            </View>
-          ))}
-        </View>
+        <>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 }}>
+            {visibleListings.map((listing) => (
+              <View key={listing.id} style={{ width: '50%', padding: 5 }}>
+                <ListingCard
+                  listing={listing}
+                  onSave={handleSave}
+                  isSaved={savedIds.has(listing.id)}
+                  currentUserId={currentUserId}
+                />
+              </View>
+            ))}
+          </View>
+          {onViewAll && (
+            <TouchableOpacity
+              onPress={onViewAll}
+              activeOpacity={0.7}
+              className="flex-row items-center justify-center mt-2 mx-5 py-3 rounded-xl bg-white border border-gray-200"
+            >
+              <Text className="text-blue-600 text-sm font-medium mr-1">View all</Text>
+              <Ionicons name="chevron-forward" size={14} color="#2563EB" />
+            </TouchableOpacity>
+          )}
+        </>
       )}
     </View>
   );

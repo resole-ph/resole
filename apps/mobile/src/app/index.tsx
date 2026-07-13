@@ -75,17 +75,24 @@ export default function HomeScreen() {
           <Text className="text-xs text-gray-600">Preview Onboarding</Text>
         </TouchableOpacity>
         <SearchBar onSearch={setSearchQuery} />
-        <FavoritesToggle active={favoritesOnly} onToggle={() => setFavoritesOnly((prev) => !prev)} />
         <HeroBanner onPress={() => router.push('/sell' as any)} />
         <CategoriesRow onBrandPress={setSelectedBrand} />
-        <CharitiesSection />
         <BrowseFeed
           title={favoritesOnly ? 'Your Favorites' : searchQuery ? `Results for "${searchQuery}"` : 'Listings'}
           subtitle={favoritesOnly ? 'Listings you\'ve saved' : selectedBrand ? `Filtered by ${selectedBrand}` : 'Kickstart your day'}
           brand={selectedBrand}
           search={searchQuery}
           favoritesOnly={favoritesOnly}
+          onViewAll={() => router.push('/market' as any)}
+          headerRight={
+            <FavoritesToggle
+              compact
+              active={favoritesOnly}
+              onToggle={() => setFavoritesOnly((prev) => !prev)}
+            />
+          }
         />
+        <CharitiesSection />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
     </View>

@@ -131,7 +131,7 @@ export default function AiResultsContainer() {
                 elevation: 6,
               }}
             >
-              <Text className="font-body-md text-body-md text-on-primary">Looks Good</Text>
+              <Text className="font-body-md text-body-md text-on-primary">Continue</Text>
             </TouchableOpacity>
           </View>
         </>

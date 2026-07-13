@@ -4,10 +4,6 @@ import { ratingToLabel } from '../utils/condition';
 
 const PHOTO_ANGLES = ['top', 'side', 'soles', 'insoles'] as const;
 
-function clamp(val: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, val));
-}
-
 export function useSellFlow() {
   const store = useSellStore();
 
@@ -38,14 +34,6 @@ export function useSellFlow() {
     };
   }
 
-  function conditionAllowedRange() {
-    const base = store.aiResult?.conditionRating ?? 5;
-    return {
-      min: clamp(Math.round(base * 0.85), 1, 10),
-      max: clamp(Math.round(base * 1.15), 1, 10),
-    };
-  }
-
   const STEP_ORDER: SellStep[] = ['photos', 'aiResults', 'editListing', 'review', 'confirmation'];
 
   function goBack() {
@@ -58,7 +46,6 @@ export function useSellFlow() {
     allPhotosUploaded,
     initFormFromAiResult,
     priceAllowedRange,
-    conditionAllowedRange,
     ratingToLabel,
     goBack,
   };

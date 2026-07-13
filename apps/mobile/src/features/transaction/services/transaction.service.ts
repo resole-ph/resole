@@ -37,7 +37,7 @@ export const TransactionService = {
       method: 'GET'
     });
 
-    return res;
+    return res.wallet;
   },
 
   async getUserWalletTransactions(): Promise<CoinTx[]> {
@@ -45,11 +45,11 @@ export const TransactionService = {
       method: 'GET'
     });
 
-    return res.map((item: any) => {
+    return res.transactions.map((item: any) => {
       return {
         id: item.id,
         amount: item.amount,
-        date: item.createdAt.toDateString().slice(4),
+        date: new Date(item.createdAt).toDateString().slice(4),
         ...this.getTransactionInfo(item)
       }
     })
@@ -60,7 +60,7 @@ export const TransactionService = {
       method: 'GET'
     });
 
-    return res.map((item: any) => {
+    return res.redeemOptions.map((item: any) => {
       return {
         id: item.id,
         title: item.name,

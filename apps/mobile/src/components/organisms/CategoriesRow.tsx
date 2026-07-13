@@ -11,16 +11,14 @@ const CATEGORIES: Category[] = [
   { id: 'skate',      label: 'Skate',      icon: 'trending-up',  iconColor: '#10B981' },
   { id: 'training',   label: 'Training',   icon: 'barbell',      iconColor: '#3B82F6' },
   { id: 'casual',     label: 'Casual',     icon: 'shirt',        iconColor: '#EC4899' },
-  { id: 'other',      label: 'Other',      icon: 'ellipsis-horizontal-outline',        iconColor: '#a1a1a1' },
 ];
 
 interface CategoriesRowProps {
   onCategoryPress?: (categoryId: string) => void;
   onBrandPress?: (brandId: string | null) => void;
-  onSeeAll?: () => void;
 }
 
-export default function CategoriesRow({ onCategoryPress, onBrandPress, onSeeAll }: CategoriesRowProps) {
+export default function CategoriesRow({ onCategoryPress, onBrandPress }: CategoriesRowProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [activeCatId, setActiveCatId] = useState<string | null>(null);
   const [activeBrandId, setActiveBrandId] = useState<string | null>(null);
@@ -54,9 +52,6 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress, onSeeAll 
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 mb-3">
         <Text className="text-gray-900 font-bold text-base">Categories</Text>
-        <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7}>
-          <Text className="text-blue-600 text-sm font-medium">See all</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Category chips */}
