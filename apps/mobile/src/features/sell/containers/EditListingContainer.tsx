@@ -6,6 +6,7 @@ import ConditionSlider from '../components/ConditionSlider';
 import PriceInput from '../components/PriceInput';
 import { useSellFlow } from '../hooks/useSellFlow';
 import type { ListingMode } from '../types/sell.types';
+import { validateListingForm } from '../utils/validation';
 
 function listingModeDescription(mode: ListingMode) {
   switch (mode) {
@@ -32,27 +33,35 @@ function StyledInput({
   placeholder,
   multiline,
   keyboardType,
+  error,
 }: {
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
   multiline?: boolean;
   keyboardType?: 'default' | 'numeric';
+  error?: string;
 }) {
   return (
-    <View className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#727687"
-        multiline={multiline}
-        keyboardType={keyboardType}
-        numberOfLines={multiline ? 4 : 1}
-        textAlignVertical={multiline ? 'top' : 'center'}
-        className="py-3 px-4 font-body-md text-body-md text-on-surface"
-        style={multiline ? { minHeight: 96 } : undefined}
-      />
+    <View className="gap-1">
+      <View
+        className="bg-surface-container-lowest border rounded-xl overflow-hidden"
+        style={{ borderColor: error ? '#ba1a1a' : '#c2c6d8' }}
+      >
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#727687"
+          multiline={multiline}
+          keyboardType={keyboardType}
+          numberOfLines={multiline ? 4 : 1}
+          textAlignVertical={multiline ? 'top' : 'center'}
+          className="py-3 px-4 font-body-md text-body-md text-on-surface"
+          style={multiline ? { minHeight: 96 } : undefined}
+        />
+      </View>
+      {error && <Text className="font-label-md text-label-md text-error">{error}</Text>}
     </View>
   );
 }
@@ -65,6 +74,8 @@ export default function EditListingContainer() {
 
   const { min: priceMin, max: priceMax } = priceAllowedRange();
   const aiConditionRating = aiResult?.conditionRating ?? form.conditionRating;
+  const errors = validateListingForm(form);
+  const canContinue = Object.keys(errors).length === 0;
 
   function handleConditionChange(v: number) {
     updateFormField('conditionRating', v);
@@ -106,31 +117,37 @@ export default function EditListingContainer() {
               value={form.brand}
               onChangeText={(v) => updateFormField('brand', v)}
               placeholder="Brand"
+              error={errors.brand}
             />
             <StyledInput
               value={form.model}
               onChangeText={(v) => updateFormField('model', v)}
               placeholder="Model"
+              error={errors.model}
             />
             <StyledInput
               value={form.colorway}
               onChangeText={(v) => updateFormField('colorway', v)}
               placeholder="Colorway"
+              error={errors.colorway}
             />
             <View className="flex-row gap-2">
               <View className="flex-1">
                 <StyledInput
                   value={form.size}
-                  onChangeText={(v) => updateFormField('size', v)}
-                  placeholder="Size (e.g. US 10)"
+                  onChangeText={(v) => updateFormField('size', v.replace(/[^0-9.]/g, ''))}
+                  placeholder="Size (e.g. 10)"
+                  keyboardType="numeric"
+                  error={errors.size}
                 />
               </View>
               <View className="flex-1">
                 <StyledInput
                   value={form.year}
-                  onChangeText={(v) => updateFormField('year', v)}
+                  onChangeText={(v) => updateFormField('year', v.replace(/[^0-9]/g, ''))}
                   placeholder="Year"
                   keyboardType="numeric"
+                  error={errors.year}
                 />
               </View>
             </View>
@@ -180,6 +197,7 @@ export default function EditListingContainer() {
             onChange={(v) => updateFormField('price', v)}
             minPrice={priceMin}
             maxPrice={priceMax}
+            error={errors.price}
           />
         </View>
 
@@ -275,10 +293,17 @@ export default function EditListingContainer() {
 
       {/* CTA */}
       <View className="px-4 pb-8 pt-2">
+        {!canContinue && (
+          <Text className="font-label-md text-label-md text-error text-center mb-2">
+            {Object.values(errors)[0]} Please fix the highlighted fields to continue.
+          </Text>
+        )}
         <TouchableOpacity
-          onPress={() => setStep('review')}
+          onPress={() => canContinue && setStep('review')}
+          disabled={!canContinue}
           className="bg-primary rounded-full py-4 items-center"
           style={{
+            opacity: canContinue ? 1 : 0.4,
             shadowColor: '#0054d3',
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.3,
