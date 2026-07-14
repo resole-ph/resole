@@ -28,6 +28,13 @@ const COMMON_EMAIL_DOMAINS = [
   'protonmail.com',
 ];
 
+const KNOWN_SAFE_DOMAINS = [
+  ...COMMON_EMAIL_DOMAINS,
+  'ymail.com',
+  'rocketmail.com',
+  'mail.com',
+];
+
 function levenshteinDistance(a: string, b: string): number {
   const rows = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
 
@@ -52,7 +59,7 @@ export function suggestEmailTypoCorrection(email: string): string | null {
   }
 
   const domain = email.slice(atIndex + 1).toLowerCase();
-  if (COMMON_EMAIL_DOMAINS.includes(domain)) {
+  if (KNOWN_SAFE_DOMAINS.includes(domain)) {
     return null;
   }
 
