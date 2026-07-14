@@ -13,6 +13,7 @@ import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { UserService } from '@/features/user/services/user.service';
+import { useSellStore } from '@/store/sell';
 
 export const CONDITION_COLORS: Record<Listing['condition'], string> = {
   'Like New':  '#10B981',
@@ -45,6 +46,7 @@ export default function ListingDetailScreen() {
   const [isLoading, setIsLoading]           = useState(true);
   const [activePhoto, setActivePhoto]       = useState(0);
   const [currentUserId, setCurrentUserId]   = useState<string | null>(null);
+  const resetSell = useSellStore((s) => s.reset);
 
   useEffect(() => {
     const loadData = async () => {
@@ -131,6 +133,12 @@ export default function ListingDetailScreen() {
   const similarItems = similarListings?.filter(
     (l) => l.id !== listing.id && (l.brand === listing.brand || l.listingMode === listing.listingMode)
   ).slice(0, 6) || [];
+
+  function handleEditListing() {
+    if (!isOwnListing) return;
+    resetSell();
+    router.push({ pathname: '/profile/edit-listing', params: { id: listing!.id } });
+  }
 
   function handleSwap() {
     if (isOwnListing) return;
@@ -295,10 +303,15 @@ export default function ListingDetailScreen() {
         style={{ paddingBottom: Math.max(insets.bottom, 16), shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 10 }}
       >
         {isOwnListing ? (
-          <View className="rounded-2xl py-4 items-center justify-center flex-row bg-gray-100">
-            <Ionicons name="person-outline" size={18} color="#6B7280" />
-            <Text className="text-gray-500 font-bold text-base ml-2">This is your listing</Text>
-          </View>
+          <TouchableOpacity
+            className="rounded-2xl py-4 items-center justify-center flex-row"
+            activeOpacity={0.85}
+            onPress={handleEditListing}
+            style={{ backgroundColor: '#2563EB', ...BTN_SHADOW('#2563EB') }}
+          >
+            <Ionicons name="create-outline" size={18} color="#fff" />
+            <Text className="text-white font-bold text-base ml-2">Edit Listing</Text>
+          </TouchableOpacity>
         ) : canOffer && canSwap ? (
           <View className="flex-row gap-3">
             <TouchableOpacity
