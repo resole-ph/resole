@@ -1,5 +1,32 @@
 import { NextResponse } from 'next/server';
+import sharp from 'sharp';
 import { getAuthenticatedUser } from '@/lib/request-auth';
+
+const MAX_PHOTO_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_PHOTO_SIZE_LABEL = '20MB';
+
+const COMPRESS_MAX_WIDTH = 1600;
+const COMPRESS_QUALITY = 80;
+
+async function compressPhoto(file: File): Promise<{ buffer: Buffer; contentType: string; ext: string }> {
+  const inputBuffer = Buffer.from(await file.arrayBuffer());
+
+  try {
+    const outputBuffer = await sharp(inputBuffer)
+      .rotate()
+      .flatten({ background: '#FFFFFF' })
+      .resize({ width: COMPRESS_MAX_WIDTH, withoutEnlargement: true })
+      .jpeg({ quality: COMPRESS_QUALITY, progressive: true })
+      .toBuffer();
+
+    return { buffer: outputBuffer, contentType: 'image/jpeg', ext: 'jpg' };
+  } catch (error) {
+    console.error('Photo compression failed, uploading original bytes:', error);
+    const nameParts = file.name.split('.');
+    const ext = nameParts.length > 1 ? nameParts.pop()! : 'jpg';
+    return { buffer: inputBuffer, contentType: file.type || 'application/octet-stream', ext };
+  }
+}
 
 export async function POST(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
@@ -21,6 +48,16 @@ export async function POST(request: Request) {
 
     const files = { top, side, sole, insole };
 
+    const oversizedEntries = Object.entries(files).filter(([, file]) => file.size > MAX_PHOTO_SIZE_BYTES);
+    if (oversizedEntries.length > 0) {
+      const details = oversizedEntries
+        .map(([key, file]) => `${key} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`)
+        .join(', ');
+      return NextResponse.json({
+        error: `Photo too large: ${details}. Each photo must be under ${MAX_PHOTO_SIZE_LABEL}.`,
+      }, { status: 413 });
+    }
+
     const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -28,9 +65,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Supabase storage configuration is missing' }, { status: 500 });
     }
 
-    // Storage endpoints hang off the project origin; strip any trailing slash so
-    // string-concatenated paths don't produce a `//storage/...` (which routes to
-    // PostgREST and fails with PGRST125).
     const supabaseUrl = rawSupabaseUrl.replace(/\/+$/, '');
 
     const urlKeys = {
@@ -40,25 +74,21 @@ export async function POST(request: Request) {
       insole: 'imageUrlInsole',
     } as const;
 
-    // Upload all four angles concurrently instead of one-at-a-time — each is an
-    // independent Storage request, so serializing them only adds latency.
     const uploads = await Promise.all(
       Object.entries(files).map(async ([key, file]) => {
-        const ext = file.name.split('.').pop() || 'jpg';
+        const { buffer, contentType, ext } = await compressPhoto(file);
         const randomPart = Math.random().toString(36).substring(2, 8);
         const filePath = `${currentUser.user.id}/${key}-${Date.now()}-${randomPart}.${ext}`;
         const uploadUrl = `${supabaseUrl}/storage/v1/object/resole-photos/${filePath}`;
-
-        const fileBuffer = await file.arrayBuffer();
 
         const response = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
             'apikey': serviceRoleKey,
             'Authorization': `Bearer ${serviceRoleKey}`,
-            'Content-Type': file.type,
+            'Content-Type': contentType,
           },
-          body: fileBuffer,
+          body: new Uint8Array(buffer),
         });
 
         if (!response.ok) {

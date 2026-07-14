@@ -5,6 +5,7 @@ import {
   isValidEmail,
   normalizeContactNo,
   normalizeEmail,
+  suggestEmailTypoCorrection,
 } from '@/lib/auth';
 import { randomUUID } from 'node:crypto';
 
@@ -52,6 +53,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
   }
 
+  const suggestedEmail = suggestEmailTypoCorrection(email);
+  if (suggestedEmail) {
+    return NextResponse.json({
+      error: `Enter a valid email address. Did you mean ${suggestedEmail}?`,
+    }, { status: 400 });
+  }
+
   if (!isStrongPassword(password)) {
     return NextResponse.json({
       error: 'Password must be at least 8 characters and include uppercase, lowercase, and a number',
@@ -87,6 +95,6 @@ export async function POST(request: Request) {
     return buildAuthResponse(newUser, session);
   } catch (error: unknown) {
     console.error('Signup error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create account. Please try again.' }, { status: 500 });
   }
 }

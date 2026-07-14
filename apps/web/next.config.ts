@@ -18,7 +18,8 @@ const nextConfig: NextConfig = {
     'nock',
     'puppeteer',
     'puppeteer-extra',
-    'puppeteer-extra-plugin-stealth'
+    'puppeteer-extra-plugin-stealth',
+    'sharp'
   ],
 };
 
