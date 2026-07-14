@@ -75,41 +75,6 @@ export default function ProductDetailPage() {
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'); * { box-sizing: border-box; }`}</style>
 
-      {/* Header */}
-      <header style={{ position: "sticky", top: 0, zIndex: 20, background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "14px 24px", display: "flex", alignItems: "center", gap: 32 }}>
-          <span 
-            onClick={() => router.push('/')} 
-            style={{ fontWeight: 800, fontSize: 20, color: COLORS.primary, letterSpacing: "-0.02em", cursor: "pointer" }}
-          >
-            Resole
-          </span>
-          <nav style={{ display: "flex", gap: 24, flex: 1 }}>
-            {["Home", "Market", "Sell", "Rewards"].map((item) => (
-              <span 
-                key={item} 
-                onClick={() => router.push(item === "Home" ? "/" : `/${item.toLowerCase()}`)}
-                style={{ fontSize: 14.5, fontWeight: item === "Market" ? 700 : 500, color: item === "Market" ? COLORS.primary : COLORS.textMuted, cursor: "pointer" }}
-              >
-                {item}
-              </span>
-            ))}
-          </nav>
-          <div style={{ flex: 1, maxWidth: 380, background: COLORS.inputBg, borderRadius: 9999, padding: "9px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={COLORS.textFaint} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input 
-              type="text" 
-              placeholder="Search marketplace..." 
-              onClick={() => router.push('/market')}
-              style={{ border: "none", background: "transparent", outline: "none", fontSize: 13.5, color: COLORS.textMain, width: "100%", cursor: "pointer" }}
-            />
-          </div>
-        </div>
-      </header>
-
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 24px 64px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 40, marginBottom: 56 }}>
           {/* Gallery */}
@@ -426,30 +391,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer style={{ background: "#F3F4F5", borderTop: `1px solid ${COLORS.border}`, padding: "32px 24px" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
-          <div>
-            <span onClick={() => router.push('/')} style={{ fontWeight: 800, fontSize: 17, color: COLORS.primary, cursor: "pointer" }}>Resole</span>
-            <p style={{ fontSize: 12, color: COLORS.textFaint, margin: "6px 0 0", maxWidth: 280 }}>
-              © 2026 Resole Sneaker Marketplace. Circular commerce for a better planet. Authenticating the world's most desired kicks.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 48, fontSize: 13 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.04em" }}>Platform</span>
-              <span onClick={() => router.push('/sustainability')} style={{ color: COLORS.textMuted, cursor: "pointer" }}>Sustainability Mission</span>
-              <span onClick={() => router.push('/ai-valuation')} style={{ color: COLORS.textMuted, cursor: "pointer" }}>AI Valuation Info</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.04em" }}>Support</span>
-              <span onClick={() => router.push('/terms')} style={{ color: COLORS.primary, cursor: "pointer" }}>Seller Terms</span>
-              <span onClick={() => router.push('/privacy')} style={{ color: COLORS.primary, cursor: "pointer" }}>Privacy Policy</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
