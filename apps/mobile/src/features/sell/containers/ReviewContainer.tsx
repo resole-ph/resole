@@ -5,33 +5,40 @@ import { MaterialIcons } from '@expo/vector-icons';
 import SellStepHeader from '../components/SellStepHeader';
 import ListingPreviewCard from '../components/ListingPreviewCard';
 import { useSellFlow } from '../hooks/useSellFlow';
-import { usePublishListingMutation } from '../queries/sell.queries';
+import { usePublishListingMutation, useUpdateListingMutation } from '../queries/sell.queries';
 
 export default function ReviewContainer() {
   const router = useRouter();
-  const { photos, form, aiAnalysisId, setPublishedListing, setStep, goBack } = useSellFlow();
-  const { mutateAsync: publishListing, isPending } = usePublishListingMutation();
+  const { photos, form, aiAnalysisId, flowMode, editingListingId, setPublishedListing, setStep, goBack } =
+    useSellFlow();
+  const { mutateAsync: publishListing, isPending: isPublishing } = usePublishListingMutation();
+  const { mutateAsync: updateListing, isPending: isUpdating } = useUpdateListingMutation();
+  const isEditing = flowMode === 'edit' && editingListingId != null;
+  const isPending = isPublishing || isUpdating;
   const [publishError, setPublishError] = useState<string | null>(null);
 
   if (!form) return null;
 
   async function handlePublish() {
-    if (!form || !aiAnalysisId) return;
+    if (!form) return;
+    // Editing only re-runs the AI when photos changed; a fresh listing always
+    // comes from an analysis, so it's required there but not here.
+    if (!isEditing && !aiAnalysisId) return;
     setPublishError(null);
 
+    const photoList = Object.values(photos)
+      .filter(Boolean)
+      .map((p) => ({ angle: p!.angle, remoteUrl: p!.remoteUrl ?? '' }));
+
     try {
-      const result = await publishListing({
-        photos: Object.values(photos)
-          .filter(Boolean)
-          .map((p) => ({ angle: p!.angle, remoteUrl: p!.remoteUrl ?? '' })),
-        form,
-        aiAnalysisId: String(aiAnalysisId),
-      });
+      const result = isEditing
+        ? await updateListing({ listingId: editingListingId!, photos: photoList, form })
+        : await publishListing({ photos: photoList, form, aiAnalysisId: String(aiAnalysisId) });
       setPublishedListing(result);
       setStep('confirmation');
     } catch (err) {
       setPublishError(
-        err instanceof Error ? err.message : 'Failed to publish listing'
+        err instanceof Error ? err.message : isEditing ? 'Failed to save changes' : 'Failed to publish listing'
       );
     }
   }
@@ -39,7 +46,7 @@ export default function ReviewContainer() {
   return (
     <View className="flex-1 bg-surface">
       <SellStepHeader
-        title="Review Listing"
+        title={isEditing ? 'Review Changes' : 'Review Listing'}
         stepLabel="Step 4 of 4"
         onBack={goBack}
         onClose={() => router.back()}
@@ -55,7 +62,9 @@ export default function ReviewContainer() {
             Everything look right?
           </Text>
           <Text className="font-body-md text-body-md text-on-surface-variant">
-            Review your listing before it goes live.
+            {isEditing
+              ? 'Review your changes before saving them.'
+              : 'Review your listing before it goes live.'}
           </Text>
         </View>
 
@@ -90,7 +99,9 @@ export default function ReviewContainer() {
             className="font-body-md text-body-md"
             style={{ color: isPending ? '#727687' : '#ffffff' }}
           >
-            {isPending ? 'Publishing...' : 'Publish Listing'}
+            {isEditing
+              ? isPending ? 'Saving...' : 'Save Changes'
+              : isPending ? 'Publishing...' : 'Publish Listing'}
           </Text>
         </TouchableOpacity>
 

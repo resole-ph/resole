@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import StepHeader from './StepHeader';
 import type { ListingFormData, ShoeCategory, ListingMode } from '../types/sell.types';
 import { getConditionLabel } from '../utils/condition';
+import { validateListingForm } from '../utils/validation';
 
 const CATEGORIES: ShoeCategory[] = ['running', 'basketball', 'football', 'casual', 'other'];
 
@@ -16,6 +17,10 @@ const LISTING_MODES: { value: ListingMode; label: string; hint: string }[] = [
 const inputClass =
   'rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors';
 
+function fieldInputClass(hasError?: string) {
+  return hasError ? inputClass.replace('border-outline-variant', 'border-error') : inputClass;
+}
+
 interface EditListingStepProps {
   form: ListingFormData;
   onChange: <K extends keyof ListingFormData>(key: K, value: ListingFormData[K]) => void;
@@ -23,11 +28,20 @@ interface EditListingStepProps {
   onContinue: () => void;
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[13px] font-semibold text-on-surface-variant">{label}</span>
       {children}
+      {error && <span className="text-[11px] text-error">{error}</span>}
     </label>
   );
 }
@@ -45,9 +59,8 @@ function CardLabel({ children }: { children: string }) {
 }
 
 export default function EditListingStep({ form, onChange, onBack, onContinue }: EditListingStepProps) {
-  const canContinue = Boolean(
-    form.brand.trim() && form.model.trim() && form.colorway.trim() && form.size.trim() && form.price.trim()
-  );
+  const errors = validateListingForm(form);
+  const canContinue = Object.keys(errors).length === 0;
 
   return (
     <div>
@@ -59,24 +72,24 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
             <CardLabel>Shoe Details</CardLabel>
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Brand">
+                <Field label="Brand *" error={errors.brand}>
                   <input
-                    className={inputClass}
+                    className={fieldInputClass(errors.brand)}
                     value={form.brand}
                     onChange={(e) => onChange('brand', e.target.value)}
                   />
                 </Field>
-                <Field label="Model">
+                <Field label="Model *" error={errors.model}>
                   <input
-                    className={inputClass}
+                    className={fieldInputClass(errors.model)}
                     value={form.model}
                     onChange={(e) => onChange('model', e.target.value)}
                   />
                 </Field>
               </div>
-              <Field label="Colorway *">
+              <Field label="Colorway *" error={errors.colorway}>
                 <input
-                  className={inputClass}
+                  className={fieldInputClass(errors.colorway)}
                   value={form.colorway}
                   onChange={(e) => onChange('colorway', e.target.value)}
                   placeholder="e.g. Chicago"
@@ -84,11 +97,11 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Size (US) *">
+                <Field label="Size (US) *" error={errors.size}>
                   <input
-                    className={inputClass}
+                    className={fieldInputClass(errors.size)}
                     value={form.size}
-                    onChange={(e) => onChange('size', e.target.value)}
+                    onChange={(e) => onChange('size', e.target.value.replace(/[^0-9.]/g, ''))}
                     placeholder="10"
                     inputMode="decimal"
                   />
@@ -147,7 +160,12 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
         <div>
           <Card>
             <CardLabel>Asking Price</CardLabel>
-            <div className="flex items-center rounded-lg border border-outline-variant overflow-hidden">
+            <div
+              className={[
+                'flex items-center rounded-lg border overflow-hidden',
+                errors.price ? 'border-error' : 'border-outline-variant',
+              ].join(' ')}
+            >
               <span className="px-3 py-2.5 border-r border-outline-variant text-on-surface-variant text-[14px]">
                 ₱
               </span>
@@ -158,6 +176,7 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
                 inputMode="numeric"
               />
             </div>
+            {errors.price && <p className="text-[11px] text-error mt-1.5">{errors.price}</p>}
           </Card>
 
           <Card>
@@ -200,7 +219,7 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
 
       {!canContinue && (
         <p className="text-[12px] text-error mb-2 text-center">
-          Fill in Brand, Model, Colorway, Size, and Price to continue.
+          {Object.values(errors)[0]} Please fix the highlighted fields to continue.
         </p>
       )}
 

@@ -2,6 +2,7 @@ import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ListingService } from '@/features/listing/services/listing.service';
+import { useSellStore } from '@/store/sell';
 
 export interface Listing {
   id: string;
@@ -70,12 +71,19 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
   const conditionColor = CONDITION_COLORS[listing.condition];
   const isOwnListing = !!currentUserId && listing.seller.id === currentUserId;
   const daysLeft = listing.daysLeft ?? (listing.createdAt ? ListingService.getDaysLeft(listing.createdAt) : undefined);
+  const resetSell = useSellStore((s) => s.reset);
 
   const handlePress = () => {
     router.push({
       pathname: '/listing/[id]',
       params: { id: listing.id },
     });
+  };
+
+  const handleEdit = (e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    resetSell();
+    router.push({ pathname: '/profile/edit-listing', params: { id: listing.id } });
   };
 
   return (
@@ -183,15 +191,17 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
               {listing.swapFor ?? 'Open to offers'}
             </Text>
             {isOwnListing ? (
-              <View
+              <TouchableOpacity
                 className="flex-row items-center justify-center rounded-xl py-2"
                 style={{ backgroundColor: '#F3F4F6' }}
+                activeOpacity={0.75}
+                onPress={handleEdit}
               >
-                <Ionicons name="person-outline" size={13} color="#6B7280" />
+                <Ionicons name="create-outline" size={13} color="#6B7280" />
                 <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
-                  This is your listing
+                  Edit Listing
                 </Text>
-              </View>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 className="flex-row items-center justify-center rounded-xl py-2"
@@ -247,15 +257,17 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
             </View>
 
             {isOwnListing ? (
-              <View
+              <TouchableOpacity
                 className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
                 style={{ backgroundColor: '#F3F4F6' }}
+                activeOpacity={0.75}
+                onPress={handleEdit}
               >
-                <Ionicons name="person-outline" size={13} color="#6B7280" />
+                <Ionicons name="create-outline" size={13} color="#6B7280" />
                 <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
-                  This is your listing
+                  Edit Listing
                 </Text>
-              </View>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
