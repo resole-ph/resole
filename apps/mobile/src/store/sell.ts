@@ -54,10 +54,20 @@ export const useSellStore = create<SellState>()((set) => ({
   setStep: (step) => set({ step }),
 
   setPhoto: (angle, photo) =>
-    set((s) => ({ photos: { ...s.photos, [angle]: photo } })),
+    set((s) => ({
+      photos: { ...s.photos, [angle]: photo },
+      aiResult: null,
+      aiAnalysisId: null,
+      analysisError: null,
+    })),
 
   clearPhoto: (angle) =>
-    set((s) => ({ photos: { ...s.photos, [angle]: null } })),
+    set((s) => ({
+      photos: { ...s.photos, [angle]: null },
+      aiResult: null,
+      aiAnalysisId: null,
+      analysisError: null,
+    })),
 
   setIsAnalyzing: (v) => set({ isAnalyzing: v }),
 
