@@ -13,7 +13,8 @@ async function compressPhoto(file: File): Promise<{ buffer: Buffer; contentType:
 
   try {
     const outputBuffer = await sharp(inputBuffer)
-      .rotate() 
+      .rotate()
+      .flatten({ background: '#FFFFFF' })
       .resize({ width: COMPRESS_MAX_WIDTH, withoutEnlargement: true })
       .jpeg({ quality: COMPRESS_QUALITY, progressive: true })
       .toBuffer();
@@ -21,7 +22,8 @@ async function compressPhoto(file: File): Promise<{ buffer: Buffer; contentType:
     return { buffer: outputBuffer, contentType: 'image/jpeg', ext: 'jpg' };
   } catch (error) {
     console.error('Photo compression failed, uploading original bytes:', error);
-    const ext = file.name.split('.').pop() || 'jpg';
+    const nameParts = file.name.split('.');
+    const ext = nameParts.length > 1 ? nameParts.pop()! : 'jpg';
     return { buffer: inputBuffer, contentType: file.type || 'application/octet-stream', ext };
   }
 }
