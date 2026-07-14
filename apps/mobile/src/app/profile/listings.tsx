@@ -24,6 +24,28 @@ const TAB_LABELS: Record<Tab, string> = {
   pending: 'Removed',
 };
 
+/**
+ * Listing photos are shot with a lot of plain background around the shoe, so a
+ * plain "cover" fill still leaves the shoe looking small in a tight thumbnail.
+ * Scaling the image up (clipped by the parent's overflow-hidden) crops that
+ * margin away and zooms in on the shoe itself.
+ */
+function ListingThumbnail({ imageUrl }: { imageUrl?: string }) {
+  return (
+    <View className="w-16 h-16 rounded-xl items-center justify-center mr-3 bg-gray-100 overflow-hidden">
+      {imageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={{ width: '100%', height: '100%', transform: [{ scale: 1.5 }] }}
+          resizeMode="cover"
+        />
+      ) : (
+        <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
+      )}
+    </View>
+  );
+}
+
 function ActiveCard({
   item,
   onPress,
@@ -42,13 +64,7 @@ function ActiveCard({
       activeOpacity={0.85}
       onPress={onPress}
     >
-      <View className="w-16 h-16 rounded-xl items-center justify-center mr-3 bg-gray-100 overflow-hidden">
-        {item.imageUrl ? (
-          <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="cover" />
-        ) : (
-          <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
-        )}
-      </View>
+      <ListingThumbnail imageUrl={item.imageUrl} />
 
       <View className="flex-1 mr-2">
         <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>
@@ -97,13 +113,7 @@ function PendingCard({
   return (
     <View className="bg-white rounded-2xl p-4 mb-3 mx-5" style={CARD_SHADOW}>
       <View className="flex-row items-center mb-3">
-        <View className="w-16 h-16 rounded-xl items-center justify-center mr-3 bg-gray-100 overflow-hidden">
-          {item.imageUrl ? (
-            <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="cover" />
-          ) : (
-            <Ionicons name="footsteps-outline" size={24} color="#9CA3AF" />
-          )}
-        </View>
+        <ListingThumbnail imageUrl={item.imageUrl} />
 
         <View className="flex-1 mr-2">
           <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>

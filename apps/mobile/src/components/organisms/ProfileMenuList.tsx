@@ -40,9 +40,17 @@ function CardHeader({
 
 function PreviewThumb({ uri }: { uri?: string }) {
   return (
-    <View className="flex-1 h-20 rounded-xl items-center justify-center bg-gray-100 overflow-hidden">
+    <View className="w-20 h-20 rounded-xl items-center justify-center bg-gray-100 overflow-hidden">
       {uri ? (
-        <Image source={{ uri }} className="w-full h-full" resizeMode="cover" />
+        // Fixed size instead of flex-1 — with only 1-2 previews, flex-1 stretched
+        // the lone thumbnail to fill the whole row, badly distorting the photo.
+        // The extra scale crops out the plain background shoe photos are shot
+        // with, so the shoe itself doesn't look tiny/zoomed-out either.
+        <Image
+          source={{ uri }}
+          style={{ width: '100%', height: '100%', transform: [{ scale: 1.5 }] }}
+          resizeMode="cover"
+        />
       ) : (
         <Ionicons name="image-outline" size={20} color="#9CA3AF" />
       )}
@@ -83,7 +91,7 @@ function MyListingsCard({ onPress }: { onPress: () => void }) {
           <PreviewThumb key={item.id} uri={item.imageUrl} />
         ))}
         {remaining > 0 && (
-          <View className="w-16 h-20 rounded-xl bg-gray-100 items-center justify-center">
+          <View className="w-20 h-20 rounded-xl bg-gray-100 items-center justify-center">
             <Text className="text-gray-500 font-bold text-sm">+{remaining}</Text>
           </View>
         )}
