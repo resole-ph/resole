@@ -5,6 +5,7 @@ import {
   isValidEmail,
   normalizeContactNo,
   normalizeEmail,
+  suggestEmailTypoCorrection,
 } from '@/lib/auth';
 import { randomUUID } from 'node:crypto';
 
@@ -50,6 +51,13 @@ export async function POST(request: Request) {
 
   if (!email || !isValidEmail(email)) {
     return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
+  }
+
+  const suggestedEmail = suggestEmailTypoCorrection(email);
+  if (suggestedEmail) {
+    return NextResponse.json({
+      error: `Enter a valid email address. Did you mean ${suggestedEmail}?`,
+    }, { status: 400 });
   }
 
   if (!isStrongPassword(password)) {

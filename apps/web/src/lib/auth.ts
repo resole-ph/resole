@@ -18,6 +18,53 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+const COMMON_EMAIL_DOMAINS = [
+  'gmail.com',
+  'yahoo.com',
+  'outlook.com',
+  'hotmail.com',
+  'icloud.com',
+  'aol.com',
+  'protonmail.com',
+];
+
+function levenshteinDistance(a: string, b: string): number {
+  const rows = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+
+  for (let i = 0; i <= a.length; i++) rows[i][0] = i;
+  for (let j = 0; j <= b.length; j++) rows[0][j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      rows[i][j] = a[i - 1] === b[j - 1]
+        ? rows[i - 1][j - 1]
+        : 1 + Math.min(rows[i - 1][j - 1], rows[i - 1][j], rows[i][j - 1]);
+    }
+  }
+
+  return rows[a.length][b.length];
+}
+
+export function suggestEmailTypoCorrection(email: string): string | null {
+  const atIndex = email.lastIndexOf('@');
+  if (atIndex === -1) {
+    return null;
+  }
+
+  const domain = email.slice(atIndex + 1).toLowerCase();
+  if (COMMON_EMAIL_DOMAINS.includes(domain)) {
+    return null;
+  }
+
+  for (const knownDomain of COMMON_EMAIL_DOMAINS) {
+    if (levenshteinDistance(domain, knownDomain) <= 2) {
+      return `${email.slice(0, atIndex + 1)}${knownDomain}`;
+    }
+  }
+
+  return null;
+}
+
 export function isStrongPassword(password: string): boolean {
   if (typeof password !== 'string' || password.length < 8) {
     return false;
