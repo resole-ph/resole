@@ -29,11 +29,13 @@ export function validateListingForm(form: ListingFormData): ListingFormErrors {
     errors.size = `Enter a valid size between ${MIN_SIZE} and ${MAX_SIZE}.`;
   }
 
-  const year = Number(form.year);
-  if (!form.year.trim()) {
-    errors.year = 'Year is required.';
-  } else if (!Number.isInteger(year) || year < MIN_YEAR || year > currentYear) {
-    errors.year = `Enter a valid year (${MIN_YEAR}–${currentYear}).`;
+  // Year is only known when the AI has analyzed photos this session — existing
+  // published listings don't store one, so it's optional when editing them.
+  if (form.year.trim()) {
+    const year = Number(form.year);
+    if (!Number.isInteger(year) || year < MIN_YEAR || year > currentYear) {
+      errors.year = `Enter a valid year (${MIN_YEAR}–${currentYear}).`;
+    }
   }
 
   const price = Number(form.price);

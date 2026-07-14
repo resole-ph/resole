@@ -37,7 +37,8 @@ async function compressForUpload(uri: string): Promise<string> {
 
 export default function PhotoUploadContainer() {
   const router = useRouter();
-  const { photos, setPhoto, allPhotosUploaded, setStep } = useSellFlow();
+  const { photos, setPhoto, allPhotosUploaded, setStep, flowMode, photosDirty, setAnalysisSkipped } = useSellFlow();
+  const isEditingUnchanged = flowMode === 'edit' && !photosDirty;
   const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
   const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle } | null>(null);
   const [queuedAction, setQueuedAction] = useState<{ type: 'camera' | 'library'; angle: PhotoAngle } | null>(null);
@@ -142,23 +143,37 @@ export default function PhotoUploadContainer() {
     const list = PHOTO_ANGLES.map((angle) => photos[angle]).filter(Boolean) as SellPhoto[];
     if (list.length < PHOTO_ANGLES.length) return;
 
+    // Only (re-)upload photos that are still local files. Untouched angles from
+    // an edit session already have a remoteUrl and re-sending their http(s) uri
+    // as a multipart file part wouldn't work anyway.
+    const toUpload = list.filter((p) => !p.uploaded);
+
     setUploading(true);
     try {
-      const { photos: uploaded } = await sellService.uploadPhotos(list);
-      uploaded.forEach((u) =>
-        setPhoto(u.angle, {
-          angle: u.angle,
-          uri: photos[u.angle]!.uri,
-          uploaded: true,
-          remoteUrl: u.remoteUrl,
-        })
-      );
+      if (toUpload.length > 0) {
+        const { photos: uploaded } = await sellService.uploadPhotos(toUpload);
+        uploaded.forEach((u) =>
+          setPhoto(u.angle, {
+            angle: u.angle,
+            uri: photos[u.angle]!.uri,
+            uploaded: true,
+            remoteUrl: u.remoteUrl,
+          })
+        );
+      }
+      setAnalysisSkipped(false);
       setStep('aiResults');
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Please try again.');
     } finally {
       setUploading(false);
     }
+  }
+
+  function handleContinueUnchanged() {
+    if (!isEditingUnchanged) return;
+    setAnalysisSkipped(true);
+    setStep('editListing');
   }
 
   const uploadedCount = Object.values(photos).filter(Boolean).length;
@@ -203,17 +218,22 @@ export default function PhotoUploadContainer() {
       </ScrollView>
 
       <View className="px-4 pb-8 pt-2">
+        {isEditingUnchanged && (
+          <Text className="font-label-md text-label-md text-on-surface-variant text-center mb-2">
+            Photos are unchanged — no need to re-analyze.
+          </Text>
+        )}
         <TouchableOpacity
-          onPress={handleAnalyze}
-          disabled={!allPhotosUploaded || uploading}
+          onPress={isEditingUnchanged ? handleContinueUnchanged : handleAnalyze}
+          disabled={isEditingUnchanged ? false : !allPhotosUploaded || uploading}
           className="rounded-full py-4 items-center"
           style={{
-            backgroundColor: allPhotosUploaded ? '#0054d3' : '#c2c6d8',
-            shadowColor: allPhotosUploaded ? '#0054d3' : 'transparent',
+            backgroundColor: isEditingUnchanged || allPhotosUploaded ? '#0054d3' : '#c2c6d8',
+            shadowColor: isEditingUnchanged || allPhotosUploaded ? '#0054d3' : 'transparent',
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.3,
             shadowRadius: 16,
-            elevation: allPhotosUploaded ? 6 : 0,
+            elevation: isEditingUnchanged || allPhotosUploaded ? 6 : 0,
           }}
         >
           {uploading ? (
@@ -226,9 +246,9 @@ export default function PhotoUploadContainer() {
           ) : (
             <Text
               className="font-body-md text-body-md"
-              style={{ color: allPhotosUploaded ? '#ffffff' : '#727687' }}
+              style={{ color: isEditingUnchanged || allPhotosUploaded ? '#ffffff' : '#727687' }}
             >
-              Analyze with AI
+              {isEditingUnchanged ? 'Continue' : 'Analyze with AI'}
             </Text>
           )}
         </TouchableOpacity>

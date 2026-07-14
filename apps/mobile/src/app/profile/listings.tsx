@@ -272,9 +272,9 @@ export default function ListingsScreen() {
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = (id: string) => {
     resetSell();
-    router.push('/profile/edit-listing');
+    router.push({ pathname: '/profile/edit-listing', params: { id } });
   };
 
   const counts: Record<Tab, number> = {
@@ -320,7 +320,7 @@ export default function ListingsScreen() {
               key={item.id}
               item={item}
               onPress={() => router.push({ pathname: '/listing/[id]', params: { id: item.id } })}
-              onEdit={handleEdit}
+              onEdit={() => handleEdit(item.id)}
               onDelete={() => handleDelete(item.id)}
             />
           ))}

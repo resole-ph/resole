@@ -50,6 +50,12 @@ export interface PublishListingPayload {
   aiAnalysisId: string;
 }
 
+export interface UpdateListingPayload {
+  listingId: number;
+  photos: Array<{ angle: PhotoAngle; remoteUrl: string }>;
+  form: ListingFormData;
+}
+
 export interface PublishListingResult {
   listingId: string;
   listingUrl: string;

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useSellFlow } from '@/features/sell/hooks/useSellFlow';
 import PhotoUploadContainer from '@/features/sell/containers/PhotoUploadContainer';
@@ -7,7 +8,13 @@ import ReviewContainer from '@/features/sell/containers/ReviewContainer';
 import ConfirmationContainer from '@/features/sell/containers/ConfirmationContainer';
 
 export default function SellScreen() {
-  const { step } = useSellFlow();
+  const { step, flowMode, reset } = useSellFlow();
+
+  useEffect(() => {
+    // A leftover "editing an existing listing" session must never bleed into
+    // a fresh listing here — that would silently PATCH the wrong listing.
+    if (flowMode === 'edit') reset();
+  }, []);
 
   return (
     <View className="flex-1 bg-surface">

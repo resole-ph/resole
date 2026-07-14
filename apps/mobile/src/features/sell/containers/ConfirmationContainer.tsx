@@ -7,7 +7,8 @@ import { useSellFlow } from '../hooks/useSellFlow';
 export default function ConfirmationContainer() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { publishedListing, reset } = useSellFlow();
+  const { publishedListing, flowMode, reset } = useSellFlow();
+  const isEditing = flowMode === 'edit';
 
   function handleGoHome() {
     reset();
@@ -42,10 +43,12 @@ export default function ConfirmationContainer() {
 
         <View className="items-center gap-2">
           <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center">
-            Listing Published!
+            {isEditing ? 'Listing Updated!' : 'Listing Published!'}
           </Text>
           <Text className="font-body-md text-body-md text-on-surface-variant text-center">
-            Your shoe is now live on the marketplace. Buyers will be able to find it shortly.
+            {isEditing
+              ? 'Your changes are now live on the marketplace.'
+              : 'Your shoe is now live on the marketplace. Buyers will be able to find it shortly.'}
           </Text>
         </View>
 

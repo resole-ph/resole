@@ -72,7 +72,7 @@ export default function EditListingContainer() {
 
   if (!form) return null;
 
-  const { min: priceMin, max: priceMax } = priceAllowedRange();
+  const priceRange = priceAllowedRange();
   const aiConditionRating = aiResult?.conditionRating ?? form.conditionRating;
   const errors = validateListingForm(form);
   const canContinue = Object.keys(errors).length === 0;
@@ -195,8 +195,8 @@ export default function EditListingContainer() {
           <PriceInput
             value={form.price}
             onChange={(v) => updateFormField('price', v)}
-            minPrice={priceMin}
-            maxPrice={priceMax}
+            minPrice={priceRange?.min}
+            maxPrice={priceRange?.max}
             error={errors.price}
           />
         </View>

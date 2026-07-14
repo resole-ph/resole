@@ -4,9 +4,11 @@ import type {
   AiAnalysisResult,
   UploadPhotosResult,
   PublishListingPayload,
+  UpdateListingPayload,
   PublishListingResult,
   ListingFormData
 } from '../types/sell.types';
+import type { Listing } from '@/components/molecules/ListingCard';
 import { apiFetch } from '@/lib/api-client';
 import { ratingToLabel } from '../utils/condition';
 
@@ -31,6 +33,12 @@ const MODE_TO_LISTING_MODE: Record<ListingFormData['mode'], 'Sale' | 'Swap' | 'B
   sell: 'Sale',
   swap: 'Swap',
   both: 'Both',
+};
+
+const LISTING_MODE_TO_MODE: Record<'Sale' | 'Swap' | 'Both', ListingFormData['mode']> = {
+  Sale: 'sell',
+  Swap: 'swap',
+  Both: 'both',
 };
 
 /** Shape of the `analysis` payload returned by POST /api/listings/analyze. */
@@ -78,6 +86,42 @@ export interface SellService {
    * TODO(backend): POST /listings
    */
   publishListing(payload: PublishListingPayload): Promise<PublishListingResult>;
+
+  /** Updates an existing, already-published listing in place. */
+  updateListing(payload: UpdateListingPayload): Promise<PublishListingResult>;
+}
+
+/** Maps an existing published listing into the sell flow's photos + form shape, for editing. */
+export function listingToEditState(listing: Listing): {
+  photos: Record<PhotoAngle, SellPhoto>;
+  form: ListingFormData;
+} {
+  const photos = {} as Record<PhotoAngle, SellPhoto>;
+  (Object.keys(ANGLE_TO_FIELD) as PhotoAngle[]).forEach((angle) => {
+    const urlKey = FIELD_TO_URL_KEY[ANGLE_TO_FIELD[angle]];
+    const remoteUrl = listing[urlKey];
+    photos[angle] = { angle, uri: remoteUrl, uploaded: true, remoteUrl };
+  });
+
+  const conditionRating = listing.conditionScore;
+  const listingMode = (listing.listingMode as 'Sale' | 'Swap' | 'Both' | undefined) ?? 'Sale';
+
+  const form: ListingFormData = {
+    brand: listing.brand,
+    model: listing.model,
+    colorway: listing.colorway ?? '',
+    size: listing.size ?? '',
+    // Existing listings don't store a manufacture year — only a fresh AI
+    // analysis captures one, so leave it blank until/unless that happens.
+    year: '',
+    conditionRating,
+    conditionLabel: ratingToLabel(conditionRating),
+    price: String(listing.price),
+    description: listing.description ?? '',
+    mode: LISTING_MODE_TO_MODE[listingMode] ?? 'sell',
+  };
+
+  return { photos, form };
 }
 
 export const sellService: SellService = {
@@ -162,5 +206,37 @@ export const sellService: SellService = {
     });
 
     return listing
+  },
+
+  async updateListing({ listingId, photos, form }) {
+    const remoteUrlByAngle = Object.fromEntries(
+      photos.map((p) => [p.angle, p.remoteUrl])
+    ) as Partial<Record<PhotoAngle, string>>;
+
+    const body: Record<string, unknown> = {
+      value: form.price,
+      description: form.description,
+      colorway: form.colorway,
+      size: form.size,
+      conditionScore: form.conditionRating,
+      listingMode: MODE_TO_LISTING_MODE[form.mode],
+    };
+
+    // Only send image URLs for photos that were actually re-uploaded —
+    // unchanged angles keep whatever the listing already has server-side.
+    if (remoteUrlByAngle.top) body.imageUrlTop = remoteUrlByAngle.top;
+    if (remoteUrlByAngle.side) body.imageUrlSide = remoteUrlByAngle.side;
+    if (remoteUrlByAngle.soles) body.imageUrlSole = remoteUrlByAngle.soles;
+    if (remoteUrlByAngle.insoles) body.imageUrlInsole = remoteUrlByAngle.insoles;
+
+    await apiFetch(`/api/listings/${listingId}`, {
+      method: 'PATCH',
+      body,
+    });
+
+    return {
+      listingId: String(listingId),
+      listingUrl: `/listing/${listingId}`,
+    };
   },
 };
