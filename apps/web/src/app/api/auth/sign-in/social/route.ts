@@ -66,59 +66,64 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Google identity token or credential is required' }, { status: 400 });
   }
 
-  const profile: GoogleProfile | null = await verifyGoogleIdToken(token);
+  try {
+    const profile: GoogleProfile | null = await verifyGoogleIdToken(token);
 
-  if (!profile) {
-    return NextResponse.json({ 
-      error: 'Invalid Google identity token or verification failed' 
-    }, { status: 401 });
-  }
-
-  const email = normalizeEmail(profile.email);
-  if (!email) {
-    return NextResponse.json({ error: 'Invalid Google account email' }, { status: 400 });
-  }
-
-  const existingGoogleAccount = await getAccountByProviderAndAccountId('google', profile.sub);
-  let authenticatedUser: User | null = null;
-
-  if (existingGoogleAccount) {
-    authenticatedUser = await getUserById(existingGoogleAccount.userId);
-    if (!authenticatedUser || authenticatedUser.deletedAt) {
-      return NextResponse.json({ error: 'Unable to authenticate Google account' }, { status: 401 });
+    if (!profile) {
+      return NextResponse.json({
+        error: 'Google sign-in failed. Please try again.'
+      }, { status: 401 });
     }
-  } else {
-    const existingUser = await getUserByEmail(email);
 
-    if (existingUser) {
-      authenticatedUser = existingUser;
-      const linkedAccount = await linkGoogleAccountToUser({
-        userId: existingUser.id,
-        googleSub: profile.sub,
-      });
+    const email = normalizeEmail(profile.email);
+    if (!email) {
+      return NextResponse.json({ error: 'Google sign-in failed. Please try again.' }, { status: 400 });
+    }
 
-      if (!linkedAccount) {
-        return NextResponse.json({ error: 'Unable to link Google account' }, { status: 500 });
+    const existingGoogleAccount = await getAccountByProviderAndAccountId('google', profile.sub);
+    let authenticatedUser: User | null = null;
+
+    if (existingGoogleAccount) {
+      authenticatedUser = await getUserById(existingGoogleAccount.userId);
+      if (!authenticatedUser || authenticatedUser.deletedAt) {
+        return NextResponse.json({ error: 'Google sign-in failed. Please try again.' }, { status: 401 });
       }
     } else {
-      authenticatedUser = await createGoogleUser({
-        id: randomUUID(),
-        name: profile.name,
-        email,
-        image: profile.image || null,
-        googleSub: profile.sub,
-      });
+      const existingUser = await getUserByEmail(email);
 
-      if (!authenticatedUser) {
-        return NextResponse.json({ error: 'Unable to create account' }, { status: 500 });
+      if (existingUser) {
+        authenticatedUser = existingUser;
+        const linkedAccount = await linkGoogleAccountToUser({
+          userId: existingUser.id,
+          googleSub: profile.sub,
+        });
+
+        if (!linkedAccount) {
+          return NextResponse.json({ error: 'Google sign-in failed. Please try again.' }, { status: 500 });
+        }
+      } else {
+        authenticatedUser = await createGoogleUser({
+          id: randomUUID(),
+          name: profile.name,
+          email,
+          image: profile.image || null,
+          googleSub: profile.sub,
+        });
+
+        if (!authenticatedUser) {
+          return NextResponse.json({ error: 'Failed to create account. Please try again.' }, { status: 500 });
+        }
       }
     }
-  }
 
-  const session = await createSessionForUser(authenticatedUser.id, request);
-  if (!session) {
-    return NextResponse.json({ error: 'Unable to create session' }, { status: 500 });
-  }
+    const session = await createSessionForUser(authenticatedUser.id, request);
+    if (!session) {
+      return NextResponse.json({ error: 'Google sign-in failed. Please try again.' }, { status: 500 });
+    }
 
-  return buildAuthResponse(authenticatedUser, session);
+    return buildAuthResponse(authenticatedUser, session);
+  } catch (error: unknown) {
+    console.error('Google sign-in error:', error);
+    return NextResponse.json({ error: 'Google sign-in failed. Please try again.' }, { status: 500 });
+  }
 }

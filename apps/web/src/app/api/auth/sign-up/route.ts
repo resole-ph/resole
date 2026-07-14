@@ -95,6 +95,6 @@ export async function POST(request: Request) {
     return buildAuthResponse(newUser, session);
   } catch (error: unknown) {
     console.error('Signup error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create account. Please try again.' }, { status: 500 });
   }
 }

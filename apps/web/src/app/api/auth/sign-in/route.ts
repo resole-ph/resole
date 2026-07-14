@@ -40,15 +40,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
   }
 
-  const user = await verifyCredentials(email, password);
-  if (!user) {
-    return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-  }
+  try {
+    const user = await verifyCredentials(email, password);
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
 
-  const session = await createSessionForUser(user.id, request);
-  if (!session) {
-    return NextResponse.json({ error: 'Unable to create session' }, { status: 500 });
-  }
+    const session = await createSessionForUser(user.id, request);
+    if (!session) {
+      return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
+    }
 
-  return buildAuthResponse(user, session);
+    return buildAuthResponse(user, session);
+  } catch (error: unknown) {
+    console.error('Sign-in error:', error);
+    return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
+  }
 }
