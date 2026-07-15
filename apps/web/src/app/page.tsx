@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { useAuthGate } from '@/providers/AuthGateProvider';
 
 /* ---------------------------------------------------------
@@ -149,25 +150,8 @@ function ListingCard({
           />
         </Link>
 
-        {/* Days left / Your Listing badge */}
-        {isOwnListing ? (
-          <div
-            style={{
-              position: 'absolute',
-              top: 10,
-              left: 10,
-              borderRadius: 9999,
-              padding: '3px 8px',
-              background: COLORS.green,
-              color: '#fff',
-              fontSize: 10,
-              fontWeight: 700,
-              zIndex: 10,
-            }}
-          >
-            Your Listing
-          </div>
-        ) : daysLeft !== undefined ? (
+        {/* Days left badge */}
+        {daysLeft !== undefined ? (
           <div
             style={{
               position: 'absolute',
@@ -306,7 +290,7 @@ function ListingCard({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <span className="material-symbols-outlined text-amber-500 text-[13px] fill-current">star</span>
-              <span style={{ fontSize: 11.5, fontWeight: 600, color: COLORS.textMuted }}>4.8</span>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: COLORS.textMuted }}>{listing.seller?.rating?.toFixed(1) || '0.0'}</span>
             </div>
           </div>
         </div>
@@ -477,9 +461,7 @@ export default function ResoleHome() {
 
   // Dynamic States
   const [user, setUser] = useState<any>(null);
-  const [listings, setListings] = useState<any[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -510,32 +492,27 @@ export default function ResoleHome() {
     loadUserData();
   }, []);
 
-  // Fetch listings dynamically
-  useEffect(() => {
-    async function loadListings() {
-      setLoading(true);
-      try {
-        let url = '/api/listings';
-        const params = new URLSearchParams();
-        if (activeBrand) {
-          params.append('brand', activeBrand);
-        }
-        if (params.toString()) {
-          url += `?${params.toString()}`;
-        }
-        const res = await fetch(url);
-        const data = await res.json();
-        if (res.ok && data.shoeListings) {
-          setListings(data.shoeListings);
-        }
-      } catch (e) {
-        console.error('Failed to load listings:', e);
-      } finally {
-        setLoading(false);
-      }
+  // Fetch listings dynamically with SWR
+  const fetcher = (url: string) => fetch(url).then(r => r.json());
+  
+  const listingsUrl = useMemo(() => {
+    let url = '/api/listings';
+    const params = new URLSearchParams();
+    if (activeBrand) {
+      params.append('brand', activeBrand);
     }
-    loadListings();
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+    return url;
   }, [activeBrand]);
+
+  const { data: listingsData, isLoading: loading } = useSWR(listingsUrl, fetcher, {
+    revalidateOnFocus: false, // Prevents awful refetching on every tab click
+    dedupingInterval: 60000, // 1 minute deduplication cache
+  });
+  
+  const listings = listingsData?.shoeListings || [];
 
   const handleSaveListing = async (listingId: string) => {
     const isSaved = savedIds.has(listingId);
@@ -562,9 +539,12 @@ export default function ResoleHome() {
     }
   };
 
-  // Client-side category filtering
+  // Client-side category filtering & hide own listings
   const visibleListings = useMemo(() => {
-    return listings.filter((l) => {
+    return listings.filter((l: any) => {
+      // Hide own listings
+      if (user?.id && l.seller?.id === user.id) return false;
+
       if (!activeCategory) return true;
       const cat = (l.category || '').toLowerCase();
       const active = activeCategory.toLowerCase();
@@ -573,7 +553,7 @@ export default function ResoleHome() {
       }
       return cat === active;
     });
-  }, [listings, activeCategory]);
+  }, [listings, activeCategory, user]);
 
   return (
     <div style={{ minHeight: '100vh', background: COLORS.background, fontFamily: 'Inter, sans-serif' }}>

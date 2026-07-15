@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 import { ALL_SNEAKERS, SneakerItem } from "../data/sneakers";
 
 const COLORS = {
@@ -186,10 +187,16 @@ export default function MarketPage() {
   const [sort, setSort] = useState("Latest Arrivals");
   const router = useRouter();
 
+  const { data: userData } = useSWR('/api/users/me', (url) => fetch(url).then(r => r.json()));
+  const user = userData?.user;
+
   // Split our ALL_SNEAKERS array into the 3 sections based on flags
-  const flashSales = ALL_SNEAKERS.filter(item => item.isFlashSale);
-  const swapBoard = ALL_SNEAKERS.filter(item => item.isSwapBoard);
-  const marketplaceListings = ALL_SNEAKERS.filter(item => !item.isFlashSale && !item.isSwapBoard);
+  // We also filter out any listings owned by the current logged-in user
+  const validSneakers = ALL_SNEAKERS.filter((item: any) => user?.id && item.seller?.id === user.id ? false : true);
+
+  const flashSales = validSneakers.filter(item => item.isFlashSale);
+  const swapBoard = validSneakers.filter(item => item.isSwapBoard);
+  const marketplaceListings = validSneakers.filter(item => !item.isFlashSale && !item.isSwapBoard);
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>

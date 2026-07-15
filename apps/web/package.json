@@ -25,7 +25,8 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resole": "file:../..",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "swr": "^2.4.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
