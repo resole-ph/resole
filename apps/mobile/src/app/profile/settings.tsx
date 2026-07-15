@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { authService } from '@/features/auth/services/auth.service';
 import { UserService } from '@/features/user/services/user.service';
 import { useOnboardingStore } from '@/store/onboarding';
+import { usePreferencesStore } from '@/store/preferences';
+import { SIZE_SYSTEMS, SIZE_SYSTEM_LABELS, type SizeSystem } from '@/features/shoe/utils/size-conversion';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -78,6 +80,70 @@ function ToggleRow({
   );
 }
 
+function PickerRow({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      className="flex-row items-center px-4 py-3.5 border-b border-gray-50"
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      <View className="flex-1">
+        <Text className="text-gray-900 font-medium text-sm">{label}</Text>
+        <Text className="text-gray-400 text-xs mt-0.5">{value}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+    </TouchableOpacity>
+  );
+}
+
+function SizeSystemModal({
+  visible,
+  current,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  current: SizeSystem;
+  onSelect: (system: SizeSystem) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={onClose} />
+      <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, paddingBottom: 32 }}>
+        <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 }} />
+        <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', paddingHorizontal: 20, marginBottom: 8 }}>
+          Shoe size system
+        </Text>
+        {SIZE_SYSTEMS.map((system) => (
+          <TouchableOpacity
+            key={system}
+            className="flex-row items-center px-5 py-3.5"
+            activeOpacity={0.7}
+            onPress={() => {
+              onSelect(system);
+              onClose();
+            }}
+          >
+            <Text className="flex-1 text-gray-900 text-sm" style={{ fontWeight: system === current ? '700' : '400' }}>
+              {SIZE_SYSTEM_LABELS[system]}
+            </Text>
+            {system === current && <Ionicons name="checkmark" size={18} color="#2563EB" />}
+          </TouchableOpacity>
+        ))}
+      </View>
+    </Modal>
+  );
+}
+
 function ActionRow({
   label,
   icon,
@@ -113,6 +179,9 @@ export default function SettingsScreen() {
     recycleReminders: true,
   });
   const [accountFields, setAccountFields] = useState<any[]>([]);
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
+  const setSizeSystem = usePreferencesStore((s) => s.setSizeSystem);
+  const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
 
   useEffect(() => {
     const getAccountFields = async () => {
@@ -218,6 +287,16 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* Preferences */}
+        <SectionTitle title="Preferences" />
+        <View className="bg-white rounded-2xl mx-5" style={CARD_SHADOW}>
+          <PickerRow
+            label="Shoe size system"
+            value={SIZE_SYSTEM_LABELS[sizeSystem]}
+            onPress={() => setShowSizeSystemModal(true)}
+          />
+        </View>
+
         {/* More */}
         <SectionTitle title="More" />
         <View className="bg-white rounded-2xl mx-5" style={CARD_SHADOW}>
@@ -252,6 +331,13 @@ export default function SettingsScreen() {
 
         <Text className="text-center text-gray-300 text-xs mt-6">Resole v1.0.0</Text>
       </ScrollView>
+
+      <SizeSystemModal
+        visible={showSizeSystemModal}
+        current={sizeSystem}
+        onSelect={setSizeSystem}
+        onClose={() => setShowSizeSystemModal(false)}
+      />
     </View>
   );
 }

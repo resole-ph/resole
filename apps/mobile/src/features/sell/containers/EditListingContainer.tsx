@@ -7,6 +7,8 @@ import PriceInput from '../components/PriceInput';
 import { useSellFlow } from '../hooks/useSellFlow';
 import type { ListingMode } from '../types/sell.types';
 import { validateListingForm } from '../utils/validation';
+import { usePreferencesStore } from '@/store/preferences';
+import { SIZE_SYSTEM_LABELS } from '@/features/shoe/utils/size-conversion';
 
 function listingModeDescription(mode: ListingMode) {
   switch (mode) {
@@ -69,6 +71,7 @@ function StyledInput({
 export default function EditListingContainer() {
   const router = useRouter();
   const { form, aiResult, updateFormField, priceAllowedRange, ratingToLabel, setStep, goBack } = useSellFlow();
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
 
   if (!form) return null;
 
@@ -133,10 +136,13 @@ export default function EditListingContainer() {
             />
             <View className="flex-row gap-2">
               <View className="flex-1">
+                <Text className="font-label-md text-label-md text-on-surface-variant mb-1">
+                  Size · {SIZE_SYSTEM_LABELS[sizeSystem]}
+                </Text>
                 <StyledInput
                   value={form.size}
                   onChangeText={(v) => updateFormField('size', v.replace(/[^0-9.]/g, ''))}
-                  placeholder="Size (e.g. 10)"
+                  placeholder="e.g. 10"
                   keyboardType="numeric"
                   error={errors.size}
                 />

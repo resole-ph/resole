@@ -6,6 +6,8 @@ import SellStepHeader from '../components/SellStepHeader';
 import ListingPreviewCard from '../components/ListingPreviewCard';
 import { useSellFlow } from '../hooks/useSellFlow';
 import { usePublishListingMutation, useUpdateListingMutation } from '../queries/sell.queries';
+import { usePreferencesStore } from '@/store/preferences';
+import { convertToEUR } from '@/features/shoe/utils/size-conversion';
 
 export default function ReviewContainer() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export default function ReviewContainer() {
     useSellFlow();
   const { mutateAsync: publishListing, isPending: isPublishing } = usePublishListingMutation();
   const { mutateAsync: updateListing, isPending: isUpdating } = useUpdateListingMutation();
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   const isEditing = flowMode === 'edit' && editingListingId != null;
   const isPending = isPublishing || isUpdating;
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -30,10 +33,14 @@ export default function ReviewContainer() {
       .filter(Boolean)
       .map((p) => ({ angle: p!.angle, remoteUrl: p!.remoteUrl ?? '' }));
 
+    // The seller enters size in their preferred display system; the backend
+    // always stores EUR, so convert right before it leaves the client.
+    const eurForm = { ...form, size: String(convertToEUR(Number(form.size), sizeSystem)) };
+
     try {
       const result = isEditing
-        ? await updateListing({ listingId: editingListingId!, photos: photoList, form })
-        : await publishListing({ photos: photoList, form, aiAnalysisId: String(aiAnalysisId) });
+        ? await updateListing({ listingId: editingListingId!, photos: photoList, form: eurForm })
+        : await publishListing({ photos: photoList, form: eurForm, aiAnalysisId: String(aiAnalysisId) });
       setPublishedListing(result);
       setStep('confirmation');
     } catch (err) {

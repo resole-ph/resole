@@ -14,6 +14,8 @@ import { ListingService } from '@/features/listing/services/listing.service';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { UserService } from '@/features/user/services/user.service';
 import { useSellStore } from '@/store/sell';
+import { usePreferencesStore } from '@/store/preferences';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 export const CONDITION_COLORS: Record<Listing['condition'], string> = {
   'Like New':  '#10B981',
@@ -47,6 +49,7 @@ export default function ListingDetailScreen() {
   const [activePhoto, setActivePhoto]       = useState(0);
   const [currentUserId, setCurrentUserId]   = useState<string | null>(null);
   const resetSell = useSellStore((s) => s.reset);
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
 
   useEffect(() => {
     const loadData = async () => {
@@ -230,7 +233,11 @@ export default function ListingDetailScreen() {
           </View>
 
           <Text className="text-gray-900 text-2xl font-bold mb-1">{listing.model}</Text>
-          {listing.size && <Text className="text-gray-400 text-sm mb-4">Size: {listing.size}</Text>}
+          {listing.size && (
+            <Text className="text-gray-400 text-sm mb-4">
+              Size: {formatSize(Number(listing.size), sizeSystem)}
+            </Text>
+          )}
 
           <View className="flex-row items-center mb-6">
             <Text className="text-blue-600 text-3xl font-bold">₱{listing.price.toLocaleString()}</Text>

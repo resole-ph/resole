@@ -10,7 +10,9 @@ export interface ListingFormErrors {
 }
 
 const MIN_SIZE = 1;
-const MAX_SIZE = 20;
+// Wide enough to cover any supported size system (EUR ~35-48, US/UK ~4-15,
+// Japan/CM ~20-32) since the value here is in whatever system the user prefers.
+const MAX_SIZE = 50;
 const MIN_YEAR = 1900;
 const MIN_PRICE = 1;
 
