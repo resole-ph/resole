@@ -8,6 +8,7 @@ import {
   suggestEmailTypoCorrection,
 } from '@/lib/auth';
 import { randomUUID } from 'node:crypto';
+import { intentType } from '@/features/auth/types/types';
 
 function getSessionCookieOptions() {
   return {
@@ -48,6 +49,9 @@ export async function POST(request: Request) {
   const address = typeof body?.address === 'string' && body.address.trim() ? body.address.trim() : null;
   const city = typeof body?.city === 'string' && body.city.trim() ? body.city.trim() : null;
   const image = typeof body?.image === 'string' && body.image.trim() ? body.image.trim() : null;
+  const intent = typeof body?.intent === 'string' && body.intent.trim()
+    ? (body.intent.trim() as intentType)
+    : undefined;
 
   if (!email || !isValidEmail(email)) {
     return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
@@ -81,6 +85,7 @@ export async function POST(request: Request) {
       city,
       contactNo,
       image,
+      intent,
     });
 
     if (!newUser) {
