@@ -98,12 +98,33 @@ function ListingCard({
   listing,
   isSaved,
   onSave,
+  currentUserId,
 }: {
   listing: any;
   isSaved: boolean;
   onSave: (id: string) => void;
+  currentUserId?: string;
 }) {
   const { requireAuth } = useAuthGate();
+  const isOwnListing = !!currentUserId && listing.seller?.id === currentUserId;
+
+  const daysLeft = useMemo(() => {
+    if (!listing.createdAt) return 30;
+    const created = new Date(listing.createdAt);
+    const diffTime = Math.abs(new Date().getTime() - created.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, 30 - diffDays);
+  }, [listing.createdAt]);
+
+  const badge = useMemo(() => {
+    if (!listing.listingMode) return null;
+    const mode = listing.listingMode;
+    if (mode === 'Swap') return { bg: '#2563EB', text: '#fff', label: 'Swap' };
+    if (mode === 'Sale') return { bg: '#10B981', text: '#fff', label: 'Sale' };
+    if (mode === 'Both') return { bg: '#8B5CF6', text: '#fff', label: 'Sale & Swap' };
+    return null;
+  }, [listing.listingMode]);
+
   return (
     <div
       style={{
@@ -112,6 +133,9 @@ function ListingCard({
         overflow: 'hidden',
         boxShadow: CARD_SHADOW,
         transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
       }}
       className="group hover:-translate-y-1 hover:shadow-lg"
     >
@@ -124,75 +148,244 @@ function ListingCard({
             style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.5)' }}
           />
         </Link>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            requireAuth(() => onSave(listing.id), 'Log in to save listings to your favourites.');
-          }}
-          aria-label="Save listing"
-          style={{
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            width: 30,
-            height: 30,
-            borderRadius: 9999,
-            background: 'rgba(255,255,255,0.9)',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            zIndex: 10,
-          }}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{
-              fontSize: 18,
-              color: isSaved ? COLORS.red : '#6B7280',
-              fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0",
-            }}
-          >
-            favorite
-          </span>
-        </button>
-      </div>
 
-      <div style={{ padding: '12px 14px 14px' }}>
-        <Link href={`/listings/${listing.id}`}>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: COLORS.textFaint, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            {listing.brand}
-          </div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14.5, fontWeight: 700, color: COLORS.textMain, margin: '2px 0 4px' }} className="hover:text-primary transition-colors truncate">
-            {listing.model}
-          </div>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 10 }}>
-          <span style={{ width: 6, height: 6, borderRadius: 9999, background: COLORS.green }} />
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: COLORS.textMuted }}>{listing.condition || 'Good Condition'}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 18, fontWeight: 700, color: COLORS.textMain }}>
-            ₱{Number(listing.price || 0).toLocaleString()}
-          </span>
+        {/* Days left / Your Listing badge */}
+        {isOwnListing ? (
           <div
             style={{
-              width: 24,
-              height: 24,
+              position: 'absolute',
+              top: 10,
+              left: 10,
               borderRadius: 9999,
-              background: COLORS.primary,
+              padding: '3px 8px',
+              background: COLORS.green,
               color: '#fff',
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 700,
+              zIndex: 10,
+            }}
+          >
+            Your Listing
+          </div>
+        ) : daysLeft !== undefined ? (
+          <div
+            style={{
+              position: 'absolute',
+              top: 10,
+              left: 10,
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: 9999,
+              padding: '3px 8px',
+              background: 'rgba(255, 255, 255, 0.9)',
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#374151',
+              zIndex: 10,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 9999,
+                marginRight: 4,
+                background: daysLeft <= 3 ? '#EF4444' : '#10B981',
+              }}
+            />
+            {daysLeft}d left
+          </div>
+        ) : null}
+
+        {/* Mode badge */}
+        {badge && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              borderRadius: 9999,
+              padding: '3px 8px',
+              background: badge.bg,
+              color: badge.text,
+              fontSize: 10,
+              fontWeight: 700,
+              zIndex: 10,
+            }}
+          >
+            {badge.label}
+          </div>
+        )}
+
+        {/* Save button (Only if not owned) */}
+        {!isOwnListing && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              requireAuth(() => onSave(listing.id), 'Log in to save listings to your favourites.');
+            }}
+            aria-label="Save listing"
+            style={{
+              position: 'absolute',
+              bottom: 10,
+              right: 10,
+              width: 30,
+              height: 30,
+              borderRadius: 9999,
+              background: 'rgba(255,255,255,0.9)',
+              border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontFamily: 'Inter, sans-serif',
+              cursor: 'pointer',
+              zIndex: 10,
             }}
           >
-            {listing.seller?.name ? listing.seller.name.substring(0, 1).toUpperCase() : 'R'}
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: 18,
+                color: isSaved ? COLORS.red : '#6B7280',
+                fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0",
+              }}
+            >
+              favorite
+            </span>
+          </button>
+        )}
+      </div>
+
+      <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: COLORS.textFaint, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              {listing.brand}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 6, height: 6, borderRadius: 9999, background: COLORS.green }} />
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: COLORS.textMuted }}>{listing.condition || 'Good'}</span>
+            </div>
           </div>
+          <Link href={`/listings/${listing.id}`} style={{ textDecoration: 'none' }}>
+            <div
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: 14.5, fontWeight: 700, color: COLORS.textMain, margin: '2px 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: '36px' }}
+              className="hover:text-primary transition-colors"
+            >
+              {listing.model}
+            </div>
+          </Link>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, margin: '6px 0 10px' }}>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 18, fontWeight: 800, color: COLORS.primary }}>
+              ₱{Number(listing.price || 0).toLocaleString()}
+            </span>
+          </div>
+
+          {/* Seller initials avatar + full name + rating */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 9999,
+                background: '#E0F2FE',
+                color: COLORS.primary,
+                fontSize: 11,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              {listing.seller?.name ? listing.seller.name.substring(0, 1).toUpperCase() : 'S'}
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: COLORS.textMain, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {listing.seller?.name || 'Resoler'}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <span className="material-symbols-outlined text-amber-500 text-[13px] fill-current">star</span>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: COLORS.textMuted }}>4.8</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <div>
+          {isOwnListing ? (
+            <Link
+              href={`/sell?edit=${listing.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                background: '#F3F4F6',
+                border: 'none',
+                borderRadius: 12,
+                padding: '9px 0',
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: '#4B5563',
+                width: '100%',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+              className="hover:bg-gray-200 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[15px]">edit</span>
+              Edit Listing
+            </Link>
+          ) : listing.listingMode === 'Swap' ? (
+            <Link
+              href={`/listings/${listing.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                background: '#EFF6FF',
+                border: '1.5px solid #BFDBFE',
+                borderRadius: 12,
+                padding: '8px 0',
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: COLORS.primary,
+                width: '100%',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+              className="hover:bg-blue-100 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[15px]">swap_horiz</span>
+              Propose Swap
+            </Link>
+          ) : (
+            <Link
+              href={`/listings/${listing.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                background: '#EFF6FF',
+                border: '1.5px solid #BFDBFE',
+                borderRadius: 12,
+                padding: '8px 0',
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: COLORS.primary,
+                width: '100%',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+              className="hover:bg-blue-100 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[15px]">sell</span>
+              Make Offer
+            </Link>
+          )}
         </div>
       </div>
     </div>
@@ -527,6 +720,7 @@ export default function ResoleHome() {
                 listing={l}
                 isSaved={savedIds.has(String(l.id))}
                 onSave={handleSaveListing}
+                currentUserId={user?.id}
               />
             ))}
           </div>
