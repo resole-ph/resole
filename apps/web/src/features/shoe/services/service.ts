@@ -768,8 +768,14 @@ export async function publishShoeListing(userId: string, data: any) {
   const sizeValue = Number.parseFloat(size.toString());
   const scoreValue = Number.parseFloat(conditionScore.toString());
 
-  if (Number.isNaN(priceValue) || priceValue <= 0 || Number.isNaN(sizeValue) || sizeValue <= 0 || Number.isNaN(scoreValue) || scoreValue <= 0) {
-    throw new Error('Invalid numeric values provided');
+  if (Number.isNaN(priceValue) || priceValue <= 0) {
+    throw new Error('Invalid price value provided');
+  }
+  if (Number.isNaN(Number.isNaN(sizeValue) || sizeValue <= 0)) {
+    throw new Error('Invalid size values provided');
+  }
+  if (Number.isNaN(scoreValue) || scoreValue <= 0 || scoreValue > 10) {
+    throw new Error('Invalid score values provided');
   }
 
   const brandStr = brand.trim();
