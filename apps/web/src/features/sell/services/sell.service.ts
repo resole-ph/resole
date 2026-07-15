@@ -53,7 +53,7 @@ export async function publishListing(
   form: ListingFormData,
   photoUrls: UploadedPhotoUrls
 ): Promise<PublishedListing> {
-  const mappedMode = form.listingMode === 'both' ? 'Both' : form.listingMode === 'swap' ? 'Swap' : 'Sale';
+  const mappedMode = form.listingMode.charAt(0).toUpperCase() + form.listingMode.slice(1);
   const response = await fetch('/api/listings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -89,7 +89,7 @@ export async function updateListing(
   form: ListingFormData,
   photoUrls: UploadedPhotoUrls
 ): Promise<PublishedListing> {
-  const mappedMode = form.listingMode === 'both' ? 'Both' : form.listingMode === 'swap' ? 'Swap' : 'Sale';
+  const mappedMode = form.listingMode.charAt(0).toUpperCase() + form.listingMode.slice(1);
   const response = await fetch(`/api/listings/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

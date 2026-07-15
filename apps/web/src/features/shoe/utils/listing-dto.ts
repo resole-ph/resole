@@ -19,7 +19,7 @@ export function serializeShoeListing(row: ShoeListing) {
     isAvailable: row.isAvailable,
     isRefurbished: row.isRefurbished,
     category: row.shoe.category,
-    co2Footprint: row.shoe.co2Footprint ? Number(row.shoe.co2Footprint) : null,
+    co2Footprint: row.shoe.co2Footprint && !isNaN(Number(row.shoe.co2Footprint)) ? Number(row.shoe.co2Footprint) : null,
     description: row.description ?? undefined,
     size: String(row.size),
     colorway: row.colorway,
