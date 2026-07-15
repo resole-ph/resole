@@ -11,6 +11,8 @@ interface PhotoUploadStepProps {
   onSelect: (angle: PhotoAngle, file: File) => void;
   onRemove: (angle: PhotoAngle) => void;
   onContinue: () => void;
+  flowMode?: 'create' | 'edit';
+  photosDirty?: boolean;
 }
 
 export default function PhotoUploadStep({
@@ -18,6 +20,8 @@ export default function PhotoUploadStep({
   onSelect,
   onRemove,
   onContinue,
+  flowMode = 'create',
+  photosDirty = false,
 }: PhotoUploadStepProps) {
   const uploadedCount = ANGLES.filter((a) => photos[a]).length;
   const allUploaded = uploadedCount === ANGLES.length;
@@ -60,7 +64,7 @@ export default function PhotoUploadStep({
         disabled={!allUploaded}
         className="w-full md:w-auto md:min-w-64 md:mx-auto md:block mt-6 py-3.5 rounded-full font-semibold text-[15px] text-white bg-primary disabled:bg-outline-variant disabled:text-on-surface-variant transition-colors"
       >
-        Analyze with AI
+        {flowMode === 'edit' && !photosDirty ? 'Continue' : 'Analyze with AI'}
       </button>
     </div>
   );

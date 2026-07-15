@@ -1,47 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-type Tab = 'active' | 'pending';
+type Tab = 'active' | 'removed';
 
-type Listing = {
-  id: string;
-  name: string;
-  size: string;
-  price: string;
-  daysLeft?: number;
+const TAB_LABELS: Record<Tab, string> = {
+  active: 'Active',
+  removed: 'Removed',
 };
 
-const INITIAL_ACTIVE: Listing[] = [
-  { id: '1', name: 'Nike Air Max 90', size: 'US 10', price: '₱4,500', daysLeft: 12 },
-  { id: '2', name: 'Adidas Ultraboost 22', size: 'US 9.5', price: '₱6,200', daysLeft: 7 },
-  { id: '3', name: 'Jordan 1 Retro High', size: 'US 11', price: '₱18,000', daysLeft: 3 },
-  { id: '4', name: 'New Balance 550', size: 'US 8', price: '₱3,800', daysLeft: 21 },
-  { id: '5', name: 'Converse Chuck 70', size: 'US 9', price: '₱2,800', daysLeft: 14 },
-];
+function getDaysLeft(createdAtStr: string): number {
+  const LISTING_DURATION_DAYS = 30;
+  const now = new Date().getTime();
+  const listing = new Date(createdAtStr).getTime();
+  const daysElapsed = (now - listing) / (1000 * 60 * 60 * 24);
+  return Math.max(Math.round(LISTING_DURATION_DAYS - daysElapsed), 0);
+}
 
-const PENDING_LISTINGS: Listing[] = [
-  { id: 'p1', name: 'Nike Dunk Low Panda', size: 'US 9', price: '₱7,500' },
-  { id: 'p2', name: 'Jordan 1 Mid Chicago', size: 'US 10', price: '₱9,000' },
-];
-
-function Thumbnail() {
+function Thumbnail({ imageUrl }: { imageUrl?: string }) {
   return (
-    <div className="w-16 h-16 rounded-xl bg-surface-container flex items-center justify-center text-outline shrink-0">
-      <span className="material-symbols-outlined text-[26px]">footprint</span>
+    <div className="w-16 h-16 rounded-xl bg-surface-container flex items-center justify-center text-outline shrink-0 overflow-hidden">
+      {imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl}
+          alt="Shoe Thumbnail"
+          className="w-full h-full object-cover scale-[1.5]"
+        />
+      ) : (
+        <span className="material-symbols-outlined text-[26px]">footprint</span>
+      )}
     </div>
   );
 }
 
-function ActiveCard({ item, onDelete }: { item: Listing; onDelete: () => void }) {
+function ActiveCard({ item, onEdit, onDelete }: { item: any; onEdit: () => void; onDelete: () => void }) {
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 flex items-center gap-3">
-      <Thumbnail />
+      <Thumbnail imageUrl={item.imageUrl} />
 
       <div className="flex-1 min-w-0">
-        <p className="text-on-surface font-semibold text-[14px] truncate">{item.name}</p>
-        <p className="text-on-surface-variant text-[12px] mt-0.5">{item.size}</p>
-        <p className="text-primary font-bold text-[14px] mt-1">{item.price}</p>
+        <p className="text-on-surface font-semibold text-[14px] truncate">{item.model}</p>
+        <p className="text-on-surface-variant text-[12px] mt-0.5">{item.brand} &middot; US {item.size}</p>
+        <p className="text-primary font-bold text-[14px] mt-1">₱{Number(item.price || 0).toLocaleString()}</p>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
           <span className="text-on-surface-variant text-[12px]">{item.daysLeft}d left</span>
@@ -50,15 +52,16 @@ function ActiveCard({ item, onDelete }: { item: Listing; onDelete: () => void })
 
       <div className="flex items-center gap-2 shrink-0">
         <button
+          onClick={onEdit}
           className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"
-          aria-label={`Edit ${item.name}`}
+          aria-label={`Edit ${item.model}`}
         >
           <span className="material-symbols-outlined text-[18px]">edit</span>
         </button>
         <button
           onClick={onDelete}
           className="w-9 h-9 rounded-lg bg-error-container/40 flex items-center justify-center text-error hover:bg-error-container transition-colors"
-          aria-label={`Remove ${item.name}`}
+          aria-label={`Remove ${item.model}`}
         >
           <span className="material-symbols-outlined text-[18px]">delete</span>
         </button>
@@ -67,24 +70,47 @@ function ActiveCard({ item, onDelete }: { item: Listing; onDelete: () => void })
   );
 }
 
-function PendingCard({ item }: { item: Listing }) {
+function RemovedCard({
+  item,
+  onRelist,
+  onDonate,
+}: {
+  item: any;
+  onRelist: () => void;
+  onDonate: () => void;
+}) {
   return (
-    <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 flex items-center gap-3">
-      <Thumbnail />
+    <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <Thumbnail imageUrl={item.imageUrl} />
 
-      <div className="flex-1 min-w-0">
-        <p className="text-on-surface font-semibold text-[14px] truncate">{item.name}</p>
-        <p className="text-on-surface-variant text-[12px] mt-0.5">{item.size}</p>
-        <p className="text-primary font-bold text-[14px] mt-1">{item.price}</p>
-        <div className="flex items-center gap-1.5 mt-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
-          <span className="text-tertiary text-[12px]">Pending AI review</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-on-surface font-semibold text-[14px] truncate">{item.model}</p>
+          <p className="text-on-surface-variant text-[12px] mt-0.5">{item.brand} &middot; US {item.size}</p>
+          <p className="text-primary font-bold text-[14px] mt-1">₱{Number(item.price || 0).toLocaleString()}</p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-outline-variant" />
+            <span className="text-on-surface-variant text-[12px]">Removed from market</span>
+          </div>
         </div>
       </div>
 
-      <span className="shrink-0 bg-tertiary-container/20 text-tertiary font-semibold text-[12px] px-3 py-1.5 rounded-lg">
-        In Review
-      </span>
+      <div className="flex gap-2">
+        <button
+          onClick={onRelist}
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12.5px] font-bold bg-[#EFF6FF] border border-[#BFDBFE] text-primary hover:bg-[#DBEAFE] transition-colors"
+        >
+          <span className="material-symbols-outlined text-[15px]">refresh</span>
+          Re-list
+        </button>
+        <button
+          onClick={onDonate}
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12.5px] font-bold bg-[#F0FDF4] border border-[#BBF7D0] text-secondary hover:bg-[#DCFCE7] transition-colors"
+        >
+          <span className="material-symbols-outlined text-[15px]">favorite</span>
+          Donate
+        </button>
+      </div>
     </div>
   );
 }
@@ -99,53 +125,260 @@ function EmptyState({ label }: { label: string }) {
 }
 
 export default function MyListingsView() {
-  const [tab, setTab] = useState<Tab>('active');
-  const [active, setActive] = useState<Listing[]>(INITIAL_ACTIVE);
+  const router = useRouter();
 
-  const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Remove ${name}? This will take it off the market.`)) {
-      setActive((prev) => prev.filter((l) => l.id !== id));
+  const [tab, setTab] = useState<Tab>('active');
+  const [active, setActive] = useState<any[]>([]);
+  const [removed, setRemoved] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Charity donation states
+  const [donateListingId, setDonateListingId] = useState<string | null>(null);
+  const [charities, setCharities] = useState<any[]>([]);
+  const [charitiesLoading, setCharitiesLoading] = useState(false);
+  const [donating, setDonating] = useState(false);
+
+  const fetchUserListings = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/users/me/listings');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch user listings');
+
+      const listings = (data.shoeListings || []).map((item: any) => ({
+        ...item,
+        daysLeft: getDaysLeft(item.createdAt),
+      }));
+
+      const activeItems = listings.filter(
+        (item: any) => item.isAvailable !== false && item.daysLeft > 0
+      );
+      const removedItems = listings.filter((item: any) => item.isAvailable === false);
+
+      setActive(activeItems);
+      setRemoved(removedItems);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const counts: Record<Tab, number> = { active: active.length, pending: PENDING_LISTINGS.length };
+  useEffect(() => {
+    fetchUserListings();
+  }, []);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Remove ${name}? This will take it off the market. You can re-list or donate it later.`)) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/listings/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to delete listing');
+
+      // Move from active list to removed list
+      const item = active.find((l) => l.id === id);
+      setActive((prev) => prev.filter((l) => l.id !== id));
+      if (item) {
+        setRemoved((prev) => [...prev, { ...item, isAvailable: false }]);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not remove listing');
+    }
+  };
+
+  const handleRelist = async (id: string) => {
+    try {
+      const response = await fetch(`/api/listings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAvailable: true }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to re-list listing');
+
+      // Move from removed list to active list
+      const item = removed.find((l) => l.id === id);
+      setRemoved((prev) => prev.filter((l) => l.id !== id));
+      if (item) {
+        const daysLeft = getDaysLeft(item.createdAt);
+        setActive((prev) => [...prev, { ...item, isAvailable: true, daysLeft }]);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not re-list listing');
+    }
+  };
+
+  const openDonateModal = async (id: string) => {
+    setDonateListingId(id);
+    if (charities.length === 0) {
+      setCharitiesLoading(true);
+      try {
+        const response = await fetch('/api/charities');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch charities');
+        setCharities(data.charities || []);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Could not load charities');
+        setDonateListingId(null);
+      } finally {
+        setCharitiesLoading(false);
+      }
+    }
+  };
+
+  const handleConfirmDonate = async (charityId: number) => {
+    if (!donateListingId) return;
+    setDonating(true);
+    try {
+      const response = await fetch(`/api/listings/${donateListingId}/donate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ charityId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to donate listing');
+
+      setRemoved((prev) => prev.filter((l) => l.id !== donateListingId));
+      setDonateListingId(null);
+      alert('Thank you! Your shoe has been donated.');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not donate listing');
+    } finally {
+      setDonating(false);
+    }
+  };
+
+  const handleEdit = (id: string) => {
+    router.push(`/sell?edit=${id}`);
+  };
+
+  const counts: Record<Tab, number> = { active: active.length, removed: removed.length };
+
+  if (loading) {
+    return (
+      <section className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-10 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-on-surface-variant text-[14px] mt-3">Loading listings...</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-10 text-center">
+        <span className="material-symbols-outlined text-error text-[40px] mb-2">error</span>
+        <p className="text-error font-semibold text-[15px]">{error}</p>
+        <button
+          onClick={fetchUserListings}
+          className="mt-4 px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-semibold"
+        >
+          Try Again
+        </button>
+      </section>
+    );
+  }
 
   return (
-    <section className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-2">
-      <div className="flex bg-surface-container rounded-xl p-1 m-3 mb-2">
-        {(['active', 'pending'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={[
-              'flex-1 py-2 rounded-lg text-[13px] font-semibold capitalize transition-colors',
-              tab === t
-                ? 'bg-surface-container-lowest text-on-surface shadow-[0px_2px_8px_rgba(0,0,0,0.06)]'
-                : 'text-on-surface-variant',
-            ].join(' ')}
-          >
-            {t} <span className={tab === t ? 'text-primary' : 'text-on-surface-variant'}>({counts[t]})</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="px-1 pb-1 flex flex-col gap-3">
-        {tab === 'active' &&
-          (active.length === 0 ? (
-            <EmptyState label="No active listings" />
-          ) : (
-            active.map((item) => (
-              <ActiveCard key={item.id} item={item} onDelete={() => handleDelete(item.id, item.name)} />
-            ))
+    <>
+      <section className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-2">
+        <div className="flex bg-surface-container rounded-xl p-1 m-3 mb-2">
+          {(['active', 'removed'] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={[
+                'flex-1 py-2 rounded-lg text-[13px] font-semibold capitalize transition-colors',
+                tab === t
+                  ? 'bg-surface-container-lowest text-on-surface shadow-[0px_2px_8px_rgba(0,0,0,0.06)]'
+                  : 'text-on-surface-variant',
+              ].join(' ')}
+            >
+              {TAB_LABELS[t]} <span className={tab === t ? 'text-primary' : 'text-on-surface-variant'}>({counts[t]})</span>
+            </button>
           ))}
+        </div>
 
-        {tab === 'pending' &&
-          (PENDING_LISTINGS.length === 0 ? (
-            <EmptyState label="No listings pending review" />
-          ) : (
-            PENDING_LISTINGS.map((item) => <PendingCard key={item.id} item={item} />)
-          ))}
-      </div>
-    </section>
+        <div className="px-1 pb-1 flex flex-col gap-3">
+          {tab === 'active' &&
+            (active.length === 0 ? (
+              <EmptyState label="No active listings" />
+            ) : (
+              active.map((item) => (
+                <ActiveCard
+                  key={item.id}
+                  item={item}
+                  onEdit={() => handleEdit(item.id)}
+                  onDelete={() => handleDelete(item.id, item.model)}
+                />
+              ))
+            ))}
+
+          {tab === 'removed' &&
+            (removed.length === 0 ? (
+              <EmptyState label="No removed listings" />
+            ) : (
+              removed.map((item) => (
+                <RemovedCard
+                  key={item.id}
+                  item={item}
+                  onRelist={() => handleRelist(item.id)}
+                  onDonate={() => openDonateModal(item.id)}
+                />
+              ))
+            ))}
+        </div>
+      </section>
+
+      {/* Charity selection modal */}
+      {donateListingId && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-[4px] z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+          <div className="bg-surface-container-lowest w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6 shadow-2xl flex flex-col max-h-[70vh] md:max-h-[500px]">
+            <div className="flex items-center justify-between mb-4 border-b border-outline-variant pb-2">
+              <h3 className="font-bold text-[16px] text-on-surface">Choose a charity</h3>
+              <button
+                onClick={() => setDonateListingId(null)}
+                className="text-on-surface-variant hover:text-on-surface flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {charitiesLoading ? (
+              <div className="flex justify-center py-10">
+                <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : (
+              <div className="overflow-y-auto flex-1 flex flex-col gap-2 pr-1">
+                {charities.map((charity) => (
+                  <button
+                    key={charity.id}
+                    onClick={() => handleConfirmDonate(charity.id)}
+                    disabled={donating}
+                    className="flex items-center justify-between rounded-xl px-4 py-3 bg-surface-container hover:bg-surface-container-high transition-colors text-left"
+                  >
+                    <div className="flex-1 min-w-0 mr-3">
+                      <p className="text-on-surface font-semibold text-[14px] truncate">{charity.name}</p>
+                      <p className="text-on-surface-variant text-[11px] mt-0.5 truncate">{charity.cause}</p>
+                    </div>
+                    {donating ? (
+                      <div className="w-5 h-5 border-2 border-secondary border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <span className="material-symbols-outlined text-outline-variant text-[20px] flex items-center justify-center">chevron_right</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
