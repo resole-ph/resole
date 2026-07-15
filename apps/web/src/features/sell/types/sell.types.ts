@@ -8,7 +8,7 @@ export type ShoeCategory = 'running' | 'basketball' | 'football' | 'casual' | 'o
 
 export interface SellPhoto {
   angle: PhotoAngle;
-  file: File;
+  file?: File;
   previewUrl: string;
 }
 
