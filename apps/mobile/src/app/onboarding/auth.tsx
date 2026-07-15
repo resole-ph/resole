@@ -32,9 +32,21 @@ export default function AuthScreen() {
 
   const handleSubmit = async () => {
     setError(null);
+    if (email.length === 0) {
+      setError("Please enter a valid email.");
+      return;
+    }
+    if (password.length === 0) {
+      setError("Please enter a password.");
+      return;
+    }
     if (mode === 'signup') {
       if (!isStrongPassword(password)) {
         setError(PASSWORD_REQUIREMENT_MESSAGE);
+        return;
+      }
+      if (confirmPassword.length === 0) {
+        setError("Please confirm your password.");
         return;
       }
       if (password !== confirmPassword) {
