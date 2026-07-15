@@ -37,13 +37,16 @@ export async function getTransactionDetails(transaction: any) {
   let details;
   switch (transaction.type) {
     case 'sale':
-      details = await getSaleById(transaction.id);
+      const saleRow = await db.select().from(sale).where(eq(sale.transactionId, transaction.id));
+      details = saleRow.length > 0 ? await getSaleById(saleRow[0].id) : null;
       break;
     case 'swap':
-      details = await getSwapById(transaction.id);
+      const swapRow = await db.select().from(swap).where(eq(swap.transactionId, transaction.id));
+      details = swapRow.length > 0 ? await getSwapById(swapRow[0].id) : null;
       break;
     case 'donation':
-      details = await getDonationById(transaction.id);
+      const donationRow = await db.select().from(donation).where(eq(donation.transactionId, transaction.id));
+      details = donationRow.length > 0 ? await getDonationById(donationRow[0].id) : null;
       break;
     default:
       details = null;
@@ -206,11 +209,13 @@ export async function getTransactionById(id: number) {
     const result = await db
       .select({
         listing: getTableColumns(shoeListing),
+        shoe: getTableColumns(shoe),
         recipient: getTableColumns(user),
         ...getTableColumns(transaction)
       })
       .from(transaction)
       .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .leftJoin(user, eq(transaction.recipientId, user.id))
       .where(eq(transaction.id, id));
 

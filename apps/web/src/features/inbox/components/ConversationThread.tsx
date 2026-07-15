@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import type { Conversation, ChatMessage } from '../data/inbox.mock';
+import useSWR from 'swr';
+import { useAuth } from '@/providers/AuthProvider';
+import type { Conversation, ChatMessage, OfferData } from '../data/inbox.mock';
 
 interface ConversationThreadProps {
   conversation: Conversation | null;
   onBack: () => void;
-  onSend: (text: string) => void;
   onOfferAction: (messageId: string, status: 'accepted' | 'declined') => void;
 }
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 function ThreadHeader({ convo, onBack }: { convo: Conversation; onBack: () => void }) {
   return (
@@ -66,7 +69,7 @@ function TextBubble({ msg }: { msg: ChatMessage }) {
       <div className="max-w-[70%] md:max-w-[60%]">
         <div
           className={[
-            'rounded-2xl px-4 py-2.5',
+            'rounded-2xl px-4 py-2.5 whitespace-pre-wrap',
             isMe
               ? 'bg-primary text-on-primary rounded-tr-sm'
               : 'bg-surface-container-lowest text-on-surface rounded-tl-sm border border-outline-variant',
@@ -97,8 +100,8 @@ function OfferCard({
   const status = offer.status;
 
   return (
-    <div className="px-4 mb-1">
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 max-w-[85%] md:max-w-sm shadow-[0px_2px_8px_rgba(0,0,0,0.05)]">
+    <div className={`flex px-4 mb-1 ${msg.from === 'me' ? 'justify-end' : 'justify-start'}`}>
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 w-full max-w-[85%] md:max-w-sm shadow-[0px_2px_8px_rgba(0,0,0,0.05)]">
         <div className="flex items-center mb-3">
           <div className="bg-secondary-container/30 rounded-xl px-2.5 py-1 flex items-center gap-1">
             <span className="material-symbols-outlined text-primary text-[14px]">
@@ -108,42 +111,53 @@ function OfferCard({
           </div>
         </div>
 
-        <div className="w-full h-20 rounded-xl bg-surface-container flex items-center justify-center mb-3 text-outline">
-          <span className="material-symbols-outlined text-[28px]">footprint</span>
+        <div className="w-full h-20 rounded-xl bg-surface-container flex items-center justify-center mb-3 text-outline overflow-hidden">
+          {offer.image ? (
+            <img src={offer.image} alt={offer.item} className="w-full h-full object-cover" />
+          ) : (
+            <span className="material-symbols-outlined text-[28px]">footprint</span>
+          )}
         </div>
 
         {isSwap ? (
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-on-surface font-semibold text-[13px] flex-1 truncate">{offer.swapItem}</span>
+              <span className="text-on-surface font-semibold text-[13px] flex-1 truncate">{offer.swapItem || 'Your Offer'}</span>
               <span className="material-symbols-outlined text-outline text-[16px] shrink-0">sync_alt</span>
-              <span className="text-on-surface font-semibold text-[13px] flex-1 text-right truncate">{offer.item}</span>
+              <span className="text-on-surface font-semibold text-[13px] flex-1 text-right truncate">{offer.item || 'Their Shoe'}</span>
             </div>
-            <p className="text-on-surface-variant text-[12px] mb-3">Size {offer.size} · Even swap</p>
+            <p className="text-on-surface-variant text-[12px] mb-3">Size {offer.size || 'N/A'}</p>
           </div>
         ) : (
           <div className="mb-3">
             <p className="text-on-surface font-semibold text-[13px] truncate">{offer.item}</p>
-            <p className="text-on-surface-variant text-[12px]">Size {offer.size}</p>
+            <p className="text-on-surface-variant text-[12px]">Size {offer.size || 'N/A'}</p>
             <p className="text-primary font-bold text-[17px] mt-1">{offer.price}</p>
           </div>
         )}
 
         {status === 'pending' ? (
-          <div className="flex gap-2">
-            <button
-              onClick={onDecline}
-              className="flex-1 bg-surface-container rounded-xl py-2.5 text-on-surface-variant font-semibold text-[12px] hover:bg-surface-container-high transition-colors"
-            >
-              Decline
-            </button>
-            <button
-              onClick={onAccept}
-              className="flex-1 bg-primary rounded-xl py-2.5 text-on-primary font-semibold text-[12px] hover:opacity-90 transition-opacity"
-            >
-              Accept
-            </button>
-          </div>
+          msg.from === 'me' ? (
+            <div className="rounded-xl bg-surface-container py-2.5 flex items-center justify-center gap-1.5">
+              <span className="material-symbols-outlined text-outline text-[15px]">hourglass_empty</span>
+              <span className="font-semibold text-[12px] text-on-surface-variant">Waiting for response</span>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={onDecline}
+                className="flex-1 bg-surface-container rounded-xl py-2.5 text-on-surface-variant font-semibold text-[12px] hover:bg-surface-container-high transition-colors"
+              >
+                Decline
+              </button>
+              <button
+                onClick={onAccept}
+                className="flex-1 bg-primary rounded-xl py-2.5 text-on-primary font-semibold text-[12px] hover:opacity-90 transition-opacity"
+              >
+                Accept
+              </button>
+            </div>
+          )
         ) : (
           <div
             className={[
@@ -164,18 +178,16 @@ function OfferCard({
           </div>
         )}
       </div>
-
-      <span className="text-outline text-[11px] mt-1 ml-1 block">{msg.time}</span>
     </div>
   );
 }
 
-function InputBar({ onSend }: { onSend: (text: string) => void }) {
+function InputBar({ onSend, isSending }: { onSend: (text: string) => void, isSending: boolean }) {
   const [text, setText] = useState('');
 
   function handleSend() {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || isSending) return;
     onSend(trimmed);
     setText('');
   }
@@ -200,20 +212,82 @@ function InputBar({ onSend }: { onSend: (text: string) => void }) {
         </div>
         <button
           onClick={handleSend}
-          disabled={!text.trim()}
+          disabled={!text.trim() || isSending}
           aria-label="Send message"
           className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-            text.trim() ? 'bg-primary text-on-primary' : 'bg-surface-container text-outline'
+            text.trim() && !isSending ? 'bg-primary text-on-primary' : 'bg-surface-container text-outline'
           }`}
         >
-          <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
+          {isSending ? (
+            <div className="w-5 h-5 border-2 border-outline border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
+          )}
         </button>
       </div>
     </div>
   );
 }
 
-export default function ConversationThread({ conversation, onBack, onSend, onOfferAction }: ConversationThreadProps) {
+export default function ConversationThread({ conversation, onBack, onOfferAction }: ConversationThreadProps) {
+  const { user } = useAuth();
+  
+  const { data, mutate, error } = useSWR(
+    conversation ? `/api/conversations/${conversation.id}` : null,
+    fetcher,
+    { refreshInterval: 3000 }
+  );
+  
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSend = async (text: string) => {
+    if (!conversation || !text.trim() || !user) return;
+    setIsSending(true);
+    
+    // Optimistic Update
+    mutate((prevData: any) => {
+      if (!prevData) return prevData;
+      return {
+        ...prevData,
+        messages: [
+          ...(prevData.messages || []),
+          {
+            id: Date.now(),
+            userId: user.id,
+            content: text,
+            createdAt: new Date().toISOString()
+          }
+        ]
+      }
+    }, false);
+
+    try {
+      const res = await fetch(`/api/conversations/${conversation.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text.trim() })
+      });
+      if (!res.ok) throw new Error('Failed to send message');
+      mutate();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+  
+  const handleOfferStatus = async (messageId: string, status: 'accepted' | 'declined', offerTransactionId: number) => {
+    try {
+      const endpoint = status === 'accepted' ? 'accept' : 'decline';
+      const res = await fetch(`/api/offers/${offerTransactionId}/${endpoint}`, { method: 'POST' });
+      if (!res.ok) throw new Error(`Failed to ${endpoint} offer`);
+      mutate();
+    } catch (err) {
+      console.error(err);
+      alert(`Could not ${status} the offer.`);
+    }
+  };
+
   if (!conversation) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 bg-surface-container-lowest rounded-2xl border border-outline-variant">
@@ -223,36 +297,70 @@ export default function ConversationThread({ conversation, onBack, onSend, onOff
     );
   }
 
+  // Parse backend messages to UI structure
+  const messages = data?.messages || [];
+  const offers = data?.offers || [];
+  
+  const uiMessages: ChatMessage[] = messages.map((m: any): ChatMessage => {
+    const isMe = m.userId === user?.id;
+    const time = new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Check if this message has a transaction attached to it
+    const attachedOffer = m.transactionId ? offers.find((o: any) => o.id === m.transactionId) : null;
+    
+    let offerObj: OfferData | undefined;
+    if (attachedOffer) {
+      offerObj = {
+        type: attachedOffer.type === 'swap' ? 'swap' : 'buy',
+        item: attachedOffer.shoe?.model || 'Shoe Listing',
+        size: attachedOffer.listing?.size,
+        price: attachedOffer.type === 'sale' ? `₱${Number(attachedOffer.details?.price).toLocaleString()}` : undefined,
+        swapItem: attachedOffer.type === 'swap' ? 'Multiple/Requested Shoes' : undefined,
+        status: attachedOffer.isCompleted ? 'accepted' : (attachedOffer.isAccepted ? 'accepted' : attachedOffer.isAccepted === false ? 'declined' : 'pending'),
+        image: attachedOffer.listing?.imageUrlSide || attachedOffer.listing?.imageUrlTop,
+      };
+    }
+
+    return {
+      id: String(m.id),
+      from: isMe ? 'me' : 'them',
+      text: m.content,
+      time: time,
+      seen: false, // We don't have seen status yet
+      offer: offerObj,
+      _rawOfferTx: m.transactionId
+    } as ChatMessage & { _rawOfferTx?: number };
+  });
+
   return (
     <div className="flex flex-col flex-1 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.05)] overflow-hidden">
       <ThreadHeader convo={conversation} onBack={onBack} />
 
       <div className="flex-1 overflow-y-auto py-4">
-        {conversation.messages.map((msg) => {
-          if (msg.from === 'system') {
-            return <SystemBubble key={msg.id} text={msg.text!} time={msg.time} />;
-          }
+        {!data && !error && (
+          <div className="flex justify-center mt-10">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+        
+        {uiMessages.map((msg: any) => {
           if (msg.offer) {
             return (
-              <OfferCard
-                key={msg.id}
-                msg={msg}
-                onAccept={() => onOfferAction(msg.id, 'accepted')}
-                onDecline={() => onOfferAction(msg.id, 'declined')}
-              />
+              <div key={`offer-${msg.id}`}>
+                <OfferCard
+                  msg={msg}
+                  onAccept={() => handleOfferStatus(msg.id, 'accepted', msg._rawOfferTx)}
+                  onDecline={() => handleOfferStatus(msg.id, 'declined', msg._rawOfferTx)}
+                />
+                {msg.text && <TextBubble msg={msg} />}
+              </div>
             );
           }
           return <TextBubble key={msg.id} msg={msg} />;
         })}
       </div>
 
-      {conversation.isSystem ? (
-        <div className="border-t border-outline-variant py-3 text-center shrink-0">
-          <p className="text-outline text-[12px]">This is a system notification — replies are not supported</p>
-        </div>
-      ) : (
-        <InputBar onSend={onSend} />
-      )}
+      <InputBar onSend={handleSend} isSending={isSending} />
     </div>
   );
 }

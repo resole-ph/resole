@@ -1,55 +1,60 @@
 'use client';
 
 import { useState } from 'react';
+import useSWR from 'swr';
 import ConversationList from './ConversationList';
 import ConversationThread from './ConversationThread';
-import { MOCK_CONVERSATIONS, type Conversation, type ConversationTab } from '../data/inbox.mock';
+import { type Conversation, type ConversationTab } from '../data/inbox.mock';
+import { useAuthGate } from '@/providers/AuthGateProvider';
 
 type ListTab = 'all' | ConversationTab;
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function InboxView() {
-  const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
+  const { data, error } = useSWR('/api/conversations', fetcher, { refreshInterval: 5000 });
   const [tab, setTab] = useState<ListTab>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Map API conversations to the UI mock shape
+  const conversations: Conversation[] = data?.conversations?.map((conv: any) => {
+    return {
+      id: String(conv.id),
+      tab: 'offers' as ConversationTab, // Everything peer-to-peer is an offer for now
+      sender: `@${conv.user.name.toLowerCase().replace(/\s+/g, '')}`,
+      avatarInitial: conv.user.name.charAt(0).toUpperCase(),
+      avatarColor: '#EFF6FF', // Static blue for now, or could use random logic
+      isSystem: false,
+      isOnline: true, // We don't have presence yet
+      subtitle: 'Online now',
+      preview: conv.latestMessage?.content || 'Started a conversation',
+      time: conv.latestMessage?.createdAt 
+        ? new Date(conv.latestMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        : '',
+      unread: 0,
+      messages: [] // Messages are fetched in ConversationThread
+    };
+  }) || [];
 
   const totalUnread = conversations.reduce((n, c) => n + c.unread, 0);
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
 
   function handleSelectConversation(id: string) {
     setSelectedId(id);
-    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
   }
 
-  function handleSend(text: string) {
-    if (!selectedId) return;
-    const newMsg = {
-      id: String(Date.now()),
-      from: 'me' as const,
-      text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === selectedId
-          ? { ...c, messages: [...c.messages, newMsg], preview: text, time: newMsg.time }
-          : c
-      )
-    );
-  }
+  // Handle send logic from the thread (Optimistic Update)
+  function handleSend(text: string) {}
 
-  function handleOfferAction(messageId: string, status: 'accepted' | 'declined') {
-    if (!selectedId) return;
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === selectedId
-          ? {
-              ...c,
-              messages: c.messages.map((m) =>
-                m.id === messageId && m.offer ? { ...m, offer: { ...m.offer, status } } : m
-              ),
-            }
-          : c
-      )
+  // Handle offer action logic from the thread (Optimistic Update)
+  function handleOfferAction(messageId: string, status: 'accepted' | 'declined') {}
+
+  if (!data && !error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-on-surface-variant text-[14px] mt-4 font-medium">Loading inbox...</p>
+      </div>
     );
   }
 

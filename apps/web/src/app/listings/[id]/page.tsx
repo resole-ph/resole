@@ -140,16 +140,51 @@ export default function ProductDetailPage() {
     }, 1200);
   }
 
-  function handleSendOffer() {
+  async function handleSendOffer() {
     if (!offerPrice) return;
-    setOfferSent(true);
-    setTimeout(() => {
-      setOfferSent(false);
-      setShowOfferModal(false);
-      setOfferPrice('');
-      setOfferNote('');
-      router.push('/inbox');
-    }, 1200);
+    
+    try {
+      // 1. Create sale offer transaction
+      const saleRes = await fetch(`/api/listings/${productId}/sale-offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'sale', price: Number(offerPrice) })
+      });
+      const saleData = await saleRes.json();
+      
+      if (!saleRes.ok) throw new Error(saleData.error || 'Failed to submit offer');
+      
+      const transactionId = saleData.transactionDetails.id;
+      const listerId = saleData.transactionDetails.listing.userId;
+      
+      // 2. Send the conversation message
+      const finalNote = offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`;
+      
+      const msgRes = await fetch(`/api/conversations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listerId: listerId,
+          transactionId: transactionId,
+          content: finalNote
+        })
+      });
+      
+      if (!msgRes.ok) throw new Error('Failed to send offer message');
+      
+      setOfferSent(true);
+      setTimeout(() => {
+        setOfferSent(false);
+        setShowOfferModal(false);
+        setOfferPrice('');
+        setOfferNote('');
+        router.push('/inbox');
+      }, 1200);
+      
+    } catch (err: any) {
+      console.error('Offer error:', err);
+      alert(err.message || 'Something went wrong while sending your offer.');
+    }
   }
 
   if (loading) {

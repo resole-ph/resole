@@ -7,6 +7,7 @@ export type OfferData = {
   price?: string;
   swapItem?: string;
   status: 'pending' | 'accepted' | 'declined';
+  image?: string;
 };
 
 export type ChatMessage = {
