@@ -31,7 +31,6 @@ export async function POST(request: Request) {
   const conversation = existingConversation ?? await createConversation({
     recipientId: currentUser.user.id,
     listerId: body.listerId,
-    transactionId: body.transactionId,
   });
 
   if (!conversation) {

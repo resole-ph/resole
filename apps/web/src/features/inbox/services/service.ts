@@ -38,11 +38,9 @@ export async function getConversations() {
   try {
     const rows = await db
       .select({
-        transaction: getTableColumns(transaction),
         ...getTableColumns(conversation)
       })
       .from(conversation)
-      .innerJoin(transaction, eq(conversation.transactionId, transaction.id))
 
     return rows ?? null;
   } catch (error) {
@@ -55,11 +53,9 @@ export async function getConversationById(id: number) {
   try {
     const result = await db
       .select({
-        transaction: getTableColumns(transaction),
         ...getTableColumns(conversation)
       })
       .from(conversation)
-      .innerJoin(transaction, eq(conversation.transactionId, transaction.id))
       .where(eq(conversation.id, id))
 
     return result[0] ?? null;
@@ -73,11 +69,9 @@ export async function getConversationBetweenUsers(userAId: string, userBId: stri
   try {
     const result = await db
       .select({
-        transaction: getTableColumns(transaction),
         ...getTableColumns(conversation)
       })
       .from(conversation)
-      .innerJoin(transaction, eq(conversation.transactionId, transaction.id))
       .where(
         or(
           and(eq(conversation.listerId, userAId), eq(conversation.recipientId, userBId)),
@@ -110,7 +104,6 @@ export async function getUserConversations(id: string) {
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
         user: getTableColumns(otherUser),
-        transaction: getTableColumns(transaction),
         latestMessage: {
           id: latestMessageSq.id,
           conversationId: latestMessageSq.conversationId,
@@ -136,7 +129,6 @@ export async function getUserConversations(id: string) {
           )
         )
       )
-      .innerJoin(transaction, eq(conversation.transactionId, transaction.id))
       .leftJoin(latestMessageSq, eq(conversation.id, latestMessageSq.conversationId))
       .where(
         or(

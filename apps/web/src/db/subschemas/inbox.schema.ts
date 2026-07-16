@@ -21,9 +21,6 @@ export const conversation = pgTable('conversation', {
   recipientId: text('recipient_id')
     .notNull()
     .references(() => user.id),
-  transactionId: integer('transaction_id')
-    .notNull()
-    .references(() => transaction.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -33,7 +30,6 @@ export const conversation = pgTable('conversation', {
   check('conversation_user_check', sql`${table.listerId} != ${table.recipientId}`),
   index('conversation_lister_id_idx').on(table.listerId),
   index('conversation_recipient_id_idx').on(table.recipientId),
-  index('conversation_transaction_id_idx').on(table.transactionId),
 ]);
 
 export const message = pgTable('message', {
