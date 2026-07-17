@@ -84,7 +84,7 @@ export const shoeListing = pgTable('shoe_listing', {
   defects: text('defects').array(),
   listingMode: listingEnum('listing_mode').default('Both').notNull(),
   isRefurbished: boolean('is_refurbished').default(false).notNull(),
-  isFinalPrice: boolean('is_final_price').default(false).notNull(),
+  // isFinalPrice: boolean('is_final_price').default(false).notNull(),
   isAvailable: boolean('is_available').default(true).notNull(),
   imageUrlTop: text('image_url_top').notNull(),
   imageUrlSide: text('image_url_side').notNull(),
