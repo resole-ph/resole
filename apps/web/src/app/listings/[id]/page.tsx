@@ -142,7 +142,6 @@ export default function ProductDetailPage() {
 
   async function handleSendOffer() {
     if (!offerPrice) return;
-    
     try {
       // 1. Create sale offer transaction
       const saleRes = await fetch(`/api/listings/${productId}/sale-offers`, {
