@@ -228,7 +228,7 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
         disabled={!canContinue}
         className="w-full md:w-auto md:min-w-64 md:mx-auto md:block py-3.5 rounded-full font-semibold text-[15px] text-white bg-primary disabled:bg-outline-variant disabled:text-on-surface-variant transition-colors"
       >
-        Review Listing
+        Continue
       </button>
     </div>
   );

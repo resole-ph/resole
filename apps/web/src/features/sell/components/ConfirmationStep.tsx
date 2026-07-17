@@ -12,8 +12,9 @@ export default function ConfirmationStep({ listingId, onListAnother, flowMode = 
   const isEditing = flowMode === 'edit';
   return (
     <div className="flex flex-col items-center text-center py-10">
-      <div className="w-24 h-24 rounded-full bg-secondary-container/30 flex items-center justify-center shadow-[0px_8px_24px_rgba(0,108,73,0.15)]">
-        <span className="material-symbols-outlined text-secondary text-[56px]">check_circle</span>
+      <div className="w-24 h-24 rounded-full flex items-center justify-center shadow-[0px_8px_24px_rgba(0,108,73,0.15)] overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/apple_ui_checkmark.png" alt="Success Checkmark" className="w-full h-full object-cover" />
       </div>
 
       <h1 className="text-[24px] font-bold text-on-surface mt-6">
@@ -25,12 +26,7 @@ export default function ConfirmationStep({ listingId, onListAnother, flowMode = 
           : 'Your shoe is now live on the marketplace. Buyers will be able to find it shortly.'}
       </p>
 
-      {listingId && (
-        <div className="bg-surface-container-low rounded-xl px-4 py-2 mt-5">
-          <p className="text-[12px] text-on-surface-variant">Listing ID</p>
-          <p className="text-[14px] font-semibold text-primary">#{listingId}</p>
-        </div>
-      )}
+
 
       <div className="flex flex-col gap-3 w-full mt-8 max-w-xs">
         <Link

@@ -218,6 +218,14 @@ export default function SellWizard() {
   }
 
   function goBack() {
+    if (step === 'results') {
+      objectUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrls.current = [];
+      setPhotos(INITIAL_PHOTOS);
+      setAiResult(null);
+      setUploadedPhotoUrls(null);
+      setPhotosDirty(false);
+    }
     const idx = STEP_ORDER.indexOf(step);
     if (idx > 0) setStep(STEP_ORDER[idx - 1]);
   }

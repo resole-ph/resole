@@ -103,7 +103,7 @@ export default function AiResultsStep({
             onClick={onContinue}
             className="w-full md:w-auto md:min-w-80 md:mx-auto md:block mt-6 py-3.5 rounded-full font-semibold text-[15px] text-white bg-primary transition-colors hover:opacity-90"
           >
-            Looks Good
+            Continue
           </button>
         </>
       )}

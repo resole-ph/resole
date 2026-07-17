@@ -72,8 +72,8 @@ export async function publishListing(
     }),
   });
 
-  const data = await parseJsonOrThrow<{ listing: PublishedListing }>(response);
-  return data.listing;
+  const data = await parseJsonOrThrow<{ listingId: number }>(response);
+  return { id: data.listingId } as PublishedListing;
 }
 
 export async function fetchListingById(id: number): Promise<any> {
