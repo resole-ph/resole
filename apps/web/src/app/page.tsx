@@ -700,10 +700,7 @@ export default function ResoleHome() {
                 listing={l}
                 isSaved={savedIds.has(String(l.id))}
                 onSave={handleSaveListing}
-<<<<<<< HEAD
                 currentUserId={user?.id}
-=======
->>>>>>> origin/dev
               />
             ))}
           </div>
