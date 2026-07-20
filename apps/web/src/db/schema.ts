@@ -8,3 +8,4 @@ export * from './subschemas/user-action.schema';
 export * from './subschemas/ticket.schema';
 export * from './subschemas/inbox.schema';
 export * from './subschemas/cart.schema';
+export * from './subschemas/view.schema';

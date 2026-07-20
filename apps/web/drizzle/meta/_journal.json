@@ -127,6 +127,13 @@
       "when": 1784297658758,
       "tag": "0017_dear_solo",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784566856710,
+      "tag": "0018_confused_living_tribunal",
+      "breakpoints": true
     }
   ]
 }

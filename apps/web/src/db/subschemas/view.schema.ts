@@ -4,6 +4,7 @@ import {
   timestamp,
   integer,
   index,
+  text,
   check
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -15,7 +16,7 @@ export const listingView = pgTable('listing_view', {
   listingId: integer('listing_id')
     .notNull()
     .references(() => shoeListing.id),
-  viewerId: integer('viewer_id')
+  viewerId: text('viewer_id')
     .notNull()
     .references(() => user.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -26,10 +27,10 @@ export const listingView = pgTable('listing_view', {
 
 export const profileView = pgTable('profile_view', {
   id: serial('id').primaryKey(),
-  profileUserId: integer('profile_user_id')
+  profileUserId: text('profile_user_id')
     .notNull()
     .references(() => user.id),
-  viewerId: integer('viewer_id')
+  viewerId: text('viewer_id')
     .notNull()
     .references(() => user.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
