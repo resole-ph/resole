@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '@/config/db';
 import { and, eq, desc, count, isNull, or, sql } from 'drizzle-orm';
-import { account, session, user, save, login, rating, shoeListing, transaction } from '@/db/schema';
+import { account, session, user, save, login, rating, shoeListing, transaction, classificaitonEnum } from '@/db/schema';
 import {
   createSessionToken,
   hashPassword,
@@ -129,6 +129,8 @@ export async function getUserProfileById(userId: string) {
       description: userRecord.description,
       coins: userRecord.coins,
       intent: userRecord.intent,
+      unit: userRecord.unit,
+      classification: userRecord.classificaiton,
       overallRating: Number(ratingStats?.overallRating ?? 0),
       reviewCount: Number(ratingStats?.reviewCount ?? 0),
       joinedAt: userRecord.createdAt,
