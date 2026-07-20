@@ -18,6 +18,7 @@ interface ReviewStepProps {
   error: string | null;
   onBack: () => void;
   onPublish: () => void;
+  flowMode?: 'create' | 'edit';
 }
 
 function FieldRow({ label, value }: { label: string; value: string }) {
@@ -36,13 +37,15 @@ export default function ReviewStep({
   error,
   onBack,
   onPublish,
+  flowMode = 'create',
 }: ReviewStepProps) {
+  const isEditing = flowMode === 'edit';
   return (
     <div>
-      <StepHeader title="Review Listing" stepLabel="Step 4 of 4" onBack={onBack} />
+      <StepHeader title={isEditing ? 'Review Changes' : 'Review Listing'} stepLabel="Step 4 of 4" onBack={onBack} />
 
       <p className="text-[14px] text-on-surface-variant mb-4">
-        Review your listing before it goes live.
+        {isEditing ? 'Review your changes before updating.' : 'Review your listing before it goes live.'}
       </p>
 
       <div className="rounded-2xl bg-surface-container-lowest border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)] md:grid md:grid-cols-2 md:gap-6">
@@ -97,7 +100,13 @@ export default function ReviewStep({
           disabled={isPublishing}
           className="w-full md:flex-1 py-3.5 rounded-full font-semibold text-[15px] text-white bg-primary disabled:bg-outline-variant disabled:text-on-surface-variant transition-colors"
         >
-          {isPublishing ? 'Publishing...' : 'Publish Listing'}
+          {isEditing
+            ? isPublishing
+              ? 'Saving Changes...'
+              : 'Save Changes'
+            : isPublishing
+              ? 'Publishing...'
+              : 'Publish Listing'}
         </button>
         <button
           onClick={onBack}

@@ -253,7 +253,7 @@ export async function createCredentialsUser(input: CreateCredentialsInput): Prom
         contactNo: input.contactNo ?? null,
         description: 'I love shoes!',
         coins: 0,
-        intent: 'buy',
+        intent: input.intent ?? 'buy',
       });
 
       await tx.insert(account).values({

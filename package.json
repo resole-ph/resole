@@ -6,10 +6,12 @@
   "private": true,
   "scripts": {
     "dev:web": "npm run dev --prefix apps/web",
+    "dev:web:tunnel": "concurrently \"npm run dev --prefix apps/web\" \"npx localtunnel --port 3000\"",
     "build:web": "npm run build --prefix apps/web",
     "start:web": "npm run start --prefix apps/web",
     "lint:web": "npm run lint --prefix apps/web",
     "dev:mobile": "npm run start --prefix apps/mobile",
+    "dev:mobile:tunnel": "npm run start --prefix apps/mobile -- --tunnel",
     "android:mobile": "npm run android --prefix apps/mobile",
     "ios:mobile": "npm run ios --prefix apps/mobile",
     "web:mobile": "npm run web --prefix apps/mobile",
@@ -27,5 +29,8 @@
   "bugs": {
     "url": "https://github.com/rdgonzaga/resole/issues"
   },
-  "homepage": "https://github.com/rdgonzaga/resole#readme"
+  "homepage": "https://github.com/rdgonzaga/resole#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
 }

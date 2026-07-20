@@ -15,7 +15,6 @@ import {
   ShoeAnalysisResult
 } from '@/features/shoe/types/types';
 import { GoogleGenAI } from "@google/genai";
-import { detectIfShoe } from '@/features/shoe/services/detector';
 
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-001";
 const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1536", 10);
@@ -561,57 +560,48 @@ export async function deleteUserShoeListing(userId: string, id: number) {
   }
 }
 
-export async function analyzeShoePhotos(photoUrls: { top: string; side: string; sole: string; insole: string }): Promise<ShoeAnalysis> {
+export class InvalidShoePhotoError extends Error {}
+
+export async function analyzeShoePhotos(photoUrls: { top: string; leftSide: string; rightSide: string; sole: string; insole: string }): Promise<ShoeAnalysis> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     throw new Error('Google API key is not configured');
   }
 
-  const imageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
   const urls = {
     top: photoUrls.top,
-    side: photoUrls.side,
+    leftSide: photoUrls.leftSide,
+    rightSide: photoUrls.rightSide,
     sole: photoUrls.sole,
     insole: photoUrls.insole,
   };
 
-  for (const [key, url] of Object.entries(urls)) {
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Failed to download ${key} image from URL`);
-    }
-    const buffer = Buffer.from(await res.arrayBuffer());
-
-    if (key === 'side') {
-      const isShoe = await detectIfShoe(buffer);
-      if (!isShoe) {
-        throw new Error(`Image for ${key} does not appear to be a shoe`);
+  const imageParts = await Promise.all(
+    Object.entries(urls).map(async ([key, url]) => {
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Failed to download ${key} image from URL`);
       }
-    }
+      const buffer = Buffer.from(await res.arrayBuffer());
 
-    const base64 = buffer.toString('base64');
-    const contentType = res.headers.get('content-type') || 'image/jpeg';
-
-    imageParts.push({
-      inlineData: {
-        mimeType: contentType,
-        data: base64,
-      },
-    });
-  }
+      return {
+        inlineData: {
+          mimeType: res.headers.get('content-type') || 'image/jpeg',
+          data: buffer.toString('base64'),
+        },
+      };
+    })
+  );
 
   const ai = new GoogleGenAI({ apiKey });
   const prompt = [
-    'Analyze these four photos of a shoe representing its top, side, sole, and insole.',
-    'Accurately identify:',
-    '- brand and model',
-    '- colorway (the common name for the color scheme, e.g. "Chicago", "Bred", or a plain description)',
-    '- size: the US size, read from any label on the insole or tongue, as a plain number string (e.g. "10" or "10.5"). If unreadable, give your best visual estimate.',
-    '- year: the approximate release or production year as a number.',
-    '- conditionScore: a condition score from 0 to 10 (10 = brand new, unworn).',
-    '- description: a short paragraph outlining wear, condition, and visible defects.',
-    '- defects: an array of short strings, one per distinct visible defect (empty array if none).',
-    '- estimatedPrice: the typical BRAND-NEW / retail market price in PHP (Philippine Peso) for this model, NOT adjusted for condition.',
+    'These 5 photos show ONE pair of shoes (left + right) together in every frame, in this exact order: (1) top view of both shoes, (2) left-side view — outer face of the LEFT shoe, right shoe also visible, (3) right-side view — outer face of the RIGHT shoe, left shoe also visible, (4) sole view — both shoes flipped over, outsoles visible, (5) insole view — both shoes tilted open, insoles visible.',
+    '',
+    'Validation: set isValidPhotoSet to false ONLY if a photo clearly is not footwear at all (e.g. a person, unrelated object, blank/corrupted image, random scene) — explain which photo and why in rejectionReason, and fill the other fields with neutral placeholders (empty string / 0 / empty array) since they are still required. Imperfect framing, only one shoe visible in a shot, or an inexact angle is NOT invalid — set isValidPhotoSet true and just do your best analysis. rejectionReason must be "" whenever isValidPhotoSet is true.',
+    '',
+    'Both shoes are a matched pair (same brand, model, colorway, size) — read brand/model/colorway/size from whichever photo gives the clearest read; no need to reconcile across shoes. Condition can differ between the two shoes though: set conditionScore to reflect the WORSE shoe (0-10, 10 = new/unworn), call out any left/right asymmetry in description, and prefix each defects entry with "Left: ", "Right: ", or "Both: " depending on which shoe(s) it affects (plain, no prefix, if unclear).',
+    '',
+    'Return: brand, model, colorway, size (US size as a plain number string, e.g. "10" or "10.5", read from an insole/tongue label on either shoe, best visual estimate if unreadable), year (approximate release year, number), conditionScore, description (short paragraph per the rule above), defects (string array per the rule above, empty if none), estimatedPrice (typical brand-new retail price in PHP, not condition-adjusted).',
   ].join('\n');
 
   const response = await ai.models.generateContent({
@@ -622,6 +612,8 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
       responseSchema: {
         type: 'OBJECT',
         properties: {
+          isValidPhotoSet: { type: 'BOOLEAN' },
+          rejectionReason: { type: 'STRING' },
           brand: { type: 'STRING' },
           model: { type: 'STRING' },
           colorway: { type: 'STRING' },
@@ -632,7 +624,7 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
           defects: { type: 'ARRAY', items: { type: 'STRING' } },
           estimatedPrice: { type: 'NUMBER' },
         },
-        required: ['brand', 'model', 'colorway', 'size', 'year', 'conditionScore', 'description', 'defects', 'estimatedPrice'],
+        required: ['isValidPhotoSet', 'rejectionReason', 'brand', 'model', 'colorway', 'size', 'year', 'conditionScore', 'description', 'defects', 'estimatedPrice'],
       },
     },
   });
@@ -642,7 +634,14 @@ export async function analyzeShoePhotos(photoUrls: { top: string; side: string; 
     throw new Error('Failed to generate content from AI model');
   }
 
-  return JSON.parse(resultText) as ShoeAnalysis;
+  const parsed = JSON.parse(resultText) as ShoeAnalysis & { isValidPhotoSet: boolean; rejectionReason: string };
+
+  if (!parsed.isValidPhotoSet) {
+    throw new InvalidShoePhotoError(parsed.rejectionReason || 'One or more uploaded photos do not appear to show a pair of shoes.');
+  }
+
+  const { isValidPhotoSet, rejectionReason, ...analysis } = parsed;
+  return analysis;
 }
 
 /**
@@ -699,7 +698,7 @@ export function calculateSuggestedPrice(baselinePrice: number, conditionScore: n
  * When no catalog baseline is found, falls back to Gemini's own estimatedPrice so a
  * suggested price is always produced.
  */
-export async function analyzeAndPriceShoe(photoUrls: { top: string; side: string; sole: string; insole: string }): Promise<ShoeAnalysisResult> {
+export async function analyzeAndPriceShoe(photoUrls: { top: string; leftSide: string; rightSide: string; sole: string; insole: string }): Promise<ShoeAnalysisResult> {
   const analysis = await analyzeShoePhotos(photoUrls);
 
   const { baselinePrice, matchedShoeId, similarity } = await getBaselinePriceByShoe(analysis.brand, analysis.model);
@@ -753,14 +752,16 @@ export async function publishShoeListing(userId: string, data: any) {
     conditionScore,
     defects = [],
     isRefurbished = false,
+    isFinalPrice = false,
     listingMode = 'both',
     imageUrlTop,
-    imageUrlSide,
+    imageUrlLeftSide,
+    imageUrlRightSide,
     imageUrlSole,
     imageUrlInsole,
   } = data;
 
-  if (!brand || !model || !value || !colorway || !size || !conditionScore || !imageUrlTop || !imageUrlSide || !imageUrlSole || !imageUrlInsole) {
+  if (!brand || !model || !value || !colorway || !size || !conditionScore || !imageUrlTop || !imageUrlLeftSide || !imageUrlRightSide || !imageUrlSole || !imageUrlInsole) {
     throw new Error('Missing required listing information');
   }
 
@@ -768,8 +769,14 @@ export async function publishShoeListing(userId: string, data: any) {
   const sizeValue = Number.parseFloat(size.toString());
   const scoreValue = Number.parseFloat(conditionScore.toString());
 
-  if (Number.isNaN(priceValue) || priceValue <= 0 || Number.isNaN(sizeValue) || sizeValue <= 0 || Number.isNaN(scoreValue) || scoreValue <= 0) {
-    throw new Error('Invalid numeric values provided');
+  if (Number.isNaN(priceValue) || priceValue <= 0) {
+    throw new Error('Invalid price value provided');
+  }
+  if (Number.isNaN(Number.isNaN(sizeValue) || sizeValue <= 0)) {
+    throw new Error('Invalid size values provided');
+  }
+  if (Number.isNaN(scoreValue) || scoreValue <= 0 || scoreValue > 10) {
+    throw new Error('Invalid score values provided');
   }
 
   const brandStr = brand.trim();
@@ -811,9 +818,11 @@ export async function publishShoeListing(userId: string, data: any) {
       conditionScore: scoreValue.toString(),
       defects,
       isRefurbished,
+      isFinalPrice,
       listingMode,
       imageUrlTop,
-      imageUrlSide,
+      imageUrlLeftSide,
+      imageUrlRightSide,
       imageUrlSole,
       imageUrlInsole,
       isAvailable: true,

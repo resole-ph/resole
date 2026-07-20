@@ -1,5 +1,5 @@
 import { type InferSelectModel } from 'drizzle-orm';
-import { user, session, account, verification } from '@/db/schema';
+import { user, session, account, verification, intentEnum } from '@/db/schema';
 
 export type User = InferSelectModel<typeof user>;
 export type Session = InferSelectModel<typeof session>;
@@ -11,6 +11,8 @@ export interface AuthSession {
   user: User;
 }
 
+export type intentType = 'buy' | 'sell' | 'donate'
+
 export type UpdateUserProfileInput = {
   name?: string;
   email?: string;
@@ -19,7 +21,7 @@ export type UpdateUserProfileInput = {
   address?: string;
   city?: string;
   contactNo?: string;
-  intent?: 'buy' | 'sell' | 'donate';
+  intent?: intentType;
 };
 
 export interface CreateCredentialsInput {
@@ -31,6 +33,7 @@ export interface CreateCredentialsInput {
   city?: string | null;
   contactNo?: string | null;
   image?: string | null;
+  intent?: intentType;
 }
 
 export interface CreateGoogleUserInput {

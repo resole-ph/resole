@@ -115,8 +115,12 @@ function getEditableShoeListingFields(body: Record<string, unknown>) {
     updateData.imageUrlTop = String(body.imageUrlTop);
   }
 
-  if (body.imageUrlSide !== undefined) {
-    updateData.imageUrlSide = String(body.imageUrlSide);
+  if (body.imageUrlLeftSide !== undefined) {
+    updateData.imageUrlLeftSide = String(body.imageUrlLeftSide);
+  }
+
+  if (body.imageUrlRightSide !== undefined) {
+    updateData.imageUrlRightSide = String(body.imageUrlRightSide);
   }
 
   if (body.imageUrlSole !== undefined) {
