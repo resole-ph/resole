@@ -54,7 +54,9 @@ export const UserService = {
       name: user.name,
       email: user.email,
       phone: user.contactNo,
-      location: user.location
+      location: user.location,
+      unit: user.unit ?? 'us',
+      classification: user.classification ?? 'men'
     };
   },
 

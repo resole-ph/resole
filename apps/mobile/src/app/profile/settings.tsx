@@ -22,6 +22,8 @@ const ACCOUNT_FIELDS = [
   { id: 'email',    label: 'Email',         value: '', icon: 'mail-outline' as const },
   { id: 'phone',    label: 'Phone',         value: '', icon: 'call-outline' as const },
   { id: 'location', label: 'Location',      value: '', icon: 'location-outline' as const },
+  { id: 'unit',     label: 'Unit',          value: '', icon: 'cube' as const },
+  { id: 'classificaiton', label: 'Classification',  value: '', icon: 'male-female-outline' as const },
 ];
 
 function SectionTitle({ title }: { title: string }) {
