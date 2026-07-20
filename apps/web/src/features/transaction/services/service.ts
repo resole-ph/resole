@@ -287,7 +287,7 @@ export async function getUserTransactionHistory(userId: string) {
         listingMode: shoeListing.listingMode,
         listingIsAvailable: shoeListing.isAvailable,
         listingImageUrlTop: shoeListing.imageUrlTop,
-        listingImageUrlSide: shoeListing.imageUrlSide,
+        listingImageUrlLeftSide: shoeListing.imageUrlLeftSide,
         shoeId: shoe.id,
         shoeBrand: shoe.brand,
         shoeModel: shoe.model,
@@ -343,7 +343,7 @@ export async function getUserTransactionHistory(userId: string) {
         listingMode: row.listingMode,
         isAvailable: row.listingIsAvailable,
         imageUrlTop: row.listingImageUrlTop,
-        imageUrlSide: row.listingImageUrlSide,
+        imageUrlLeftSide: row.listingImageUrlLeftSide,
         shoe: {
           id: row.shoeId,
           brand: row.shoeBrand,
