@@ -102,7 +102,7 @@ export default function FavouritesScreen() {
 
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, saved: !i.saved } : i)));
     try {
-      await ListingService.unfavoriteListing(item.listingId);
+      await ListingService.unfavouriteListing(item.listingId);
     } catch (error) {
       console.error('Failed to unfavorite listing:', error);
       setItems((prev) => prev.map((i) => (i.id === id ? { ...i, saved: !i.saved } : i)));

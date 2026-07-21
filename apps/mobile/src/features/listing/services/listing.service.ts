@@ -92,13 +92,13 @@ export const ListingService = {
     return favourites.map((item) => item.listingId).filter((id): id is number => id != null);
   },
 
-  async favoriteListing(id: number): Promise<undefined> {
+  async favouriteListing(id: number): Promise<undefined> {
     await apiFetch<undefined>(`/api/listings/${id}/save`, {
       method: 'POST'
     });
   },
 
-  async unfavoriteListing(id: number): Promise<undefined> {
+  async unfavouriteListing(id: number): Promise<undefined> {
     await apiFetch<undefined>(`/api/listings/${id}/save`, {
       method: 'DELETE'
     });
