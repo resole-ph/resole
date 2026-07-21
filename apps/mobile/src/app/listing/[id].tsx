@@ -77,8 +77,8 @@ export default function ListingDetailScreen() {
       return;
     }
 
-    const canOfferNow = listing.listingMode !== 'Swap';
-    const canSwapNow  = listing.listingMode === 'Swap' || listing.listingMode === 'Both';
+    const canOfferNow = listing.isAvailable && (listing.listingMode === 'Sale' || listing.listingMode === 'Both');
+    const canSwapNow  = listing.isAvailable && (listing.listingMode === 'Swap' || listing.listingMode === 'Both');
 
     if (action === 'offer' && canOfferNow) {
       setOfferPrice(String(listing.price));
@@ -118,10 +118,10 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const canOffer      = listing.listingMode !== 'Swap';
-  const canSwap        = listing.listingMode === 'Swap' || listing.listingMode === 'Both';
+  const canOffer       = listing.isAvailable && (listing.listingMode === 'Sale' || listing.listingMode === 'Both');
+  const canSwap        = listing.isAvailable && (listing.listingMode === 'Swap' || listing.listingMode === 'Both');
   const conditionColor = CONDITION_COLORS[listing.condition];
-  const isOwnListing  = !!currentUserId && listing.seller.id === currentUserId;
+  const isOwnListing   = !!currentUserId && listing.seller.id === currentUserId;
 
   const photoUrls = [
     listing.imageUrlTop,
@@ -343,7 +343,7 @@ export default function ListingDetailScreen() {
             <Ionicons name="swap-horizontal" size={18} color="#fff" />
             <Text className="text-white font-bold text-base ml-2">Offer Swap</Text>
           </TouchableOpacity>
-        ) : (
+        ) : canOffer ? (
           <TouchableOpacity
             className="rounded-2xl py-4 items-center justify-center flex-row"
             activeOpacity={0.85}
@@ -352,6 +352,15 @@ export default function ListingDetailScreen() {
           >
             <Ionicons name="pricetag-outline" size={18} color="#fff" />
             <Text className="text-white font-bold text-base ml-2">Make Offer</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            className="rounded-2xl py-4 items-center justify-center flex-row"
+            activeOpacity={0.85}
+            style={{ backgroundColor: '#4E4D4B', ...BTN_SHADOW('#4E4D4B') }}
+          >
+            <Ionicons name="pricetag-outline" size={18} color="#fff" />
+            <Text className="text-white font-bold text-base ml-2">Unavailable</Text>
           </TouchableOpacity>
         )}
       </View>
