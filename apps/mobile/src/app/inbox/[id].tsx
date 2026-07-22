@@ -106,7 +106,7 @@ function TextBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
 }
 
 function OfferCard({
-  type, listing, swapItem, price, status, canRespond, onAccept, onDecline, time, isMe,
+  type, listing, swapItem, price, status, canRespond, onAccept, onDecline, time, isMe, disabled
 }: {
   type: 'sale' | 'swap';
   listing: Listing | null;
@@ -118,6 +118,7 @@ function OfferCard({
   onDecline: () => void;
   time: string;
   isMe: boolean;
+  disabled: boolean;
 }) {
   const isSwap = type === 'swap';
 
@@ -168,10 +169,10 @@ function OfferCard({
         {status === 'pending' ? (
           canRespond ? (
             <View className="flex-row gap-2">
-              <TouchableOpacity className="flex-1 bg-gray-100 rounded-xl py-2.5 items-center" activeOpacity={0.7} onPress={onDecline}>
+              <TouchableOpacity className="flex-1 bg-gray-100 rounded-xl py-2.5 items-center" activeOpacity={disabled ? 0.6 : 0.85} onPress={onDecline} disabled={disabled}>
                 <Text className="text-gray-600 font-semibold text-xs">Decline</Text>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 bg-blue-600 rounded-xl py-2.5 items-center" activeOpacity={0.7} onPress={onAccept}>
+              <TouchableOpacity className="flex-1 bg-blue-600 rounded-xl py-2.5 items-center" activeOpacity={disabled ? 0.6 : 0.85} onPress={onAccept} disabled={disabled}>
                 <Text className="text-white font-semibold text-xs">Accept</Text>
               </TouchableOpacity>
             </View>
@@ -195,7 +196,7 @@ function OfferCard({
   );
 }
 
-function InputBar({ onSend }: { onSend: (text: string) => void }) {
+function InputBar({ onSend, disabled }: { onSend: (text: string) => void, disabled: boolean }) {
   const [text, setText] = useState('');
   const insets = useSafeAreaInsets();
 
@@ -224,11 +225,11 @@ function InputBar({ onSend }: { onSend: (text: string) => void }) {
         </View>
         <TouchableOpacity
           className={`w-11 h-11 rounded-full items-center justify-center ${text.trim() ? 'bg-blue-600' : 'bg-gray-200'}`}
-          activeOpacity={0.7}
+          activeOpacity={!text.trim() || disabled ? 0.6 : 0.85}
           onPress={handleSend}
-          disabled={!text.trim()}
+          disabled={!text.trim() || disabled}
         >
-          <Ionicons name="arrow-up" size={20} color={text.trim() ? '#fff' : '#9CA3AF'} />
+          <Ionicons name="arrow-up" size={20} color={text.trim() && !disabled ? '#fff' : '#9CA3AF'} />
         </TouchableOpacity>
       </View>
     </View>
@@ -248,20 +249,21 @@ export default function ConversationScreen() {
   const isSystemRoute = rawId.startsWith('u');
   const numericId = Number(rawId.slice(1));
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(true);
+  const [isLoadingSend, setIsLoadingSend] = useState(false);
+  const [isLoadingOffer, setIsLoadingOffer] = useState(false);
+
   const [notFound, setNotFound] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Conversation state
   const [messages, setMessages] = useState<any[]>([]);
   const [offersById, setOffersById] = useState<Record<number, any>>({});
   const [offerExtrasById, setOfferExtrasById] = useState<Record<number, { listing: Listing | null; swapItem: Listing | null }>>({});
 
-  // System notification state
   const [notification, setNotification] = useState<any | null>(null);
 
   const loadConversation = useCallback(async () => {
-    setIsLoading(true);
+    setIsLoadingConversation(true);
     try {
       const thread = await InboxService.getConversationThread(numericId);
       setMessages(thread.messages ?? []);
@@ -288,12 +290,12 @@ export default function ConversationScreen() {
       console.error('Failed to load conversation:', error);
       setNotFound(true);
     } finally {
-      setIsLoading(false);
+      setIsLoadingConversation(false);
     }
   }, [numericId]);
 
   const loadNotification = useCallback(async () => {
-    setIsLoading(true);
+    setIsLoadingConversation(true);
     try {
       const conversations = await InboxService.getConversations();
       const item = conversations.find((m) => m.id === rawId);
@@ -307,7 +309,7 @@ export default function ConversationScreen() {
       console.error('Failed to load notification:', error);
       setNotFound(true);
     } finally {
-      setIsLoading(false);
+      setIsLoadingConversation(false);
     }
   }, [rawId, numericId]);
 
@@ -326,33 +328,42 @@ export default function ConversationScreen() {
 
   const handleSend = async (text: string) => {
     try {
+      setIsLoadingSend(true);
       const res = await InboxService.sendMessage(numericId, text);
       setMessages((prev) => [...prev, res.message]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     } catch (error) {
       console.error('Failed to send message:', error);
+    } finally {
+      setIsLoadingSend(false);
     }
   };
 
   const handleAccept = async (transactionId: number) => {
     try {
+      setIsLoadingOffer(true);
       await OfferService.acceptOffer(transactionId);
       setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: true } }));
     } catch (error) {
       console.error('Failed to accept offer:', error);
+    } finally {
+      setIsLoadingOffer(false);
     }
   };
 
   const handleDecline = async (transactionId: number) => {
     try {
+      setIsLoadingOffer(true);
       await OfferService.declineOffer(transactionId);
       setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: false } }));
     } catch (error) {
       console.error('Failed to decline offer:', error);
+    } finally {
+      setIsLoadingSend(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoadingConversation) {
     return (
       <View className="flex-1 bg-gray-50 items-center justify-center">
         <ActivityIndicator size="large" color="#2563EB" />
@@ -419,6 +430,7 @@ export default function ConversationScreen() {
                     onDecline={() => handleDecline(offerItem.id)}
                     time={new Date(msg.createdAt).toLocaleDateString()}
                     isMe={isMe}
+                    disabled={isLoadingOffer}
                   />
                 )}
               </View>
@@ -426,7 +438,10 @@ export default function ConversationScreen() {
           })}
         </ScrollView>
 
-        <InputBar onSend={handleSend} />
+        <InputBar 
+          onSend={handleSend} 
+          disabled={isLoadingSend} 
+        />
       </KeyboardAvoidingView>
     </View>
   );
