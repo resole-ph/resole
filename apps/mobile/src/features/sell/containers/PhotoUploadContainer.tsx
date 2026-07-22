@@ -12,14 +12,14 @@ import type { PhotoAngle, SellPhoto } from '../types/sell.types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'soles', 'insoles'];
+const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'sole', 'insole'];
 
 const ANGLE_LABELS: Record<PhotoAngle, string> = {
   leftSide: 'Left Side View',
   rightSide: 'Right Side View',
   top: 'Top View',
-  soles: 'Soles',
-  insoles: 'Insoles',
+  sole: 'Sole',
+  insole: 'Insole',
 };
 
 /** Max width photos are resized to before upload. Cuts file size drastically

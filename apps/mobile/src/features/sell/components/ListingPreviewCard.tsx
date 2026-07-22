@@ -1,7 +1,7 @@
 import { View, Text, Image } from 'react-native';
 import type { ListingFormData, SellPhoto, PhotoAngle } from '../types/sell.types';
 
-const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'soles', 'insoles'];
+const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'sole', 'insole'];
 
 const MODE_LABELS = { sell: 'Sell', swap: 'Swap', both: 'Sell & Swap' };
 

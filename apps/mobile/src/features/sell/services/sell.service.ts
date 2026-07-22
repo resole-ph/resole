@@ -13,12 +13,12 @@ import { apiFetch } from '@/lib/api-client';
 import { ratingToLabel } from '../utils/condition';
 
 /** Web /api/listings/photos expects singular field names; mobile uses plural angles. */
-const ANGLE_TO_FIELD: Record<PhotoAngle, 'leftSide' | 'rightSide' | 'top' | 'soles' | 'insoles'> = {
+const ANGLE_TO_FIELD: Record<PhotoAngle, 'leftSide' | 'rightSide' | 'top' | 'sole' | 'insole'> = {
   leftSide: 'leftSide',
   rightSide: 'rightSide',
   top: 'top',
-  soles: 'soles',
-  insoles: 'insoles',
+  sole: 'sole',
+  insole: 'insole',
 };
 
 /** Response key the web route returns for each field. */
@@ -26,8 +26,8 @@ const FIELD_TO_URL_KEY = {
   leftSide: 'imageUrlLeftSide',
   rightSide: 'imageUrlRightSide',
   top: 'imageUrlTop',
-  soles: 'imageUrlSole',
-  insoles: 'imageUrlInsole',
+  sole: 'imageUrlSole',
+  insole: 'imageUrlInsole',
 } as const;
 
 /** Mobile's lowercase listing mode vs. the web API's capitalized enum. */
@@ -159,8 +159,8 @@ export const sellService: SellService = {
         imageUrlLeftSide: remoteUrls.leftSide,
         imageUrlRightSide: remoteUrls.rightSide,
         imageUrlTop: remoteUrls.top,
-        imageUrlSole: remoteUrls.soles,
-        imageUrlInsole: remoteUrls.insoles,
+        imageUrlSole: remoteUrls.sole,
+        imageUrlInsole: remoteUrls.insole,
       },
     });
 
@@ -204,8 +204,8 @@ export const sellService: SellService = {
         imageUrlLeftSide: remoteUrlByAngle.leftSide,
         imageUrlRightSide: remoteUrlByAngle.rightSide,
         imageUrlTop: remoteUrlByAngle.top,
-        imageUrlSole: remoteUrlByAngle.soles,
-        imageUrlInsole: remoteUrlByAngle.insoles,
+        imageUrlSole: remoteUrlByAngle.sole,
+        imageUrlInsole: remoteUrlByAngle.insole,
       },
     });
 
@@ -231,8 +231,8 @@ export const sellService: SellService = {
     if (remoteUrlByAngle.leftSide) body.imageUrlLeftSide = remoteUrlByAngle.leftSide;
     if (remoteUrlByAngle.rightSide) body.imageUrlRightSide = remoteUrlByAngle.rightSide;
     if (remoteUrlByAngle.top) body.imageUrlTop = remoteUrlByAngle.top;
-    if (remoteUrlByAngle.soles) body.imageUrlSole = remoteUrlByAngle.soles;
-    if (remoteUrlByAngle.insoles) body.imageUrlInsole = remoteUrlByAngle.insoles;
+    if (remoteUrlByAngle.sole) body.imageUrlSole = remoteUrlByAngle.sole;
+    if (remoteUrlByAngle.insole) body.imageUrlInsole = remoteUrlByAngle.insole;
 
     await apiFetch(`/api/listings/${listingId}`, {
       method: 'PATCH',

@@ -8,16 +8,16 @@ const ANGLE_LABELS: Record<PhotoAngle, string> = {
   leftSide: 'Left Side View',
   rightSide: 'Right Side View',
   top: 'Top View',
-  soles: 'Soles',
-  insoles: 'Insoles',
+  sole: 'Sole',
+  insole: 'Insole',
 };
 
 const ANGLE_ICONS: Record<PhotoAngle, keyof typeof Ionicons.glyphMap> = {
   leftSide: 'arrow-back-circle-outline',
   rightSide: 'arrow-forward-circle-outline',
   top: 'arrow-up-circle-outline',
-  soles: 'footsteps-outline',
-  insoles: 'layers-outline',
+  sole: 'footsteps-outline',
+  insole: 'layers-outline',
 };
 
 interface PhotoUploadCardProps {
