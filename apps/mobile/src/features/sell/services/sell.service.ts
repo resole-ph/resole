@@ -13,19 +13,21 @@ import { apiFetch } from '@/lib/api-client';
 import { ratingToLabel } from '../utils/condition';
 
 /** Web /api/listings/photos expects singular field names; mobile uses plural angles. */
-const ANGLE_TO_FIELD: Record<PhotoAngle, 'top' | 'side' | 'sole' | 'insole'> = {
+const ANGLE_TO_FIELD: Record<PhotoAngle, 'left' | 'right' | 'top' | 'soles' | 'insoles'> = {
+  left: 'left',
+  right: 'right',
   top: 'top',
-  side: 'side',
-  soles: 'sole',
-  insoles: 'insole',
+  soles: 'soles',
+  insoles: 'insoles',
 };
 
 /** Response key the web route returns for each field. */
 const FIELD_TO_URL_KEY = {
+  left: 'imageUrlLeftSide',
+  right: 'imageUrlRightSide',
   top: 'imageUrlTop',
-  side: 'imageUrlSide',
-  sole: 'imageUrlSole',
-  insole: 'imageUrlInsole',
+  soles: 'imageUrlSole',
+  insoles: 'imageUrlInsole',
 } as const;
 
 /** Mobile's lowercase listing mode vs. the web API's capitalized enum. */
@@ -154,8 +156,9 @@ export const sellService: SellService = {
     const { analysis, analysisId } = await apiFetch<AnalyzeResponse>('/api/listings/analyze', {
       method: 'POST',
       body: {
+        imageUrlLeftSide: remoteUrls.left,
+        imageUrlRightSide: remoteUrls.right,
         imageUrlTop: remoteUrls.top,
-        imageUrlSide: remoteUrls.side,
         imageUrlSole: remoteUrls.soles,
         imageUrlInsole: remoteUrls.insoles,
       },
@@ -198,8 +201,9 @@ export const sellService: SellService = {
         size: form.size,
         conditionScore: form.conditionRating,
         listingMode: MODE_TO_LISTING_MODE[form.mode],
+        imageUrlLeftSide: remoteUrlByAngle.left,
+        imageUrlRightSide: remoteUrlByAngle.right,
         imageUrlTop: remoteUrlByAngle.top,
-        imageUrlSide: remoteUrlByAngle.side,
         imageUrlSole: remoteUrlByAngle.soles,
         imageUrlInsole: remoteUrlByAngle.insoles,
       },
@@ -224,8 +228,9 @@ export const sellService: SellService = {
 
     // Only send image URLs for photos that were actually re-uploaded —
     // unchanged angles keep whatever the listing already has server-side.
+    if (remoteUrlByAngle.left) body.imageUrlLeftSide = remoteUrlByAngle.left;
+    if (remoteUrlByAngle.right) body.imageUrlRightSide = remoteUrlByAngle.right;
     if (remoteUrlByAngle.top) body.imageUrlTop = remoteUrlByAngle.top;
-    if (remoteUrlByAngle.side) body.imageUrlSide = remoteUrlByAngle.side;
     if (remoteUrlByAngle.soles) body.imageUrlSole = remoteUrlByAngle.soles;
     if (remoteUrlByAngle.insoles) body.imageUrlInsole = remoteUrlByAngle.insoles;
 
