@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import PhotoUploadCard from './PhotoUploadCard';
 import type { SellPhoto, PhotoAngle } from '../types/sell.types';
 
-const PHOTO_ANGLES: PhotoAngle[] = ['left', 'right', 'top', 'soles', 'insoles'];
+const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'soles', 'insoles'];
 
 interface PhotoGridProps {
   photos: Record<PhotoAngle, SellPhoto | null>;

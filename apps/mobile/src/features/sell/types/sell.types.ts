@@ -1,4 +1,4 @@
-export type PhotoAngle = 'left' | 'right' | 'top' | 'soles' | 'insoles';
+export type PhotoAngle = 'leftSide' | 'rightSide' | 'top' | 'soles' | 'insoles';
 
 export type SellStep = 'photos' | 'aiResults' | 'editListing' | 'review' | 'confirmation';
 

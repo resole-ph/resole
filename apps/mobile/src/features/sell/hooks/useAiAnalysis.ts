@@ -3,7 +3,7 @@ import { useSellStore } from '@/store/sell';
 import type { PhotoAngle } from '../types/sell.types';
 import { sellService } from '../services/sell.service';
 
-const PHOTO_ANGLES: PhotoAngle[] = ['top', 'side', 'soles', 'insoles'];
+const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'soles', 'insoles'];
 
 export function useAiAnalysis() {
   const { photos, aiResult, setIsAnalyzing, setAnalysisError, setAiResult } = useSellStore();

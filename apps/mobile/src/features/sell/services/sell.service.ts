@@ -13,9 +13,9 @@ import { apiFetch } from '@/lib/api-client';
 import { ratingToLabel } from '../utils/condition';
 
 /** Web /api/listings/photos expects singular field names; mobile uses plural angles. */
-const ANGLE_TO_FIELD: Record<PhotoAngle, 'left' | 'right' | 'top' | 'soles' | 'insoles'> = {
-  left: 'left',
-  right: 'right',
+const ANGLE_TO_FIELD: Record<PhotoAngle, 'leftSide' | 'rightSide' | 'top' | 'soles' | 'insoles'> = {
+  leftSide: 'leftSide',
+  rightSide: 'rightSide',
   top: 'top',
   soles: 'soles',
   insoles: 'insoles',
@@ -23,8 +23,8 @@ const ANGLE_TO_FIELD: Record<PhotoAngle, 'left' | 'right' | 'top' | 'soles' | 'i
 
 /** Response key the web route returns for each field. */
 const FIELD_TO_URL_KEY = {
-  left: 'imageUrlLeftSide',
-  right: 'imageUrlRightSide',
+  leftSide: 'imageUrlLeftSide',
+  rightSide: 'imageUrlRightSide',
   top: 'imageUrlTop',
   soles: 'imageUrlSole',
   insoles: 'imageUrlInsole',
@@ -156,8 +156,8 @@ export const sellService: SellService = {
     const { analysis, analysisId } = await apiFetch<AnalyzeResponse>('/api/listings/analyze', {
       method: 'POST',
       body: {
-        imageUrlLeftSide: remoteUrls.left,
-        imageUrlRightSide: remoteUrls.right,
+        imageUrlLeftSide: remoteUrls.leftSide,
+        imageUrlRightSide: remoteUrls.rightSide,
         imageUrlTop: remoteUrls.top,
         imageUrlSole: remoteUrls.soles,
         imageUrlInsole: remoteUrls.insoles,
@@ -201,8 +201,8 @@ export const sellService: SellService = {
         size: form.size,
         conditionScore: form.conditionRating,
         listingMode: MODE_TO_LISTING_MODE[form.mode],
-        imageUrlLeftSide: remoteUrlByAngle.left,
-        imageUrlRightSide: remoteUrlByAngle.right,
+        imageUrlLeftSide: remoteUrlByAngle.leftSide,
+        imageUrlRightSide: remoteUrlByAngle.rightSide,
         imageUrlTop: remoteUrlByAngle.top,
         imageUrlSole: remoteUrlByAngle.soles,
         imageUrlInsole: remoteUrlByAngle.insoles,
@@ -228,8 +228,8 @@ export const sellService: SellService = {
 
     // Only send image URLs for photos that were actually re-uploaded —
     // unchanged angles keep whatever the listing already has server-side.
-    if (remoteUrlByAngle.left) body.imageUrlLeftSide = remoteUrlByAngle.left;
-    if (remoteUrlByAngle.right) body.imageUrlRightSide = remoteUrlByAngle.right;
+    if (remoteUrlByAngle.leftSide) body.imageUrlLeftSide = remoteUrlByAngle.leftSide;
+    if (remoteUrlByAngle.rightSide) body.imageUrlRightSide = remoteUrlByAngle.rightSide;
     if (remoteUrlByAngle.top) body.imageUrlTop = remoteUrlByAngle.top;
     if (remoteUrlByAngle.soles) body.imageUrlSole = remoteUrlByAngle.soles;
     if (remoteUrlByAngle.insoles) body.imageUrlInsole = remoteUrlByAngle.insoles;

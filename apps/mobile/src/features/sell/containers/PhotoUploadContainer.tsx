@@ -12,11 +12,11 @@ import type { PhotoAngle, SellPhoto } from '../types/sell.types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const PHOTO_ANGLES: PhotoAngle[] = ['left', 'right', 'top', 'soles', 'insoles'];
+const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'soles', 'insoles'];
 
 const ANGLE_LABELS: Record<PhotoAngle, string> = {
-  left: 'Left Side View',
-  right: 'Right Side View',
+  leftSide: 'Left Side View',
+  rightSide: 'Right Side View',
   top: 'Top View',
   soles: 'Soles',
   insoles: 'Insoles',
