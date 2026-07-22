@@ -3,7 +3,7 @@ import type { ListingFormData, SellPhoto, PhotoAngle } from '../types/sell.types
 import { usePreferencesStore } from '@/store/preferences';
 import { SIZE_SYSTEM_LABELS } from '@/features/shoe/utils/size-conversion';
 
-const PHOTO_ANGLES: PhotoAngle[] = ['top', 'side', 'soles', 'insoles'];
+const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'sole', 'insole'];
 
 const MODE_LABELS = { sell: 'Sell', swap: 'Swap', both: 'Sell & Swap' };
 
