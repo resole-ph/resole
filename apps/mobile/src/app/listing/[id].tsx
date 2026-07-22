@@ -157,7 +157,10 @@ export default function ListingDetailScreen() {
   async function handleSendOffer() {
     if (!id || isOwnListing) return;
 
-    await OfferService.createSale(id, Number(offerPrice) || 0, offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`);
+    const price = Number(offerPrice);
+    if (price <= 0 || price > 100000) return;
+
+    await OfferService.createSale(id, price || 0, offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`);
     
     setOfferSent(true);
     setTimeout(() => {
