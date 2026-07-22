@@ -8,6 +8,8 @@ import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { CharityService } from '@/features/charity/services/charity.service';
 import { Charity } from '@/features/charity/types/charity.types';
+import { usePreferencesStore } from '@/store/preferences';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -57,6 +59,7 @@ function ActiveCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   return (
     <TouchableOpacity
       className="bg-white rounded-2xl p-4 mb-3 mx-5 flex-row items-center"
@@ -73,7 +76,9 @@ function ActiveCard({
         <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
           {item.model}
         </Text>
-        <Text className="text-gray-400 text-xs mt-0.5">Size: {item.size}</Text>
+        <Text className="text-gray-400 text-xs mt-0.5">
+          Size: {item.size ? formatSize(Number(item.size), sizeSystem) : '—'}
+        </Text>
         <Text className="text-blue-600 font-bold text-sm mt-1">Price: ₱{item.price.toLocaleString()}</Text>
         <View className="flex-row items-center mt-1">
           <View className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1" />
@@ -110,6 +115,7 @@ function PendingCard({
   onRelist: () => void;
   onDonate: () => void;
 }) {
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   return (
     <View className="bg-white rounded-2xl p-4 mb-3 mx-5" style={CARD_SHADOW}>
       <View className="flex-row items-center mb-3">
@@ -122,7 +128,9 @@ function PendingCard({
           <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
             {item.model}
           </Text>
-          <Text className="text-gray-400 text-xs mt-0.5">Size: {item.size}</Text>
+          <Text className="text-gray-400 text-xs mt-0.5">
+            Size: {item.size ? formatSize(Number(item.size), sizeSystem) : '—'}
+          </Text>
           <Text className="text-blue-600 font-bold text-sm mt-1">Price: ₱{item.price.toLocaleString()}</Text>
           <View className="flex-row items-center mt-1">
             <View className="w-1.5 h-1.5 rounded-full bg-gray-300 mr-1" />

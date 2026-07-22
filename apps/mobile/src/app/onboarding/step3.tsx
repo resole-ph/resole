@@ -47,7 +47,7 @@ export default function Step3Screen() {
           </Text>
         </View>
 
-        <OnboardingProgress total={4} current={3} />
+        <OnboardingProgress total={3} current={3} />
 
         <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center mt-4 mb-3">
           The 30-Day Freshness Guarantee.

@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { FavItem } from '@/features/listing/types/listing.types';
+import { usePreferencesStore } from '@/store/preferences';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -30,6 +32,7 @@ function daysAgo(date: Date | string): number {
 }
 
 function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: number) => void }) {
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   return (
     <View className="bg-white rounded-2xl p-3 mb-3 flex-1" style={CARD_SHADOW}>
       {/* Image area */}
@@ -70,7 +73,9 @@ function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: number) => 
       <Text className="text-gray-900 font-semibold text-sm mt-0.5" numberOfLines={1}>
         {item.model}
       </Text>
-      <Text className="text-gray-400 text-xs mt-0.5">Size: {item.size}</Text>
+      <Text className="text-gray-400 text-xs mt-0.5">
+        Size: {item.size ? formatSize(Number(item.size), sizeSystem) : '—'}
+      </Text>
       <Text className="text-blue-600 font-bold text-sm mt-1">
         Price: ₱{Number(item.price ?? 0).toLocaleString()}
       </Text>

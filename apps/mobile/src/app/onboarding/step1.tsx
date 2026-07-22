@@ -46,7 +46,7 @@ export default function Step1Screen() {
           </Text>
         </View>
 
-        <OnboardingProgress total={4} current={1} />
+        <OnboardingProgress total={3} current={1} />
 
         <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center mt-4 mb-3">
           Clear out the closet.

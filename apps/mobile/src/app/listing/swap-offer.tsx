@@ -9,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { OfferService } from '@/features/offer/services/offer.service';
+import { usePreferencesStore } from '@/store/preferences';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 const CONDITION_COLORS: Record<string, string> = {
   'Like New':  '#10B981',
@@ -35,6 +37,7 @@ export default function SwapOfferScreen() {
   const [notes, setNotes]           = useState('');
   const [sent, setSent]             = useState(false);
   const [isValid, setIsValid]       = useState<boolean>(false);
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -192,7 +195,7 @@ export default function SwapOfferScreen() {
                         </View>
                         {item.size && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
-                            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>Size: {item.size}</Text>
+                            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>Size: {formatSize(Number(item.size), sizeSystem)}</Text>
                           </View>
                         )}
                       </View>
