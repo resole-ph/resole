@@ -2,7 +2,7 @@ import { useSellStore } from '@/store/sell';
 import type { SellStep } from '../types/sell.types';
 import { ratingToLabel } from '../utils/condition';
 
-const PHOTO_ANGLES = ['top', 'side', 'soles', 'insoles'] as const;
+const PHOTO_ANGLES = ['left', 'right', 'top', 'soles', 'insoles'] as const;
 
 export function useSellFlow() {
   const store = useSellStore();
