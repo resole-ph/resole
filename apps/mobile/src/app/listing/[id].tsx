@@ -150,8 +150,9 @@ export default function ListingDetailScreen() {
   const isOwnListing   = !!currentUserId && listing.seller.id === currentUserId;
 
   const photoUrls = [
+    listing.imageUrlLeftSide,
+    listing.imageUrlRightSide,
     listing.imageUrlTop,
-    listing.imageUrlSide,
     listing.imageUrlSole,
     listing.imageUrlInsole,
   ].filter((url): url is string => Boolean(url));
