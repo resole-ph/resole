@@ -1,6 +1,8 @@
 import { getConditionLabel } from '@/features/sell/utils/condition';
 import type { ShoeListing } from '@/features/shoe/types/types';
 
+export type SerializedShoeListing = ReturnType<typeof serializeShoeListing>;
+
 /** Flattens a joined shoe_listing/shoe/user row into the shape API clients expect. */
 export function serializeShoeListing(row: ShoeListing) {
   return {
