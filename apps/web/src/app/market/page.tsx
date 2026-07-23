@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ALL_SNEAKERS, SneakerItem } from "../data/sneakers";
+import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
 
 const COLORS = {
   primary: "#2563EB",
@@ -149,9 +150,11 @@ function SwapCard({ item }: { item: SneakerItem }) {
   );
 }
 
-function ListingCard({ item }: { item: SneakerItem }) {
+function ListingCard({ item }: { item: SerializedShoeListing }) {
   const [saved, setSaved] = useState(false);
   const router = useRouter();
+
+  const title = item.colorway ? `${item.model} '${item.colorway}'` : item.model;
 
   // Pick a color for condition dynamically (or green as default)
   const conditionColor = item.condition.includes("New") || item.condition.includes("Excellent") ? COLORS.green : COLORS.amber;
@@ -164,7 +167,7 @@ function ListingCard({ item }: { item: SneakerItem }) {
       onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = CARD_SHADOW; }}
     >
       <div style={{ position: "relative", aspectRatio: "1/1", background: "#F3F4F6" }}>
-        <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={item.imageUrl} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         <button onClick={(e) => { e.stopPropagation(); setSaved((s) => !s); }} style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 9999, background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <span className="material-symbols-outlined" style={{ fontSize: 13, color: saved ? COLORS.red : "#6B7280", fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
         </button>
@@ -174,7 +177,7 @@ function ListingCard({ item }: { item: SneakerItem }) {
       </div>
       <div style={{ padding: "10px 12px 12px" }}>
         <div style={{ fontSize: 10.5, color: COLORS.textFaint, fontWeight: 600, textTransform: "uppercase" }}>{item.brand}</div>
-        <div style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.textMain, margin: "2px 0 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.textMain, margin: "2px 0 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
         <div style={{ fontSize: 15.5, fontWeight: 700, color: COLORS.textMain }}>₱{item.price.toLocaleString()}</div>
       </div>
     </div>
@@ -186,10 +189,30 @@ export default function MarketPage() {
   const [sort, setSort] = useState("Latest Arrivals");
   const router = useRouter();
 
-  // Split our ALL_SNEAKERS array into the 3 sections based on flags
+  // Flash Sales & Swap Board have no DB-backed equivalent yet kaya kineep ko lang
   const flashSales = ALL_SNEAKERS.filter(item => item.isFlashSale);
   const swapBoard = ALL_SNEAKERS.filter(item => item.isSwapBoard);
-  const marketplaceListings = ALL_SNEAKERS.filter(item => !item.isFlashSale && !item.isSwapBoard);
+
+  const [marketplaceListings, setMarketplaceListings] = useState<SerializedShoeListing[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadMarketplaceListings() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/listings?section=sale-board');
+        const data = await res.json();
+        if (res.ok && data.shoeListings) {
+          setMarketplaceListings(data.shoeListings);
+        }
+      } catch (e) {
+        console.error('Failed to load marketplace listings:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMarketplaceListings();
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
@@ -251,9 +274,15 @@ export default function MarketPage() {
               </select>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
-            {marketplaceListings.map((item) => <ListingCard key={item.id} item={item} />)}
-          </div>
+          {loading ? (
+            <p style={{ fontSize: 13.5, color: COLORS.textMuted }}>Fetching marketplace listings...</p>
+          ) : marketplaceListings.length === 0 ? (
+            <p style={{ fontSize: 13.5, color: COLORS.textMuted }}>No listings found.</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
+              {marketplaceListings.map((item) => <ListingCard key={item.id} item={item} />)}
+            </div>
+          )}
         </section>
       </main>
 
