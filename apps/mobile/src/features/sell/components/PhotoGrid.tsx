@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import PhotoUploadCard from './PhotoUploadCard';
 import type { SellPhoto, PhotoAngle } from '../types/sell.types';
 
-const ANGLES: PhotoAngle[] = ['top', 'side', 'soles', 'insoles'];
+const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'sole', 'insole'];
 
 interface PhotoGridProps {
   photos: Record<PhotoAngle, SellPhoto | null>;
@@ -12,7 +12,7 @@ interface PhotoGridProps {
 export default function PhotoGrid({ photos, onPhotoPress }: PhotoGridProps) {
   return (
     <View className="flex-row flex-wrap gap-3">
-      {ANGLES.map((angle) => (
+      {PHOTO_ANGLES.map((angle) => (
         <PhotoUploadCard
           key={angle}
           angle={angle}

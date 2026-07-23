@@ -38,15 +38,16 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const top = formData.get('top') as File;
-    const side = formData.get('side') as File;
+    const leftSide = formData.get('leftSide') as File;
+    const rightSide = formData.get('rightSide') as File;
     const sole = formData.get('sole') as File;
     const insole = formData.get('insole') as File;
 
-    if (!top || !side || !sole || !insole) {
-      return NextResponse.json({ error: 'Missing one or more required photos (top, side, sole, insole)' }, { status: 400 });
+    if (!top || !leftSide || !rightSide || !sole || !insole) {
+      return NextResponse.json({ error: 'Missing one or more required photos (top, leftSide, rightSide, sole, insole)' }, { status: 400 });
     }
 
-    const files = { top, side, sole, insole };
+    const files = { top, leftSide, rightSide, sole, insole };
 
     const oversizedEntries = Object.entries(files).filter(([, file]) => file.size > MAX_PHOTO_SIZE_BYTES);
     if (oversizedEntries.length > 0) {
@@ -69,7 +70,8 @@ export async function POST(request: Request) {
 
     const urlKeys = {
       top: 'imageUrlTop',
-      side: 'imageUrlSide',
+      leftSide: 'imageUrlLeftSide',
+      rightSide: 'imageUrlRightSide',
       sole: 'imageUrlSole',
       insole: 'imageUrlInsole',
     } as const;

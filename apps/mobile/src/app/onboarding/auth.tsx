@@ -30,11 +30,31 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const resetFields = () => {
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  }
+
   const handleSubmit = async () => {
     setError(null);
+    if (email.length === 0) {
+      setError("Please enter a valid email.");
+      return;
+    }
+    if (password.length === 0) {
+      setError("Please enter a password.");
+      return;
+    }
     if (mode === 'signup') {
       if (!isStrongPassword(password)) {
         setError(PASSWORD_REQUIREMENT_MESSAGE);
+        return;
+      }
+      if (confirmPassword.length === 0) {
+        setError("Please confirm your password.");
         return;
       }
       if (password !== confirmPassword) {
@@ -56,6 +76,7 @@ export default function AuthScreen() {
       setError(e?.message ?? 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
+      resetFields();
     }
   };
 
@@ -92,7 +113,10 @@ export default function AuthScreen() {
             style={{ borderWidth: 1, borderColor: '#e0e2ec' }}
           >
             <TouchableOpacity
-              onPress={() => setMode('signup')}
+              onPress={() => {
+                setMode('signup');
+                resetFields();
+              }}
               className="flex-1 py-2 rounded-full items-center"
               style={{ backgroundColor: mode === 'signup' ? '#ffffff' : 'transparent' }}
             >
@@ -104,7 +128,10 @@ export default function AuthScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setMode('login')}
+              onPress={() => {
+                setMode('login');
+                resetFields();
+              }}
               className="flex-1 py-2 rounded-full items-center"
               style={{ backgroundColor: mode === 'login' ? '#ffffff' : 'transparent' }}
             >

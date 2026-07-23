@@ -1,7 +1,9 @@
 import { View, Text, Image } from 'react-native';
 import type { ListingFormData, SellPhoto, PhotoAngle } from '../types/sell.types';
+import { usePreferencesStore } from '@/store/preferences';
+import { SIZE_SYSTEM_LABELS } from '@/features/shoe/utils/size-conversion';
 
-const PHOTO_ANGLES: PhotoAngle[] = ['top', 'side', 'soles', 'insoles'];
+const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'sole', 'insole'];
 
 const MODE_LABELS = { sell: 'Sell', swap: 'Swap', both: 'Sell & Swap' };
 
@@ -20,6 +22,7 @@ function FieldRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function ListingPreviewCard({ photos, form }: ListingPreviewCardProps) {
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   return (
     <View
       className="rounded-2xl bg-surface-container-lowest border border-outline-variant overflow-hidden"
@@ -65,7 +68,7 @@ export default function ListingPreviewCard({ photos, form }: ListingPreviewCardP
         <FieldRow label="Brand" value={form.brand} />
         <FieldRow label="Model" value={form.model} />
         <FieldRow label="Colorway" value={form.colorway} />
-        <FieldRow label="Size" value={form.size} />
+        <FieldRow label={`Size (${SIZE_SYSTEM_LABELS[sizeSystem]})`} value={form.size} />
         <FieldRow label="Year" value={form.year} />
         <FieldRow label="Condition" value={`${form.conditionLabel} (${form.conditionRating}/10)`} />
         <FieldRow label="Price" value={`₱${parseInt(form.price || '0').toLocaleString()}`} />

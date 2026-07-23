@@ -40,19 +40,24 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const currentUser = await getAuthenticatedUser(request);
+  try {
+    const currentUser = await getAuthenticatedUser(request);
 
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const body = await request.json();
-  const newListing = await publishShoeListing(currentUser.user.id, body);
-  if (!newListing) {
-    return NextResponse.json({ error: "Failed to create new listing" }, { status: 400 });
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const body = await request.json();
+    const newListing = await publishShoeListing(currentUser.user.id, body);
+    if (!newListing) {
+      return NextResponse.json({ error: "Failed to create new listing" }, { status: 400 });
+    }
+    
+    return NextResponse.json({ 
+      listingId: newListing.id,
+      listingUrl: `/listing/${newListing.id}` 
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 401 })
   }
   
-  return NextResponse.json({ 
-    listingId: newListing.id,
-    listingUrl: `/listing/${newListing.id}` 
-  });
 }

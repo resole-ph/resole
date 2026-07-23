@@ -47,7 +47,7 @@ export default function Step2Screen() {
           </Text>
         </View>
 
-        <OnboardingProgress total={4} current={2} />
+        <OnboardingProgress total={3} current={2} />
 
         <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center mt-4 mb-3">
           Meet the AI Appraiser.

@@ -12,8 +12,9 @@ export interface Listing {
   originalPrice?: number;
   condition: 'Like New' | 'Excellent' | 'Good' | 'Fair' | 'Poor';
   imageUrl?: string;
+  imageUrlLeftSide: string;
+  imageUrlRightSide: string;
   imageUrlTop: string;
-  imageUrlSide: string;
   imageUrlSole: string;
   imageUrlInsole: string;
   conditionScore: number;
@@ -28,7 +29,7 @@ export interface Listing {
   updatedAt: Date;
   deletedAt?: Date;
   daysLeft?: number;
-  isAvailable?: boolean;
+  isAvailable: boolean;
   seller: {
     id?: string;
     name: string;

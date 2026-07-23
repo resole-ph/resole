@@ -1,27 +1,28 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PhotoUploadStep from './PhotoUploadStep';
 import AiResultsStep from './AiResultsStep';
 import EditListingStep from './EditListingStep';
 import ReviewStep from './ReviewStep';
 import ConfirmationStep from './ConfirmationStep';
-import { MOCK_AI_RESULT, MOCK_ANALYSIS_DELAY_MS, MOCK_PUBLISH_DELAY_MS, MOCK_LISTING_ID } from '../data/sell.mock';
+import {
+  uploadListingPhotos,
+  analyzeListingPhotos,
+  publishListing,
+  fetchListingById,
+  updateListing,
+  listingToEditState,
+} from '../services/sell.service';
 import type {
   SellStep,
   PhotoAngle,
   SellPhoto,
   AiAnalysisResult,
   ListingFormData,
+  UploadedPhotoUrls,
 } from '../types/sell.types';
-
-// NOTE: This wizard is currently wired to mock data (see ../data/sell.mock.ts)
-// so the flow can be reviewed end-to-end without a backend. Swap the bodies of
-// runAnalysis()/handlePublish() below for the real calls in ../services/sell.service.ts
-// once photo upload storage + AI analysis are ready to test against.
-function delay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
 
 const ANGLES: PhotoAngle[] = ['top', 'side', 'sole', 'insole'];
 const STEP_ORDER: SellStep[] = ['photos', 'results', 'editListing', 'review', 'confirmation'];
@@ -50,6 +51,9 @@ function initFormFromAiResult(ai: AiAnalysisResult): ListingFormData {
 }
 
 export default function SellWizard() {
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
+
   const [step, setStep] = useState<SellStep>('photos');
   const [photos, setPhotos] = useState<Record<PhotoAngle, SellPhoto | null>>(INITIAL_PHOTOS);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -60,6 +64,14 @@ export default function SellWizard() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedListingId, setPublishedListingId] = useState<number | string | null>(null);
 
+  // Edit flow states
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [flowMode, setFlowMode] = useState<'create' | 'edit'>('create');
+  const [editingListingId, setEditingListingId] = useState<number | null>(null);
+  const [photosDirty, setPhotosDirty] = useState(false);
+  const [uploadedPhotoUrls, setUploadedPhotoUrls] = useState<UploadedPhotoUrls | null>(null);
+
   const objectUrls = useRef<string[]>([]);
 
   useEffect(() => {
@@ -68,14 +80,65 @@ export default function SellWizard() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!editId) {
+      setFlowMode('create');
+      setEditingListingId(null);
+      setPhotosDirty(false);
+      return;
+    }
+
+    async function loadListing() {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const listing = await fetchListingById(Number(editId));
+        if (listing) {
+          const { photos: mappedPhotos, form: mappedForm } = listingToEditState(listing);
+          setPhotos(mappedPhotos);
+          setForm(mappedForm);
+          setFlowMode('edit');
+          setEditingListingId(Number(editId));
+          setPhotosDirty(false);
+        } else {
+          setLoadError('Listing not found');
+        }
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : 'Failed to load listing');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadListing();
+  }, [editId]);
+
   function handleSelectPhoto(angle: PhotoAngle, file: File) {
     const previewUrl = URL.createObjectURL(file);
     objectUrls.current.push(previewUrl);
     setPhotos((prev) => ({ ...prev, [angle]: { angle, file, previewUrl } }));
+    setPhotosDirty(true);
   }
 
   function handleRemovePhoto(angle: PhotoAngle) {
     setPhotos((prev) => ({ ...prev, [angle]: null }));
+    setPhotosDirty(true);
+  }
+
+  async function resolvePhotosToFiles(photosRecord: Record<PhotoAngle, SellPhoto | null>): Promise<Record<PhotoAngle, File>> {
+    const resolved = {} as Record<PhotoAngle, File>;
+    for (const angle of ANGLES) {
+      const photo = photosRecord[angle];
+      if (!photo) throw new Error(`Missing ${angle} photo`);
+      if (photo.file) {
+        resolved[angle] = photo.file;
+      } else {
+        const res = await fetch(photo.previewUrl);
+        const blob = await res.blob();
+        resolved[angle] = new File([blob], `${angle}.jpg`, { type: blob.type || 'image/jpeg' });
+      }
+    }
+    return resolved;
   }
 
   async function runAnalysis() {
@@ -86,8 +149,11 @@ export default function SellWizard() {
     setAnalysisError(null);
 
     try {
-      await delay(MOCK_ANALYSIS_DELAY_MS);
-      setAiResult(MOCK_AI_RESULT);
+      const resolvedFiles = await resolvePhotosToFiles(photos);
+      const uploadedUrls = await uploadListingPhotos(resolvedFiles);
+      const analysis = await analyzeListingPhotos(uploadedUrls);
+      setAiResult(analysis);
+      setUploadedPhotoUrls(uploadedUrls);
     } catch (err) {
       setAnalysisError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
@@ -111,11 +177,25 @@ export default function SellWizard() {
     setPublishError(null);
 
     try {
-      await delay(MOCK_PUBLISH_DELAY_MS);
-      setPublishedListingId(MOCK_LISTING_ID);
+      let finalUrls = uploadedPhotoUrls;
+      if (!finalUrls) {
+        finalUrls = {
+          imageUrlTop: photos.top?.previewUrl || '',
+          imageUrlSide: photos.side?.previewUrl || '',
+          imageUrlSole: photos.sole?.previewUrl || '',
+          imageUrlInsole: photos.insole?.previewUrl || '',
+        };
+      }
+
+      if (flowMode === 'edit' && editingListingId) {
+        await updateListing(editingListingId, form, finalUrls);
+      } else {
+        const result = await publishListing(form, finalUrls);
+        setPublishedListingId(result.id);
+      }
       setStep('confirmation');
     } catch (err) {
-      setPublishError(err instanceof Error ? err.message : 'Failed to publish listing');
+      setPublishError(err instanceof Error ? err.message : 'Failed to save listing');
     } finally {
       setIsPublishing(false);
     }
@@ -133,11 +213,32 @@ export default function SellWizard() {
     setIsPublishing(false);
     setPublishError(null);
     setPublishedListingId(null);
+    setPhotosDirty(false);
+    setUploadedPhotoUrls(null);
   }
 
   function goBack() {
     const idx = STEP_ORDER.indexOf(step);
     if (idx > 0) setStep(STEP_ORDER[idx - 1]);
+  }
+
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-on-surface-variant text-[14px] mt-4 font-medium">Loading listing details...</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-6">
+        <span className="material-symbols-outlined text-error text-[48px] mb-3">error</span>
+        <p className="text-error font-semibold text-[16px]">{loadError}</p>
+      </div>
+    );
   }
 
   return (
@@ -147,7 +248,9 @@ export default function SellWizard() {
           photos={photos}
           onSelect={handleSelectPhoto}
           onRemove={handleRemovePhoto}
-          onContinue={runAnalysis}
+          onContinue={flowMode === 'edit' && !photosDirty ? () => setStep('editListing') : runAnalysis}
+          flowMode={flowMode}
+          photosDirty={photosDirty}
         />
       )}
 
@@ -178,11 +281,16 @@ export default function SellWizard() {
           error={publishError}
           onBack={goBack}
           onPublish={handlePublish}
+          flowMode={flowMode}
         />
       )}
 
       {step === 'confirmation' && (
-        <ConfirmationStep listingId={publishedListingId} onListAnother={handleReset} />
+        <ConfirmationStep
+          listingId={publishedListingId}
+          onListAnother={handleReset}
+          flowMode={flowMode}
+        />
       )}
     </div>
   );

@@ -9,7 +9,28 @@ import {
     uniqueIndex
 } from 'drizzle-orm/pg-core';
 
-export const intentEnum = pgEnum('intent_enum', ['buy', 'sell', 'donate']);
+export const intentEnum = pgEnum('intent_enum', [
+  'buy', 
+  'sell', 
+  'donate'
+]);
+
+export const unitEnum = pgEnum('unit_enum', [
+  'us',
+  'uk',
+  'eu',
+  'au',
+  'mx',
+  'mm',
+  'cm',
+  'in',
+]);
+
+export const classificaitonEnum = pgEnum('classification_enum', [
+  'men',
+  'women',
+  'children'
+])
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -23,6 +44,8 @@ export const user = pgTable('user', {
   description: text('description').default('I love shoes!'),
   coins: integer('coins').default(0).notNull(),
   intent: intentEnum('intent').default('buy').notNull(),
+  unit: unitEnum('unit').default('us'),
+  classificaiton: classificaitonEnum('classification').default('men'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()

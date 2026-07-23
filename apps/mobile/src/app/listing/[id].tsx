@@ -14,6 +14,8 @@ import { ListingService } from '@/features/listing/services/listing.service';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { UserService } from '@/features/user/services/user.service';
 import { useSellStore } from '@/store/sell';
+import { usePreferencesStore } from '@/store/preferences';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 export const CONDITION_COLORS: Record<Listing['condition'], string> = {
   'Like New':  '#10B981',
@@ -31,26 +33,50 @@ const BTN_SHADOW = (color: string) => ({
   elevation: 6,
 });
 
+type ActionButtonProps = {
+  label: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  color: string;
+  onPress?: () => void;
+  disabled?: boolean;
+};
+
+const ActionButton = ({ label, icon, color, onPress, disabled }: ActionButtonProps) => (
+  <TouchableOpacity
+    className="flex-1 rounded-2xl py-4 items-center justify-center flex-row"
+    activeOpacity={disabled ? 0.6 : 1}
+    onPress={onPress}
+    disabled={disabled}
+    style={{ backgroundColor: color, ...BTN_SHADOW(color) }}
+  >
+    <Ionicons name={icon} size={18} color="#fff" />
+    <Text className="text-white font-bold text-base ml-2">{label}</Text>
+  </TouchableOpacity>
+);
+
 export default function ListingDetailScreen() {
   const { id: rawId, action } = useLocalSearchParams<{ id: string; action?: string }>();
   const id = Number(rawId);
   const insets = useSafeAreaInsets();
 
-  const [showOfferModal, setShowOfferModal] = useState(false);
-  const [offerPrice, setOfferPrice]         = useState('');
-  const [offerNote, setOfferNote]           = useState('');
-  const [offerSent, setOfferSent]           = useState(false);
+  const [showOfferModal, setShowOfferModal]       = useState(false);
+  const [offerPrice, setOfferPrice]               = useState('');
+  const [offerNote, setOfferNote]                 = useState('');
+  const [offerSent, setOfferSent]                 = useState(false);
   const [autoActionHandled, setAutoActionHandled] = useState(false);
-  const [listing, setListing]               = useState<Listing | null>(null);
-  const [similarListings, setSimilarListings] = useState<Listing[] | null>(null);
-  const [isLoading, setIsLoading]           = useState(true);
-  const [activePhoto, setActivePhoto]       = useState(0);
-  const [currentUserId, setCurrentUserId]   = useState<string | null>(null);
+  const [listing, setListing]                     = useState<Listing | null>(null);
+  const [similarListings, setSimilarListings]     = useState<Listing[] | null>(null);
+  const [isLoadingListing, setIsLoadingListing]   = useState(true);
+  const [isLoadingOffer, setIsLoadingOffer]       = useState(false);
+  const [activePhoto, setActivePhoto]             = useState(0);
+  const [currentUserId, setCurrentUserId]         = useState<string | null>(null);
+
   const resetSell = useSellStore((s) => s.reset);
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
 
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
+      setIsLoadingListing(true);
       try {
         const fetchedListing = await ListingService.getListingById(id);
         setListing(fetchedListing);
@@ -60,7 +86,7 @@ export default function ListingDetailScreen() {
           setSimilarListings(similarData);
         }
       } finally {
-        setIsLoading(false);
+        setIsLoadingListing(false);
       }
     };
 
@@ -77,8 +103,8 @@ export default function ListingDetailScreen() {
       return;
     }
 
-    const canOfferNow = listing.listingMode !== 'Swap';
-    const canSwapNow  = listing.listingMode === 'Swap' || listing.listingMode === 'Both';
+    const canOfferNow = listing.isAvailable && (listing.listingMode === 'Sale' || listing.listingMode === 'Both');
+    const canSwapNow  = listing.isAvailable && (listing.listingMode === 'Swap' || listing.listingMode === 'Both');
 
     if (action === 'offer' && canOfferNow) {
       setOfferPrice(String(listing.price));
@@ -89,7 +115,7 @@ export default function ListingDetailScreen() {
     setAutoActionHandled(true);
   }, [listing, action, currentUserId, autoActionHandled]);
 
-  if (isLoading) {
+  if (isLoadingListing) {
     return (
       <View className="flex-1 items-center justify-center bg-gray-50">
         <TouchableOpacity
@@ -118,14 +144,15 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const canOffer      = listing.listingMode !== 'Swap';
-  const canSwap        = listing.listingMode === 'Swap' || listing.listingMode === 'Both';
+  const canOffer       = listing.isAvailable && (listing.listingMode === 'Sale' || listing.listingMode === 'Both');
+  const canSwap        = listing.isAvailable && (listing.listingMode === 'Swap' || listing.listingMode === 'Both');
   const conditionColor = CONDITION_COLORS[listing.condition];
-  const isOwnListing  = !!currentUserId && listing.seller.id === currentUserId;
+  const isOwnListing   = !!currentUserId && listing.seller.id === currentUserId;
 
   const photoUrls = [
+    listing.imageUrlLeftSide,
+    listing.imageUrlRightSide,
     listing.imageUrlTop,
-    listing.imageUrlSide,
     listing.imageUrlSole,
     listing.imageUrlInsole,
   ].filter((url): url is string => Boolean(url));
@@ -141,32 +168,47 @@ export default function ListingDetailScreen() {
   }
 
   function handleSwap() {
-    if (isOwnListing) return;
-
-    router.push({
-      pathname: '/listing/swap-offer',
-      params: {
-        listingId:    listing!.id,
-        listingName:  listing!.model,
-        listingPrice: listing!.price,
-        listingImage: listing!.imageUrl,
-      },
-    });
+    setIsLoadingOffer(true);
+    
+    try {
+      if (isOwnListing) return;
+  
+      router.push({
+        pathname: '/listing/swap-offer',
+        params: {
+          listingId:    listing!.id,
+          listingName:  listing!.model,
+          listingPrice: listing!.price,
+          listingImage: listing!.imageUrl,
+        },
+      });
+    } finally {
+      setIsLoadingOffer(false);
+    }
   }
 
   async function handleSendOffer() {
-    if (!id || isOwnListing) return;
-
-    await OfferService.createSale(id, Number(offerPrice) || 0, offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`);
+    setIsLoadingOffer(true);
     
-    setOfferSent(true);
-    setTimeout(() => {
-      setOfferSent(false);
-      setShowOfferModal(false);
-      setOfferPrice('');
-      setOfferNote('');
-      router.push('/inbox' as any);
-    }, 1200);
+    try {
+      if (!id || isOwnListing) return;
+  
+      const price = Number(offerPrice);
+      if (price <= 0 || price > 100000) return;
+  
+      await OfferService.createSale(id, price || 0, offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`);
+      
+      setOfferSent(true);
+      setTimeout(() => {
+        setOfferSent(false);
+        setShowOfferModal(false);
+        setOfferPrice('');
+        setOfferNote('');
+        router.push('/inbox' as any);
+      }, 1200);
+    } finally {
+      setIsLoadingOffer(false);
+    }
   }
 
   return (
@@ -230,7 +272,11 @@ export default function ListingDetailScreen() {
           </View>
 
           <Text className="text-gray-900 text-2xl font-bold mb-1">{listing.model}</Text>
-          {listing.size && <Text className="text-gray-400 text-sm mb-4">Size: {listing.size}</Text>}
+          {listing.size && (
+            <Text className="text-gray-400 text-sm mb-4">
+              Size: {formatSize(Number(listing.size), sizeSystem)}
+            </Text>
+          )}
 
           <View className="flex-row items-center mb-6">
             <Text className="text-blue-600 text-3xl font-bold">₱{listing.price.toLocaleString()}</Text>
@@ -303,57 +349,49 @@ export default function ListingDetailScreen() {
         style={{ paddingBottom: Math.max(insets.bottom, 16), shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 10 }}
       >
         {isOwnListing ? (
-          <TouchableOpacity
-            className="rounded-2xl py-4 items-center justify-center flex-row"
-            activeOpacity={0.85}
-            onPress={handleEditListing}
-            style={{ backgroundColor: '#2563EB', ...BTN_SHADOW('#2563EB') }}
-          >
-            <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text className="text-white font-bold text-base ml-2">Edit Listing</Text>
-          </TouchableOpacity>
-        ) : canOffer && canSwap ? (
-          <View className="flex-row gap-3">
-            <TouchableOpacity
-              className="flex-1 rounded-2xl py-4 items-center justify-center flex-row"
-              activeOpacity={0.85}
-              onPress={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
-              style={{ backgroundColor: '#D97706', ...BTN_SHADOW('#D97706') }}
-            >
-              <Ionicons name="pricetag-outline" size={18} color="#fff" />
-              <Text className="text-white font-bold text-base ml-2">Make Offer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="flex-1 rounded-2xl py-4 items-center flex-row justify-center"
-              activeOpacity={0.85}
-              onPress={handleSwap}
-              style={{ backgroundColor: '#7C3AED', ...BTN_SHADOW('#7C3AED') }}
-            >
-              <Ionicons name="swap-horizontal" size={18} color="#fff" />
-              <Text className="text-white font-bold text-base ml-2">Offer Swap</Text>
-            </TouchableOpacity>
+          <View className="flex-row">
+            <ActionButton 
+              label="Edit Listing" 
+              icon="create-outline" 
+              color="#2563EB" 
+              onPress={handleEditListing} 
+            />
           </View>
-        ) : canSwap ? (
-          <TouchableOpacity
-            className="rounded-2xl py-4 items-center flex-row justify-center"
-            activeOpacity={0.85}
-            onPress={handleSwap}
-            style={{ backgroundColor: '#7C3AED', ...BTN_SHADOW('#7C3AED') }}
-          >
-            <Ionicons name="swap-horizontal" size={18} color="#fff" />
-            <Text className="text-white font-bold text-base ml-2">Offer Swap</Text>
-          </TouchableOpacity>
         ) : (
-          <TouchableOpacity
-            className="rounded-2xl py-4 items-center justify-center flex-row"
-            activeOpacity={0.85}
-            onPress={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
-            style={{ backgroundColor: '#D97706', ...BTN_SHADOW('#D97706') }}
-          >
-            <Ionicons name="pricetag-outline" size={18} color="#fff" />
-            <Text className="text-white font-bold text-base ml-2">Make Offer</Text>
-          </TouchableOpacity>
+          <View className="flex-row gap-3">
+            
+            {canOffer && (
+              <ActionButton
+                label="Make Offer"
+                icon="pricetag-outline"
+                color="#D97706"
+                onPress={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
+                disabled={isLoadingOffer}
+              />
+            )}
+
+            {canSwap && (
+              <ActionButton
+                label="Offer Swap"
+                icon="swap-horizontal"
+                color="#7C3AED"
+                onPress={handleSwap}
+                disabled={isLoadingOffer}
+              />
+            )}
+
+            {!canOffer && !canSwap && (
+              <ActionButton
+                label="Unavailable"
+                icon="pricetag-outline"
+                color="#4E4D4B"
+                disabled={true}
+              />
+            )}
+
+          </View>
         )}
+
       </View>
 
       {/* ── Make Offer modal ── */}
