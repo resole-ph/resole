@@ -10,6 +10,7 @@ export function serializeShoeListing(row: ShoeListing) {
     model: row.shoe.model,
     brand: row.shoe.brand,
     price: Number(row.value),
+    originalPrice: row.shoe?.originalPrice ? Number(row.shoe.originalPrice) : undefined, // Useful for discounts/strikethroughs
     condition: getConditionLabel(Number(row.conditionScore)),
     conditionScore: Number(row.conditionScore),
     imageUrl: row.imageUrlTop,
@@ -21,18 +22,21 @@ export function serializeShoeListing(row: ShoeListing) {
     listingMode: row.listingMode,
     isAvailable: row.isAvailable,
     isRefurbished: row.isRefurbished,
+    freeShipping: Boolean(row.freeShipping), // Mapped if available in DB
     category: row.shoe.category,
     co2Footprint: row.shoe.co2Footprint && !isNaN(Number(row.shoe.co2Footprint)) ? Number(row.shoe.co2Footprint) : null,
     description: row.description ?? undefined,
     size: String(row.size),
     colorway: row.colorway,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    deletedAt: row.deletedAt ?? undefined,
+    swapFor: row.swapFor ?? undefined, // 👈 CRITICAL for Swap Board cards!
+    createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : new Date().toISOString(),
+    deletedAt: row.deletedAt ? new Date(row.deletedAt).toISOString() : undefined,
     seller: {
       id: row.seller.id,
       name: row.seller.name,
       image: row.seller.image ?? undefined,
+      rating: row.seller.rating ? Number(row.seller.rating) : undefined, // 👈 For seller star ratings
     },
   };
 }
