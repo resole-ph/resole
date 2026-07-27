@@ -60,7 +60,7 @@ function LoadingDots() {
 
 export default function AiResultsContainer() {
   const router = useRouter();
-  const { isAnalyzing, analysisError, aiResult, initFormFromAiResult, setStep, goBack } = useSellFlow();
+  const { isAnalyzing, analysisError, aiResult, setIsAnalyzed, initFormFromAiResult, setStep, goBack } = useSellFlow();
   const slideIn = useSharedValue(40);
   const opacity = useSharedValue(0);
 
@@ -70,6 +70,7 @@ export default function AiResultsContainer() {
     if (aiResult) {
       slideIn.value = withSpring(0, { damping: 16, stiffness: 120 });
       opacity.value = withTiming(1, { duration: 300 });
+      setIsAnalyzed(true);
     }
   }, [aiResult]);
 
