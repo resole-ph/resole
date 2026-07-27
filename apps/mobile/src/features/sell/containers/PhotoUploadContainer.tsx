@@ -38,8 +38,8 @@ async function compressForUpload(uri: string): Promise<string> {
 
 export default function PhotoUploadContainer() {
   const router = useRouter();
-  const { photos, setPhoto, allPhotosUploaded, setStep, flowMode, photosDirty, setAnalysisSkipped } = useSellFlow();
-  const isEditingUnchanged = flowMode === 'edit' && !photosDirty;
+  const { photos, setPhoto, allPhotosUploaded, setStep, isAnalyzed, photosDirty, setAnalysisSkipped } = useSellFlow();
+  const isEditingUnchanged = isAnalyzed && !photosDirty;
   const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
   const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle } | null>(null);
   const [queuedAction, setQueuedAction] = useState<{ type: 'camera' | 'library'; angle: PhotoAngle } | null>(null);
@@ -198,7 +198,7 @@ export default function PhotoUploadContainer() {
             5 angles required
           </Text>
           <Text className="font-body-md text-body-md text-on-surface-variant">
-            Clear, well-lit photos get better AI valuations.
+            Ensure that the photos are clear and well-lit.
           </Text>
         </View>
 
