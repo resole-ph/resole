@@ -115,9 +115,9 @@ export default function BrowseFeed({
 
     try {
       if (wasSaved) {
-        await ListingService.unfavoriteListing(Number(listing.id));
+        await ListingService.unfavouriteListing(Number(listing.id));
       } else {
-        await ListingService.favoriteListing(Number(listing.id));
+        await ListingService.favouriteListing(Number(listing.id));
       }
     } catch (error) {
       console.error('Failed to update saved listing:', error);

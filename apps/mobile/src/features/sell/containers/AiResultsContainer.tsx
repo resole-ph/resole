@@ -96,10 +96,28 @@ export default function AiResultsContainer() {
       {isAnalyzing && <LoadingDots />}
 
       {analysisError && (
-        <View className="flex-1 items-center justify-center px-8 gap-4">
-          <MaterialIcons name="error-outline" size={48} color="#ba1a1a" />
-          <Text className="font-body-md text-body-md text-error text-center">{analysisError}</Text>
-        </View>
+        <>
+          <View className="flex-1 items-center justify-center px-8 gap-4">
+            <MaterialIcons name="error-outline" size={48} color="#ba1a1a" />
+            <Text className="font-body-md text-body-md text-error text-center">{analysisError}</Text>
+          </View>
+
+          <View className="px-4 pb-8 pt-2">
+            <TouchableOpacity
+              onPress={goBack}
+              className="bg-primary rounded-full py-4 items-center"
+              style={{
+                shadowColor: '#0054d3',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 6,
+              }}
+            >
+              <Text className="font-body-md text-body-md text-on-primary">Go Back</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       {aiResult && (
@@ -133,6 +151,22 @@ export default function AiResultsContainer() {
               }}
             >
               <Text className="font-body-md text-body-md text-on-primary">Continue</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View className="px-4 pb-8 pt-2">
+            <TouchableOpacity
+              onPress={handleContinue}
+              className="bg-primary rounded-full py-4 items-center"
+              style={{
+                shadowColor: '#6b7280',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 6,
+              }}
+            >
+              <Text className="font-body-md text-body-md text-on-primary">Go Back</Text>
             </TouchableOpacity>
           </View>
         </>
