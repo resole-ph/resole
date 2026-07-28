@@ -47,11 +47,12 @@ interface SellState {
 }
 
 const INITIAL_PHOTOS: Record<PhotoAngle, SellPhoto | null> = {
+  top: null,
   leftSide: null,
   rightSide: null,
-  top: null,
   sole: null,
-  insole: null,
+  insoleRight: null,
+  insoleLeft: null,
 };
 
 const INITIAL_STATE = {

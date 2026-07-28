@@ -12,22 +12,24 @@ import type { Listing } from '@/components/molecules/ListingCard';
 import { apiFetch } from '@/lib/api-client';
 import { ratingToLabel } from '../utils/condition';
 
-/** Web /api/listings/photos expects singular field names; mobile uses plural angles. */
-const ANGLE_TO_FIELD: Record<PhotoAngle, 'leftSide' | 'rightSide' | 'top' | 'sole' | 'insole'> = {
+/** Web /api/listings/photos expects field names; mobile uses 6 photo angles. */
+const ANGLE_TO_FIELD: Record<PhotoAngle, 'top' | 'leftSide' | 'rightSide' | 'sole' | 'insoleRight' | 'insoleLeft'> = {
+  top: 'top',
   leftSide: 'leftSide',
   rightSide: 'rightSide',
-  top: 'top',
   sole: 'sole',
-  insole: 'insole',
+  insoleRight: 'insoleRight',
+  insoleLeft: 'insoleLeft',
 };
 
 /** Response key the web route returns for each field. */
 const FIELD_TO_URL_KEY = {
+  top: 'imageUrlTop',
   leftSide: 'imageUrlLeftSide',
   rightSide: 'imageUrlRightSide',
-  top: 'imageUrlTop',
   sole: 'imageUrlSole',
-  insole: 'imageUrlInsole',
+  insoleRight: 'imageUrlInsoleRight',
+  insoleLeft: 'imageUrlInsoleLeft',
 } as const;
 
 /** Mobile's lowercase listing mode vs. the web API's capitalized enum. */
@@ -156,11 +158,12 @@ export const sellService: SellService = {
     const { analysis, analysisId } = await apiFetch<AnalyzeResponse>('/api/listings/analyze', {
       method: 'POST',
       body: {
+        imageUrlTop: remoteUrls.top,
         imageUrlLeftSide: remoteUrls.leftSide,
         imageUrlRightSide: remoteUrls.rightSide,
-        imageUrlTop: remoteUrls.top,
         imageUrlSole: remoteUrls.sole,
-        imageUrlInsole: remoteUrls.insole,
+        imageUrlInsoleRight: remoteUrls.insoleRight,
+        imageUrlInsoleLeft: remoteUrls.insoleLeft,
       },
     });
 
@@ -201,15 +204,17 @@ export const sellService: SellService = {
         size: form.size,
         conditionScore: form.conditionRating,
         listingMode: MODE_TO_LISTING_MODE[form.mode],
+        imageUrlTop: remoteUrlByAngle.top,
         imageUrlLeftSide: remoteUrlByAngle.leftSide,
         imageUrlRightSide: remoteUrlByAngle.rightSide,
-        imageUrlTop: remoteUrlByAngle.top,
         imageUrlSole: remoteUrlByAngle.sole,
-        imageUrlInsole: remoteUrlByAngle.insole,
+        imageUrlInsoleRight: remoteUrlByAngle.insoleRight,
+        imageUrlInsoleLeft: remoteUrlByAngle.insoleLeft,
+        imageUrlInsole: remoteUrlByAngle.insoleRight || remoteUrlByAngle.insoleLeft,
       },
     });
 
-    return listing
+    return listing;
   },
 
   async updateListing({ listingId, photos, form }) {
@@ -228,11 +233,12 @@ export const sellService: SellService = {
 
     // Only send image URLs for photos that were actually re-uploaded —
     // unchanged angles keep whatever the listing already has server-side.
+    if (remoteUrlByAngle.top) body.imageUrlTop = remoteUrlByAngle.top;
     if (remoteUrlByAngle.leftSide) body.imageUrlLeftSide = remoteUrlByAngle.leftSide;
     if (remoteUrlByAngle.rightSide) body.imageUrlRightSide = remoteUrlByAngle.rightSide;
-    if (remoteUrlByAngle.top) body.imageUrlTop = remoteUrlByAngle.top;
     if (remoteUrlByAngle.sole) body.imageUrlSole = remoteUrlByAngle.sole;
-    if (remoteUrlByAngle.insole) body.imageUrlInsole = remoteUrlByAngle.insole;
+    if (remoteUrlByAngle.insoleRight) body.imageUrlInsoleRight = remoteUrlByAngle.insoleRight;
+    if (remoteUrlByAngle.insoleLeft) body.imageUrlInsoleLeft = remoteUrlByAngle.insoleLeft;
 
     await apiFetch(`/api/listings/${listingId}`, {
       method: 'PATCH',

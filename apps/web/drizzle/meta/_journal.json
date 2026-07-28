@@ -134,6 +134,13 @@
       "when": 1784566856710,
       "tag": "0018_confused_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785222550820,
+      "tag": "0019_stiff_blur",
+      "breakpoints": true
     }
   ]
 }

@@ -24,9 +24,11 @@ export async function uploadListingPhotos(
 ): Promise<UploadedPhotoUrls> {
   const formData = new FormData();
   formData.append('top', photos.top);
-  formData.append('side', photos.side);
+  formData.append('leftSide', photos.leftSide);
+  formData.append('rightSide', photos.rightSide);
   formData.append('sole', photos.sole);
-  formData.append('insole', photos.insole);
+  formData.append('insoleRight', photos.insoleRight);
+  formData.append('insoleLeft', photos.insoleLeft);
 
   const response = await fetch('/api/listings/photos', {
     method: 'POST',
@@ -117,10 +119,12 @@ export function listingToEditState(listing: any): {
   form: ListingFormData;
 } {
   const photos = {
-    top: { angle: 'top', previewUrl: listing.imageUrlTop },
-    side: { angle: 'side', previewUrl: listing.imageUrlSide },
-    sole: { angle: 'sole', previewUrl: listing.imageUrlSole },
-    insole: { angle: 'insole', previewUrl: listing.imageUrlInsole },
+    top: { angle: 'top', previewUrl: listing.imageUrlTop || listing.imageUrl || '' },
+    leftSide: { angle: 'leftSide', previewUrl: listing.imageUrlLeftSide || listing.imageUrlSide || listing.imageUrl || '' },
+    rightSide: { angle: 'rightSide', previewUrl: listing.imageUrlRightSide || listing.imageUrlSide || listing.imageUrl || '' },
+    sole: { angle: 'sole', previewUrl: listing.imageUrlSole || listing.imageUrl || '' },
+    insoleRight: { angle: 'insoleRight', previewUrl: listing.imageUrlInsoleRight || listing.imageUrlInsole || listing.imageUrl || '' },
+    insoleLeft: { angle: 'insoleLeft', previewUrl: listing.imageUrlInsoleLeft || listing.imageUrlInsole || listing.imageUrl || '' },
   } as Record<PhotoAngle, SellPhoto>;
 
   const form: ListingFormData = {
