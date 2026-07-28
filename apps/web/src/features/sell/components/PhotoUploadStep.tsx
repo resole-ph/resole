@@ -4,7 +4,7 @@ import StepHeader from './StepHeader';
 import PhotoDropzone from './PhotoDropzone';
 import type { PhotoAngle, SellPhoto } from '../types/sell.types';
 
-const ANGLES: PhotoAngle[] = ['top', 'side', 'sole', 'insole'];
+const ANGLES: PhotoAngle[] = ['top', 'leftSide', 'rightSide', 'sole', 'insoleRight', 'insoleLeft'];
 
 interface PhotoUploadStepProps {
   photos: Record<PhotoAngle, SellPhoto | null>;
@@ -30,11 +30,11 @@ export default function PhotoUploadStep({
     <div>
       <StepHeader title="Upload Photos" stepLabel="Step 1 of 4" />
 
-      <p className="text-[14px] text-on-surface-variant mb-5 md:max-w-md">
-        Upload clear, well-lit photos of your shoe with bright, even lighting (top, side, sole, and insole) for the most accurate AI valuation.
+      <p className="text-[14px] text-on-surface-variant mb-5 md:max-w-xl">
+        Upload clear, well-lit photos of your shoe (6 required angles) with bright, even lighting for the most accurate AI valuation.
       </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {ANGLES.map((angle) => (
           <PhotoDropzone
             key={angle}
@@ -46,7 +46,7 @@ export default function PhotoUploadStep({
         ))}
       </div>
 
-      <div className="flex items-center gap-2 mt-5">
+      <div className="flex items-center gap-2 mt-6">
         {ANGLES.map((angle) => (
           <div
             key={angle}

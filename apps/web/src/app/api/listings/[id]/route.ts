@@ -127,8 +127,9 @@ function getEditableShoeListingFields(body: Record<string, unknown>) {
     updateData.imageUrlSole = String(body.imageUrlSole);
   }
 
-  if (body.imageUrlInsole !== undefined) {
-    updateData.imageUrlInsole = String(body.imageUrlInsole);
+  const insoleVal = body.imageUrlInsole || body.imageUrlInsoleRight || body.imageUrlInsoleLeft;
+  if (insoleVal !== undefined) {
+    updateData.imageUrlInsole = String(insoleVal);
   }
 
   return updateData;

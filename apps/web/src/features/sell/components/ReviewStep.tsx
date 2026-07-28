@@ -4,7 +4,7 @@ import StepHeader from './StepHeader';
 import type { ListingFormData, PhotoAngle, SellPhoto } from '../types/sell.types';
 import { getConditionLabel } from '../utils/condition';
 
-const ANGLES: PhotoAngle[] = ['top', 'side', 'sole', 'insole'];
+const ANGLES: PhotoAngle[] = ['top', 'leftSide', 'rightSide', 'sole', 'insoleRight', 'insoleLeft'];
 const MODE_LABELS: Record<ListingFormData['listingMode'], string> = {
   sale: 'Sell',
   swap: 'Swap',
@@ -49,7 +49,7 @@ export default function ReviewStep({
       </p>
 
       <div className="rounded-2xl bg-surface-container-lowest border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)] md:grid md:grid-cols-2 md:gap-6">
-        <div className="grid grid-cols-2 gap-2 md:gap-3 p-3 md:p-5">
+        <div className="grid grid-cols-3 gap-2 md:gap-3 p-3 md:p-5">
           {ANGLES.map((angle) => {
             const photo = photos[angle];
             return (

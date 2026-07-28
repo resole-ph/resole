@@ -5,16 +5,20 @@ import type { PhotoAngle, SellPhoto } from '../types/sell.types';
 
 const ANGLE_LABELS: Record<PhotoAngle, string> = {
   top: 'Top View',
-  side: 'Side View',
+  leftSide: 'Left Side View',
+  rightSide: 'Right Side View',
   sole: 'Sole',
-  insole: 'Insole',
+  insoleRight: 'Insole Right',
+  insoleLeft: 'Insole Left',
 };
 
 const ANGLE_ICONS: Record<PhotoAngle, string> = {
   top: 'arrow_circle_up',
-  side: 'arrow_circle_right',
+  leftSide: 'arrow_back',
+  rightSide: 'arrow_forward',
   sole: 'footprint',
-  insole: 'layers',
+  insoleRight: 'layers',
+  insoleLeft: 'layers',
 };
 
 interface PhotoDropzoneProps {

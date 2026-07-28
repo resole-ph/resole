@@ -562,7 +562,15 @@ export async function deleteUserShoeListing(userId: string, id: number) {
 
 export class InvalidShoePhotoError extends Error {}
 
-export async function analyzeShoePhotos(photoUrls: { top: string; leftSide: string; rightSide: string; sole: string; insole: string }): Promise<ShoeAnalysis> {
+export async function analyzeShoePhotos(photoUrls: {
+  top: string;
+  leftSide: string;
+  rightSide: string;
+  sole: string;
+  insoleRight?: string;
+  insoleLeft?: string;
+  insole?: string;
+}): Promise<ShoeAnalysis> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     throw new Error('Google API key is not configured');
@@ -573,7 +581,8 @@ export async function analyzeShoePhotos(photoUrls: { top: string; leftSide: stri
     leftSide: photoUrls.leftSide,
     rightSide: photoUrls.rightSide,
     sole: photoUrls.sole,
-    insole: photoUrls.insole,
+    insoleRight: photoUrls.insoleRight || photoUrls.insole || '',
+    insoleLeft: photoUrls.insoleLeft || photoUrls.insole || '',
   };
 
   const imageParts = await Promise.all(
@@ -721,7 +730,15 @@ export function calculateSuggestedPrice(baselinePrice: number, conditionScore: n
  * When no catalog baseline is found, falls back to Gemini's own estimatedPrice so a
  * suggested price is always produced.
  */
-export async function analyzeAndPriceShoe(photoUrls: { top: string; leftSide: string; rightSide: string; sole: string; insole: string }): Promise<ShoeAnalysisResult> {
+export async function analyzeAndPriceShoe(photoUrls: {
+  top: string;
+  leftSide: string;
+  rightSide: string;
+  sole: string;
+  insoleRight?: string;
+  insoleLeft?: string;
+  insole?: string;
+}): Promise<ShoeAnalysisResult> {
   const analysis = await analyzeShoePhotos(photoUrls);
 
   const { baselinePrice, matchedShoeId, similarity } = await getBaselinePriceByShoe(analysis.brand, analysis.model);
@@ -782,9 +799,13 @@ export async function publishShoeListing(userId: string, data: any) {
     imageUrlRightSide,
     imageUrlSole,
     imageUrlInsole,
+    imageUrlInsoleRight,
+    imageUrlInsoleLeft,
   } = data;
 
-  if (!brand || !model || !value || !colorway || !size || !conditionScore || !imageUrlTop || !imageUrlLeftSide || !imageUrlRightSide || !imageUrlSole || !imageUrlInsole) {
+  const resolvedInsole = imageUrlInsole || imageUrlInsoleRight || imageUrlInsoleLeft;
+
+  if (!brand || !model || !value || !colorway || !size || !conditionScore || !imageUrlTop || !imageUrlLeftSide || !imageUrlRightSide || !imageUrlSole || !resolvedInsole) {
     throw new Error('Missing required listing information');
   }
 
@@ -847,7 +868,7 @@ export async function publishShoeListing(userId: string, data: any) {
       imageUrlLeftSide,
       imageUrlRightSide,
       imageUrlSole,
-      imageUrlInsole,
+      imageUrlInsole: resolvedInsole,
       isAvailable: true,
     })
     .returning();
