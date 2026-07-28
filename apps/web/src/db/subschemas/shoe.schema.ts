@@ -91,6 +91,8 @@ export const shoeListing = pgTable('shoe_listing', {
   imageUrlRightSide: text('image_url_right_side').notNull(),
   imageUrlSole: text('image_url_sole').notNull(),
   imageUrlInsole: text('image_url_insole').notNull(),
+  imageUrlInsoleRight: text('image_url_insole_right'),
+  imageUrlInsoleLeft: text('image_url_insole_left'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()

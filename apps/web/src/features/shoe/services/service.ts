@@ -869,6 +869,8 @@ export async function publishShoeListing(userId: string, data: any) {
       imageUrlRightSide,
       imageUrlSole,
       imageUrlInsole: resolvedInsole,
+      imageUrlInsoleRight: imageUrlInsoleRight || resolvedInsole,
+      imageUrlInsoleLeft: imageUrlInsoleLeft || resolvedInsole,
       isAvailable: true,
     })
     .returning();
