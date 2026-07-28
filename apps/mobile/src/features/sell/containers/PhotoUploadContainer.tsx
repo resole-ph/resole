@@ -198,7 +198,7 @@ export default function PhotoUploadContainer() {
             5 angles required
           </Text>
           <Text className="font-body-md text-body-md text-on-surface-variant">
-            Ensure that the photos are clear and well-lit.
+            Ensure that the photos are clear and taken under good, bright lighting with minimal shadows.
           </Text>
         </View>
 

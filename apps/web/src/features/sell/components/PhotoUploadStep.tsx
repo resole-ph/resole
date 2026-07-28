@@ -31,8 +31,7 @@ export default function PhotoUploadStep({
       <StepHeader title="Upload Photos" stepLabel="Step 1 of 4" />
 
       <p className="text-[14px] text-on-surface-variant mb-5 md:max-w-md">
-        Choose four clear, well-lit photos of your shoe — top, side, sole, and insole — for the
-        most accurate AI valuation.
+        Upload clear, well-lit photos of your shoe with bright, even lighting (top, side, sole, and insole) for the most accurate AI valuation.
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
