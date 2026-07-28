@@ -1,4 +1,4 @@
-export type PhotoAngle = 'top' | 'side' | 'sole' | 'insole';
+export type PhotoAngle = 'top' | 'leftSide' | 'rightSide' | 'sole' | 'insoleRight' | 'insoleLeft';
 
 export type SellStep = 'photos' | 'results' | 'editListing' | 'review' | 'confirmation';
 
@@ -22,9 +22,13 @@ export interface AiAnalysisResult {
 
 export interface UploadedPhotoUrls {
   imageUrlTop: string;
-  imageUrlSide: string;
+  imageUrlLeftSide: string;
+  imageUrlRightSide: string;
   imageUrlSole: string;
-  imageUrlInsole: string;
+  imageUrlInsoleRight: string;
+  imageUrlInsoleLeft: string;
+  imageUrlSide?: string;
+  imageUrlInsole?: string;
 }
 
 export interface ListingFormData {

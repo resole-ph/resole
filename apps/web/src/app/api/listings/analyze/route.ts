@@ -13,10 +13,21 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { imageUrlTop, imageUrlLeftSide, imageUrlRightSide, imageUrlSole, imageUrlInsole } = body;
+    const {
+      imageUrlTop,
+      imageUrlLeftSide,
+      imageUrlRightSide,
+      imageUrlSole,
+      imageUrlInsoleRight,
+      imageUrlInsoleLeft,
+      imageUrlInsole,
+    } = body;
 
-    if (!imageUrlTop || !imageUrlLeftSide || !imageUrlRightSide || !imageUrlSole || !imageUrlInsole) {
-      return NextResponse.json({ error: 'Missing one or more photo URLs' }, { status: 400 });
+    const insoleRight = imageUrlInsoleRight || imageUrlInsole;
+    const insoleLeft = imageUrlInsoleLeft || imageUrlInsole;
+
+    if (!imageUrlTop || !imageUrlLeftSide || !imageUrlRightSide || !imageUrlSole || !insoleRight || !insoleLeft) {
+      return NextResponse.json({ error: 'Missing one or more required photo URLs' }, { status: 400 });
     }
 
     const analysis = await analyzeAndPriceShoe({
@@ -24,7 +35,8 @@ export async function POST(request: Request) {
       leftSide: imageUrlLeftSide,
       rightSide: imageUrlRightSide,
       sole: imageUrlSole,
-      insole: imageUrlInsole,
+      insoleRight,
+      insoleLeft,
     });
 
     const insertAnalysis = await createShoeAnalysis(analysis);

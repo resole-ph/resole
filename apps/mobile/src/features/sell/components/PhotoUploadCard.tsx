@@ -5,19 +5,21 @@ import type { SellPhoto, PhotoAngle } from '../types/sell.types';
 const CARD_SIZE = (Dimensions.get('window').width - 48) / 2;
 
 const ANGLE_LABELS: Record<PhotoAngle, string> = {
+  top: 'Top View',
   leftSide: 'Left Side View',
   rightSide: 'Right Side View',
-  top: 'Top View',
   sole: 'Sole',
-  insole: 'Insole',
+  insoleRight: 'Insole Right',
+  insoleLeft: 'Insole Left',
 };
 
 const ANGLE_ICONS: Record<PhotoAngle, keyof typeof Ionicons.glyphMap> = {
+  top: 'arrow-up-circle-outline',
   leftSide: 'arrow-back-circle-outline',
   rightSide: 'arrow-forward-circle-outline',
-  top: 'arrow-up-circle-outline',
   sole: 'footsteps-outline',
-  insole: 'layers-outline',
+  insoleRight: 'layers-outline',
+  insoleLeft: 'layers-outline',
 };
 
 interface PhotoUploadCardProps {

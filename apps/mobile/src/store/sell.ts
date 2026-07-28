@@ -20,6 +20,7 @@ interface SellState {
   /** True when the AI-results step was intentionally skipped (edit, photos unchanged). */
   analysisSkipped: boolean;
   isAnalyzing: boolean;
+  isAnalyzed: boolean;
   analysisError: string | null;
   aiResult: AiAnalysisResult | null;
   aiAnalysisId: number | null;
@@ -35,6 +36,7 @@ interface SellState {
   setPhoto: (angle: PhotoAngle, photo: SellPhoto) => void;
   clearPhoto: (angle: PhotoAngle) => void;
   setIsAnalyzing: (v: boolean) => void;
+  setIsAnalyzed: (v: boolean) => void;
   setAnalysisError: (err: string | null) => void;
   setAiResult: (result: AiAnalysisResult, id: number) => void;
   setAnalysisSkipped: (v: boolean) => void;
@@ -45,11 +47,12 @@ interface SellState {
 }
 
 const INITIAL_PHOTOS: Record<PhotoAngle, SellPhoto | null> = {
+  top: null,
   leftSide: null,
   rightSide: null,
-  top: null,
   sole: null,
-  insole: null,
+  insoleRight: null,
+  insoleLeft: null,
 };
 
 const INITIAL_STATE = {
@@ -60,6 +63,7 @@ const INITIAL_STATE = {
   photosDirty: false,
   analysisSkipped: false,
   isAnalyzing: false,
+  isAnalyzed: false,
   analysisError: null,
   aiResult: null,
   aiAnalysisId: null,
@@ -81,6 +85,7 @@ export const useSellStore = create<SellState>()((set) => ({
       photosDirty: false,
       analysisSkipped: false,
       isAnalyzing: false,
+      isAnalyzed: true,
       analysisError: null,
       aiResult: null,
       aiAnalysisId: null,
@@ -108,6 +113,8 @@ export const useSellStore = create<SellState>()((set) => ({
 
   setIsAnalyzing: (v) => set({ isAnalyzing: v }),
 
+  setIsAnalyzed: (v) => set({ isAnalyzed: v }),
+
   setAnalysisError: (err) => set({ analysisError: err }),
 
   setAiResult: (result, id) =>
@@ -122,5 +129,5 @@ export const useSellStore = create<SellState>()((set) => ({
 
   setPublishedListing: (result) => set({ publishedListing: result }),
 
-  reset: () => set({ ...INITIAL_STATE, photos: { ...INITIAL_PHOTOS } }),
+  reset: () => set(INITIAL_STATE),
 }));

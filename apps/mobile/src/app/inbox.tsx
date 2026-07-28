@@ -99,6 +99,8 @@ export default function InboxScreen() {
   ];
 
   const filtered = tab === 'all' ? conversations : conversations.filter((m) => m.tab === tab);
+  const clearUnread = (id: string) =>
+    setConversations((prev) => prev.map((m) => (m.id === id ? { ...m, unread: 0 } : m)));
   const totalUnread = conversations.reduce((n, m) => n + m.unread, 0);
 
   return (
@@ -142,7 +144,9 @@ export default function InboxScreen() {
             <MessageRow
               key={msg.id}
               msg={msg}
-              onPress={() => router.push({
+              onPress={() => {
+                clearUnread(msg.id);
+                router.push({
                 pathname: '/inbox/[id]',
                 params: {
                   id: msg.id,
@@ -151,7 +155,8 @@ export default function InboxScreen() {
                   avatarColor: msg.avatarColor ?? '',
                   isSystem: msg.isSystem ? '1' : '0',
                 },
-              } as any)}
+              } as any);
+              }}
             />
           ))
         )}

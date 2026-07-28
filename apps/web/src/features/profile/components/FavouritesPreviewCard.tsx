@@ -1,8 +1,43 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { ProfileClient } from '../services/profile.client';
+import type { FavouriteItem } from '../types/profile.types';
 
 const PREVIEW_COUNT = 4;
 
+function Thumb({ imageUrl, alt }: { imageUrl?: string | null; alt?: string }) {
+  return (
+    <div className="flex-1 h-20 rounded-lg bg-surface-container flex items-center justify-center text-outline overflow-hidden">
+      {imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={imageUrl} alt={alt ?? ''} className="w-full h-full object-cover" />
+      ) : (
+        <span className="material-symbols-outlined text-[22px]">image</span>
+      )}
+    </div>
+  );
+}
+
 export default function FavouritesPreviewCard() {
+  const [favourites, setFavourites] = useState<FavouriteItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await ProfileClient.getMyFavourites();
+        setFavourites(data.favourites ?? []);
+        setTotalCount(data.totalCount ?? 0);
+      } catch {
+        setFavourites([]);
+      }
+    })();
+  }, []);
+
+  const preview = favourites.slice(0, PREVIEW_COUNT);
+
   return (
     <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
       <div className="flex items-center gap-3 mb-4">
@@ -16,18 +51,22 @@ export default function FavouritesPreviewCard() {
       </div>
 
       <div className="flex gap-2 mb-3">
-        {Array.from({ length: PREVIEW_COUNT }).map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 h-20 rounded-lg bg-surface-container flex items-center justify-center text-outline"
-          >
-            <span className="material-symbols-outlined text-[22px]">image</span>
-          </div>
-        ))}
+        {preview.length === 0
+          ? Array.from({ length: PREVIEW_COUNT }).map((_, i) => <Thumb key={i} />)
+          : preview.map((item) => (
+              <Thumb
+                key={item.details.id}
+                imageUrl={item.listing.imageUrlTop}
+                alt={item.details.model}
+              />
+            ))}
       </div>
 
       <p className="text-[13px] text-on-surface-variant">
-        <span className="font-semibold text-on-surface">23 sneakers</span> saved across all brands
+        <span className="font-semibold text-on-surface">
+          {totalCount} {totalCount === 1 ? 'sneaker' : 'sneakers'}
+        </span>{' '}
+        saved across all brands
       </p>
     </div>
   );

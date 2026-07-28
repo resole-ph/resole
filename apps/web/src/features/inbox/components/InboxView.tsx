@@ -1,56 +1,160 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ConversationList from './ConversationList';
 import ConversationThread from './ConversationThread';
-import { MOCK_CONVERSATIONS, type Conversation, type ConversationTab } from '../data/inbox.mock';
-
-type ListTab = 'all' | ConversationTab;
+import { InboxClient } from '../services/inbox.client';
+import type { SerializedShoeListing } from '@/features/shoe/utils/listing-dto';
+import type {
+  InboxItem,
+  ListTab,
+  OfferExtras,
+  ThreadMessage,
+  ThreadOffer,
+} from '../types/inbox.types';
 
 export default function InboxView() {
-  const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
+  const [conversations, setConversations] = useState<InboxItem[]>([]);
+  const [isLoadingList, setIsLoadingList] = useState(true);
   const [tab, setTab] = useState<ListTab>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const totalUnread = conversations.reduce((n, c) => n + c.unread, 0);
+  const [messages, setMessages] = useState<ThreadMessage[]>([]);
+  const [offersById, setOffersById] = useState<Record<number, ThreadOffer>>({});
+  const [offerExtrasById, setOfferExtrasById] = useState<Record<number, OfferExtras>>({});
+
+  const [isLoadingThread, setIsLoadingThread] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isRespondingToOffer, setIsRespondingToOffer] = useState(false);
+  const [threadError, setThreadError] = useState<string | null>(null);
+
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
+  const totalUnread = conversations.reduce((n, c) => n + c.unread, 0);
 
-  function handleSelectConversation(id: string) {
-    setSelectedId(id);
-    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
-  }
+  useEffect(() => {
+    (async () => {
+      try {
+        const [userId, items] = await Promise.all([
+          InboxClient.getCurrentUserId(),
+          InboxClient.getInboxItems(),
+        ]);
+        setCurrentUserId(userId);
+        setConversations(items);
+      } catch (error) {
+        console.error('Failed to load inbox:', error);
+      } finally {
+        setIsLoadingList(false);
+      }
+    })();
+  }, []);
 
-  function handleSend(text: string) {
-    if (!selectedId) return;
-    const newMsg = {
-      id: String(Date.now()),
-      from: 'me' as const,
-      text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  /** Offers carry only ids — pull the listings they point at so the card can render. */
+  const loadOfferExtras = useCallback(async (offers: ThreadOffer[]) => {
+    // A thread often carries several offers on the same listing; fetch each once.
+    const cache = new Map<number, Promise<SerializedShoeListing | null>>();
+    const listingById = (id: number | null | undefined) => {
+      if (!id) return Promise.resolve(null);
+      if (!cache.has(id)) cache.set(id, InboxClient.getListing(id));
+      return cache.get(id)!;
     };
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === selectedId
-          ? { ...c, messages: [...c.messages, newMsg], preview: text, time: newMsg.time }
-          : c
-      )
+
+    const entries = await Promise.all(
+      offers.map(async (offer) => {
+        const [listing, swapItem] = await Promise.all([
+          listingById(offer.listingId),
+          listingById(offer.details?.items?.[0]?.itemId),
+        ]);
+        return [offer.id, { listing, swapItem }] as const;
+      })
     );
+
+    setOfferExtrasById(Object.fromEntries(entries));
+  }, []);
+
+  const loadThread = useCallback(
+    async (conversationId: number) => {
+      setIsLoadingThread(true);
+      setThreadError(null);
+      try {
+        const thread = await InboxClient.getConversationThread(conversationId);
+        setMessages(thread.messages ?? []);
+
+        const offers = thread.offers ?? [];
+        setOffersById(Object.fromEntries(offers.map((offer) => [offer.id, offer])));
+        await loadOfferExtras(offers);
+      } catch (error) {
+        console.error('Failed to load conversation:', error);
+        setThreadError('Conversation could not be loaded.');
+      } finally {
+        setIsLoadingThread(false);
+      }
+    },
+    [loadOfferExtras]
+  );
+
+  async function handleSelectConversation(id: string) {
+    setSelectedId(id);
+    setMessages([]);
+    setOffersById({});
+    setOfferExtrasById({});
+    setThreadError(null);
+
+    const item = conversations.find((c) => c.id === id);
+    if (!item) return;
+
+    // Threads fold in one notification per received message, so opening the row
+    // clears all of them at once.
+    if (item.notificationIds.length > 0) {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, unread: 0, notificationIds: [] } : c))
+      );
+      Promise.all(
+        item.notificationIds.map((notificationId) =>
+          InboxClient.markNotificationRead(notificationId)
+        )
+      ).catch((error) => console.error('Failed to mark notifications read:', error));
+    }
+
+    if (item.isSystem) return;
+
+    await loadThread(item.numericId);
   }
 
-  function handleOfferAction(messageId: string, status: 'accepted' | 'declined') {
-    if (!selectedId) return;
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === selectedId
-          ? {
-              ...c,
-              messages: c.messages.map((m) =>
-                m.id === messageId && m.offer ? { ...m, offer: { ...m.offer, status } } : m
-              ),
-            }
-          : c
-      )
-    );
+  async function handleSend(text: string) {
+    if (!selected || selected.isSystem) return;
+
+    setIsSending(true);
+    try {
+      const { message } = await InboxClient.sendMessage(selected.numericId, text);
+      setMessages((prev) => [...prev, message]);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === selected.id ? { ...c, preview: text, time: 'Now' } : c))
+      );
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  async function handleOfferResponse(transactionId: number, accept: boolean) {
+    setIsRespondingToOffer(true);
+    try {
+      if (accept) {
+        await InboxClient.acceptOffer(transactionId);
+      } else {
+        await InboxClient.declineOffer(transactionId);
+      }
+      setOffersById((prev) => ({
+        ...prev,
+        [transactionId]: { ...prev[transactionId], isAccepted: accept },
+      }));
+    } catch (error) {
+      console.error(`Failed to ${accept ? 'accept' : 'decline'} offer:`, error);
+    } finally {
+      setIsRespondingToOffer(false);
+    }
   }
 
   return (
@@ -69,6 +173,7 @@ export default function InboxView() {
           conversations={conversations}
           tab={tab}
           selectedId={selectedId}
+          isLoading={isLoadingList}
           onSelectTab={setTab}
           onSelectConversation={handleSelectConversation}
           className={`w-full md:w-[360px] shrink-0 ${selectedId ? 'hidden md:flex' : 'flex'}`}
@@ -76,10 +181,19 @@ export default function InboxView() {
 
         <div className={`flex-1 ${selectedId ? 'flex' : 'hidden md:flex'}`}>
           <ConversationThread
-            conversation={selected}
+            item={selected}
+            messages={messages}
+            offersById={offersById}
+            offerExtrasById={offerExtrasById}
+            currentUserId={currentUserId}
+            isLoading={isLoadingThread}
+            isSending={isSending}
+            isRespondingToOffer={isRespondingToOffer}
+            error={threadError}
             onBack={() => setSelectedId(null)}
             onSend={handleSend}
-            onOfferAction={handleOfferAction}
+            onAccept={(id) => handleOfferResponse(id, true)}
+            onDecline={(id) => handleOfferResponse(id, false)}
           />
         </div>
       </div>

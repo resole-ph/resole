@@ -6,7 +6,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { InboxService } from '@/features/inbox/services/inbox.service';
+import { InboxService, RESOLE_THREAD_ID } from '@/features/inbox/services/inbox.service';
+import { SystemUpdate } from '@/features/inbox/types/inbox.types';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { UserService } from '@/features/user/services/user.service';
@@ -65,24 +66,25 @@ function ConvoHeader({
         {!isSystem && <Text className="text-gray-400 text-xs mt-0.5">Active recently</Text>}
       </View>
 
-      {!isSystem && (
-        <View className="w-9 h-9 items-center justify-center">
-          <Ionicons name="call-outline" size={18} color="#9CA3AF" />
-        </View>
-      )}
     </View>
   );
 }
 
 // ─── Bubbles ─────────────────────────────────────────────────────────────────
 
-function SystemBubble({ text, time }: { text: string; time: string }) {
+function UpdateBubble({ update }: { update: SystemUpdate }) {
   return (
-    <View className="items-center my-2 px-8">
-      <View className="bg-gray-100 rounded-2xl px-4 py-2.5 max-w-xs">
-        <Text className="text-gray-500 text-xs text-center leading-relaxed">{text}</Text>
+    <View className="items-start my-2 px-4">
+      <View className="bg-gray-100 rounded-2xl px-4 py-3 max-w-xs flex-row items-start gap-3">
+        <View className="w-8 h-8 rounded-full bg-white items-center justify-center">
+          <Ionicons name={update.icon} size={16} color="#2563EB" />
+        </View>
+        <View className="flex-1">
+          <Text className="text-gray-900 text-sm font-semibold">{update.title}</Text>
+          <Text className="text-gray-500 text-xs leading-relaxed mt-0.5">{update.body}</Text>
+        </View>
       </View>
-      <Text className="text-gray-300 text-xs mt-1">{time}</Text>
+      <Text className="text-gray-300 text-xs mt-1 ml-1">{update.time}</Text>
     </View>
   );
 }
@@ -246,7 +248,7 @@ export default function ConversationScreen() {
   const scrollRef = useRef<ScrollView>(null);
 
   const rawId = params.id ?? '';
-  const isSystemRoute = rawId.startsWith('u');
+  const isSystemRoute = rawId === RESOLE_THREAD_ID;
   const numericId = Number(rawId.slice(1));
 
   const [isLoadingConversation, setIsLoadingConversation] = useState(true);
@@ -260,7 +262,7 @@ export default function ConversationScreen() {
   const [offersById, setOffersById] = useState<Record<number, any>>({});
   const [offerExtrasById, setOfferExtrasById] = useState<Record<number, { listing: Listing | null; swapItem: Listing | null }>>({});
 
-  const [notification, setNotification] = useState<any | null>(null);
+  const [updates, setUpdates] = useState<SystemUpdate[]>([]);
 
   const loadConversation = useCallback(async () => {
     setIsLoadingConversation(true);
@@ -294,33 +296,33 @@ export default function ConversationScreen() {
     }
   }, [numericId]);
 
-  const loadNotification = useCallback(async () => {
+  const loadUpdates = useCallback(async () => {
     setIsLoadingConversation(true);
     try {
       const conversations = await InboxService.getConversations();
-      const item = conversations.find((m) => m.id === rawId);
+      const item = conversations.find((m) => m.id === RESOLE_THREAD_ID);
       if (!item) {
         setNotFound(true);
         return;
       }
-      setNotification(item);
-      await InboxService.markNotificationRead(numericId).catch(() => {});
+      setUpdates(item.updates ?? []);
+      await InboxService.markNotificationsRead(item.notificationIds).catch(() => {});
     } catch (error) {
-      console.error('Failed to load notification:', error);
+      console.error('Failed to load updates:', error);
       setNotFound(true);
     } finally {
       setIsLoadingConversation(false);
     }
-  }, [rawId, numericId]);
+  }, []);
 
   useEffect(() => {
     UserService.getUserInfo().then((user) => setCurrentUserId(user.id)).catch(() => {});
     if (isSystemRoute) {
-      loadNotification();
+      loadUpdates();
     } else {
       loadConversation();
     }
-  }, [isSystemRoute, loadConversation, loadNotification]);
+  }, [isSystemRoute, loadConversation, loadUpdates]);
 
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100);
@@ -389,7 +391,9 @@ export default function ConversationScreen() {
       <View className="flex-1 bg-gray-50">
         <ConvoHeader sender={sender} avatarInitial={avatarInitial} avatarColor={avatarColor} isSystem onBack={() => router.back()} />
         <ScrollView contentContainerStyle={{ paddingVertical: 12 }}>
-          <SystemBubble text={notification?.preview ?? ''} time={notification?.time ?? ''} />
+          {updates.map((update) => (
+            <UpdateBubble key={update.id} update={update} />
+          ))}
         </ScrollView>
         <View className="bg-white border-t border-gray-100 py-3 items-center">
           <Text className="text-gray-400 text-xs">This is a system notification — replies are not supported</Text>

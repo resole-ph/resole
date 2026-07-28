@@ -12,14 +12,15 @@ import type { PhotoAngle, SellPhoto } from '../types/sell.types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'sole', 'insole'];
+const PHOTO_ANGLES: PhotoAngle[] = ['top', 'leftSide', 'rightSide', 'sole', 'insoleRight', 'insoleLeft'];
 
 const ANGLE_LABELS: Record<PhotoAngle, string> = {
+  top: 'Top View',
   leftSide: 'Left Side View',
   rightSide: 'Right Side View',
-  top: 'Top View',
   sole: 'Sole',
-  insole: 'Insole',
+  insoleRight: 'Insole Right',
+  insoleLeft: 'Insole Left',
 };
 
 /** Max width photos are resized to before upload. Cuts file size drastically
@@ -38,8 +39,8 @@ async function compressForUpload(uri: string): Promise<string> {
 
 export default function PhotoUploadContainer() {
   const router = useRouter();
-  const { photos, setPhoto, allPhotosUploaded, setStep, flowMode, photosDirty, setAnalysisSkipped } = useSellFlow();
-  const isEditingUnchanged = flowMode === 'edit' && !photosDirty;
+  const { photos, setPhoto, allPhotosUploaded, setStep, isAnalyzed, photosDirty, setAnalysisSkipped } = useSellFlow();
+  const isEditingUnchanged = isAnalyzed && !photosDirty;
   const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
   const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle } | null>(null);
   const [queuedAction, setQueuedAction] = useState<{ type: 'camera' | 'library'; angle: PhotoAngle } | null>(null);
@@ -195,17 +196,17 @@ export default function PhotoUploadContainer() {
       >
         <View className="mb-5">
           <Text className="font-title-md text-title-md text-on-surface mb-1">
-            5 angles required
+            6 angles required
           </Text>
           <Text className="font-body-md text-body-md text-on-surface-variant">
-            Clear, well-lit photos get better AI valuations.
+            Ensure that the photos are clear and taken under good, bright lighting with minimal shadows.
           </Text>
         </View>
 
         <PhotoGrid photos={photos} onPhotoPress={handlePhotoPress} />
 
         <View className="flex-row items-center gap-2 mt-4">
-          {[0, 1, 2, 3, 4].map((i) => (
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <View
               key={i}
               className="flex-1 h-1 rounded-full"
@@ -214,7 +215,7 @@ export default function PhotoUploadContainer() {
           ))}
         </View>
         <Text className="font-label-md text-label-md text-on-surface-variant mt-1 text-center">
-          {uploadedCount} of 5 uploaded
+          {uploadedCount} of 6 uploaded
         </Text>
       </ScrollView>
 

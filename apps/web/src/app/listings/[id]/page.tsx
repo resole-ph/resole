@@ -120,9 +120,11 @@ export default function ProductDetailPage() {
     if (!listing) return [];
     return [
       listing.imageUrlTop,
-      listing.imageUrlSide,
+      listing.imageUrlLeftSide || listing.imageUrlSide,
+      listing.imageUrlRightSide || listing.imageUrlSide,
       listing.imageUrlSole,
-      listing.imageUrlInsole,
+      listing.imageUrlInsoleRight || listing.imageUrlInsole,
+      listing.imageUrlInsoleLeft || listing.imageUrlInsole,
     ].filter(Boolean);
   }, [listing]);
 

@@ -8,12 +8,10 @@ import ReviewContainer from '@/features/sell/containers/ReviewContainer';
 import ConfirmationContainer from '@/features/sell/containers/ConfirmationContainer';
 
 export default function SellScreen() {
-  const { step, flowMode, reset } = useSellFlow();
+  const { step, reset } = useSellFlow();
 
   useEffect(() => {
-    // A leftover "editing an existing listing" session must never bleed into
-    // a fresh listing here — that would silently PATCH the wrong listing.
-    if (flowMode === 'edit') reset();
+    reset();
   }, []);
 
   return (

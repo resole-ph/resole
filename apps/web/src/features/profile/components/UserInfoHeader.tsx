@@ -1,19 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import EditProfileModal from './EditProfileModal';
-
-const STATS = [
-  { value: '14', label: 'Listings' },
-  { value: '28', label: 'Sold' },
-  { value: '6', label: 'Swaps' },
-];
+import { ProfileClient } from '../services/profile.client';
+import type { MyProfile, UserStats } from '../types/profile.types';
 
 export default function UserInfoHeader() {
-  const [name, setName] = useState('Miguel Rodriguez');
-  const [location, setLocation] = useState('Quezon City');
-  const [avatar, setAvatar] = useState<string | null>(null);
+  const [profile, setProfile] = useState<MyProfile | null>(null);
+  const [stats, setStats] = useState<UserStats | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [user, userStats] = await Promise.all([
+          ProfileClient.getMyProfile(),
+          ProfileClient.getMyStats().catch(() => null),
+        ]);
+        setProfile(user);
+        setStats(userStats);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load your profile');
+      }
+    })();
+  }, []);
+
+  const name = profile?.name ?? '';
+  const location = profile?.location ?? '';
+  const avatar = profile?.image || null;
+
+  const statItems = [
+    { value: stats?.listingCount ?? 0, label: 'Listings' },
+    { value: stats?.salesCount ?? 0, label: 'Sold' },
+    { value: stats?.swapsCount ?? 0, label: 'Swaps' },
+  ];
+
+  const handleSave = async (values: { name: string; location: string; avatar: string | null }) => {
+    try {
+      const updated = await ProfileClient.updateMyProfile({
+        name: values.name,
+        location: values.location,
+        image: values.avatar,
+      });
+      // PATCH returns the raw user row, so keep the derived fields we already have.
+      setProfile((prev) => (prev ? { ...prev, ...updated, location: values.location } : prev));
+      setIsEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save your profile');
+    }
+  };
 
   return (
     <>
@@ -36,7 +72,9 @@ export default function UserInfoHeader() {
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-[24px] leading-8 font-semibold text-on-surface">{name}</h1>
+              <h1 className="text-[24px] leading-8 font-semibold text-on-surface">
+                {name || (error ? 'Profile unavailable' : 'Loading…')}
+              </h1>
               <button
                 onClick={() => setIsEditing(true)}
                 aria-label="Edit profile"
@@ -52,17 +90,23 @@ export default function UserInfoHeader() {
               >
                 star
               </span>
-              <span className="text-[14px] font-semibold text-on-surface">4.9</span>
-              <span className="text-on-surface-variant text-[14px]">&middot; 156 reviews</span>
+              <span className="text-[14px] font-semibold text-on-surface">
+                {(profile?.overallRating ?? 0).toFixed(1)}
+              </span>
+              <span className="text-on-surface-variant text-[14px]">
+                &middot; {profile?.reviewCount ?? 0} reviews
+              </span>
             </div>
             <p className="text-[14px] text-on-surface-variant mt-0.5">
-              {location ? `${location} · Joined 2024` : 'Joined 2024'}
+              {[location, profile?.joinedYear ? `Joined ${profile.joinedYear}` : null]
+                .filter(Boolean)
+                .join(' · ')}
             </p>
           </div>
         </div>
 
         <div className="flex gap-4">
-          {STATS.map(({ value, label }) => (
+          {statItems.map(({ value, label }) => (
             <div key={label} className="bg-surface-container p-4 rounded-xl text-center min-w-[80px]">
               <p className="text-[24px] leading-8 font-bold text-on-surface">{value}</p>
               <p className="text-[14px] font-semibold text-on-surface-variant">{label}</p>
@@ -71,18 +115,15 @@ export default function UserInfoHeader() {
         </div>
       </section>
 
+      {error && <p className="text-error text-[13px] -mt-2">{error}</p>}
+
       {isEditing && (
         <EditProfileModal
           initialName={name}
           initialLocation={location}
           initialAvatar={avatar}
           onClose={() => setIsEditing(false)}
-          onSave={(values) => {
-            setName(values.name);
-            setLocation(values.location);
-            setAvatar(values.avatar);
-            setIsEditing(false);
-          }}
+          onSave={handleSave}
         />
       )}
     </>
