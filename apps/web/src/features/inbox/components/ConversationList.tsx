@@ -1,8 +1,6 @@
 'use client';
 
-import type { Conversation, ConversationTab } from '../data/inbox.mock';
-
-type ListTab = 'all' | ConversationTab;
+import type { InboxItem, ListTab } from '../types/inbox.types';
 
 const TAB_LABELS: { id: ListTab; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -11,9 +9,10 @@ const TAB_LABELS: { id: ListTab; label: string }[] = [
 ];
 
 interface ConversationListProps {
-  conversations: Conversation[];
+  conversations: InboxItem[];
   tab: ListTab;
   selectedId: string | null;
+  isLoading: boolean;
   onSelectTab: (tab: ListTab) => void;
   onSelectConversation: (id: string) => void;
   className?: string;
@@ -49,7 +48,7 @@ function ConversationRow({
   isSelected,
   onClick,
 }: {
-  convo: Conversation;
+  convo: InboxItem;
   isSelected: boolean;
   onClick: () => void;
 }) {
@@ -93,6 +92,7 @@ export default function ConversationList({
   conversations,
   tab,
   selectedId,
+  isLoading,
   onSelectTab,
   onSelectConversation,
   className,
@@ -119,7 +119,12 @@ export default function ConversationList({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center py-16">
+            <span className="material-symbols-outlined text-[32px] text-outline-variant animate-spin">progress_activity</span>
+            <p className="text-on-surface-variant text-[14px] mt-3">Loading messages…</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center py-16">
             <span className="material-symbols-outlined text-[40px] text-outline-variant">mail</span>
             <p className="text-on-surface-variant text-[14px] mt-3">No messages here</p>

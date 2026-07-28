@@ -2,6 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 
 export type MsgTab = 'all' | 'offers' | 'updates';
 
+/** One system notification, rendered as a bubble inside the Resole thread. */
+export type SystemUpdate = {
+  id: number;
+  title: string;
+  body: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  time: string;
+  isRead: boolean;
+};
 
 export type Message = {
   id: string;
@@ -14,4 +23,8 @@ export type Message = {
   unread: number;
   icon?: keyof typeof Ionicons.glyphMap;
   isSystem: boolean;
+  /** Unread notification ids folded into this row, cleared when it is opened. */
+  notificationIds: number[];
+  /** Set on the single aggregated "Resole" row — every system update, oldest first. */
+  updates?: SystemUpdate[];
 };
