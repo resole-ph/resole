@@ -1,0 +1,16 @@
+Summary
+This PR updates the Sell Wizard UI by renaming action buttons, updating the confirmation screen checkmark, and ensuring state (photos and object URLs) is properly cleared when going back from the AI results step. It also fixes the response parsing for publishing a listing.
+
+Linked Issues
+closes #none
+
+Type of Change
+- [ ] feat: New feature
+- [x] fix: Bug fix
+- [ ] docs: Documentation update
+- [ ] chore/refactor: Maintenance or code restructure
+
+Notes for Reviewers
+- **UI Updates**: Button texts changed to "Continue". Confirmation step now uses `apple_ui_checkmark.png` and no longer displays the listing ID.
+- **State Management**: Clears photos and AI results when going back from the results step in `SellWizard.tsx`.
+- **API Fix**: `publishListing` now correctly parses `listingId` from the response.
