@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { formatMessageTime } from '../services/inbox.client';
 import type {
   InboxItem,
@@ -56,7 +57,16 @@ function ThreadHeader({ convo, onBack }: { convo: InboxItem; onBack: () => void 
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-on-surface font-semibold text-[14px] truncate">{convo.sender}</p>
+        {convo.otherUserId ? (
+          <Link
+            href={`/users/${convo.otherUserId}`}
+            className="text-on-surface font-semibold text-[14px] truncate block w-fit max-w-full hover:text-primary hover:underline transition-colors"
+          >
+            {convo.sender}
+          </Link>
+        ) : (
+          <p className="text-on-surface font-semibold text-[14px] truncate">{convo.sender}</p>
+        )}
         <p className="text-on-surface-variant text-[12px] mt-0.5 truncate">{convo.subtitle}</p>
       </div>
     </div>

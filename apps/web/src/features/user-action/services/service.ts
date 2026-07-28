@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { and, eq, getTableColumns, isNull } from 'drizzle-orm';
+import { aliasedTable, and, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
 import { referal, rating, save, user, shoe, shoeListing } from '@/db/schema';
 import { 
   Referal,
@@ -399,6 +399,40 @@ export async function removeFavouriteListing(userId: string, listingId: number) 
     return true;
   } catch (error) {
     console.error("Error removing favourite listing.");
+    return null;
+  }
+}
+
+/**
+ * Reviews written *about* a user, newest first, with the reviewer attached.
+ *
+ * `getRatingByRateeId` joins `user` twice under the same name, which Postgres
+ * rejects — only the reviewer is needed here, so this aliases that one join.
+ */
+export async function getReviewsForUser(userId: string) {
+  try {
+    const rater = aliasedTable(user, 'rater');
+
+    const rows = await db
+      .select({
+        id: rating.id,
+        rating: rating.rating,
+        comment: rating.comment,
+        createdAt: rating.createdAt,
+        rater: {
+          id: rater.id,
+          name: rater.name,
+          image: rater.image,
+        },
+      })
+      .from(rating)
+      .innerJoin(rater, eq(rating.raterId, rater.id))
+      .where(and(eq(rating.rateeId, userId), isNull(rating.deletedAt)))
+      .orderBy(desc(rating.createdAt));
+
+    return rows;
+  } catch (error) {
+    console.error("Error fetching reviews for user.", error);
     return null;
   }
 }

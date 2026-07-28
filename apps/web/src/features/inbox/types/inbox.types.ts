@@ -16,6 +16,8 @@ export type InboxItem = {
   avatarColor: string;
   icon?: string;
   isSystem: boolean;
+  /** The other participant, when this row is a real thread — links to their profile. */
+  otherUserId?: string;
   subtitle: string;
   preview: string;
   time: string;

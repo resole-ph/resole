@@ -172,6 +172,7 @@ export const InboxClient = {
         avatarInitial: name.charAt(0).toUpperCase() || '?',
         avatarColor: avatarColorFor(item.user?.id ?? name),
         isSystem: false,
+        otherUserId: item.user?.id,
         subtitle: item.transaction?.type === 'swap' ? 'Swap conversation' : 'Offer conversation',
         preview: item.latestMessage?.content ?? 'No messages yet',
         time: formatListTime(timestamp),

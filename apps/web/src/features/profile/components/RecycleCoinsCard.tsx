@@ -1,6 +1,23 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { ProfileClient } from '../services/profile.client';
 
 export default function RecycleCoinsCard() {
+  const [coins, setCoins] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const stats = await ProfileClient.getMyStats();
+        setCoins(Number(stats.coinBalance ?? 0));
+      } catch {
+        setCoins(0);
+      }
+    })();
+  }, []);
+
   return (
     <div className="bg-secondary text-on-secondary p-8 rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col justify-between">
       <div>
@@ -10,7 +27,7 @@ export default function RecycleCoinsCard() {
               Available Balance
             </p>
             <h2 className="text-[40px] leading-[48px] font-bold tracking-tight mt-2">
-              1,240 Recycle Coins
+              {coins === null ? '—' : coins.toLocaleString()} Recycle Coins
             </h2>
           </div>
           <span className="material-symbols-outlined text-[48px]">eco</span>
