@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, {
   useSharedValue,
@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import SellStepHeader from '../components/SellStepHeader';
+import StepFooter from '../components/StepFooter';
 import AiResultsCard from '../components/AiResultsCard';
 import { useSellFlow } from '../hooks/useSellFlow';
 import { useAiAnalysis } from '../hooks/useAiAnalysis';
@@ -86,12 +87,7 @@ export default function AiResultsContainer() {
 
   return (
     <View className="flex-1 bg-surface">
-      <SellStepHeader
-        title="AI Results"
-        stepLabel="Step 2 of 4"
-        onBack={goBack}
-        onClose={() => router.back()}
-      />
+      <SellStepHeader title="AI Results" stepLabel="Step 2 of 4" onBack={goBack} />
 
       {isAnalyzing && <LoadingDots />}
 
@@ -102,21 +98,11 @@ export default function AiResultsContainer() {
             <Text className="font-body-md text-body-md text-error text-center">{analysisError}</Text>
           </View>
 
-          <View className="px-4 pb-8 pt-2">
-            <TouchableOpacity
-              onPress={goBack}
-              className="bg-primary rounded-full py-4 items-center"
-              style={{
-                shadowColor: '#0054d3',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.3,
-                shadowRadius: 16,
-                elevation: 6,
-              }}
-            >
-              <Text className="font-body-md text-body-md text-on-primary">Go Back</Text>
-            </TouchableOpacity>
-          </View>
+          <StepFooter
+            onCancel={() => router.back()}
+            onPrimary={goBack}
+            primaryLabel="Go Back"
+          />
         </>
       )}
 
@@ -138,37 +124,11 @@ export default function AiResultsContainer() {
             <AiResultsCard result={aiResult} />
           </Animated.ScrollView>
 
-          <View className="px-4 pb-8 pt-2">
-            <TouchableOpacity
-              onPress={handleContinue}
-              className="bg-primary rounded-full py-4 items-center"
-              style={{
-                shadowColor: '#0054d3',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.3,
-                shadowRadius: 16,
-                elevation: 6,
-              }}
-            >
-              <Text className="font-body-md text-body-md text-on-primary">Continue</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="px-4 pb-8 pt-2">
-            <TouchableOpacity
-              onPress={handleContinue}
-              className="bg-primary rounded-full py-4 items-center"
-              style={{
-                shadowColor: '#6b7280',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.3,
-                shadowRadius: 16,
-                elevation: 6,
-              }}
-            >
-              <Text className="font-body-md text-body-md text-on-primary">Go Back</Text>
-            </TouchableOpacity>
-          </View>
+          <StepFooter
+            onCancel={() => router.back()}
+            onPrimary={handleContinue}
+            primaryLabel="Next"
+          />
         </>
       )}
     </View>

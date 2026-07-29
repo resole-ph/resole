@@ -1,14 +1,27 @@
+import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useSellFlow } from '../hooks/useSellFlow';
 
+const AUTO_HOME_SECONDS = 10;
+
+/** Raw DB ids are small sequential numbers ("10", "20", ...) — not something
+ * worth showing a buyer/seller as "the" listing ID. Pad it into a proper-
+ * looking reference instead; the real id (used for navigation) is untouched. */
+function formatListingId(id: string): string {
+  const num = Number(id);
+  if (!Number.isFinite(num)) return id;
+  return `RSL-${String(num).padStart(6, '0')}`;
+}
+
 export default function ConfirmationContainer() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { publishedListing, flowMode, reset } = useSellFlow();
   const isEditing = flowMode === 'edit';
+  const [secondsLeft, setSecondsLeft] = useState(AUTO_HOME_SECONDS);
 
   function handleGoHome() {
     reset();
@@ -20,6 +33,15 @@ export default function ConfirmationContainer() {
       router.push(`/listing/${publishedListing.listingId}` as any);
     }
   }
+
+  useEffect(() => {
+    if (secondsLeft <= 0) {
+      handleGoHome();
+      return;
+    }
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [secondsLeft]);
 
   return (
     <View
@@ -58,7 +80,7 @@ export default function ConfirmationContainer() {
               Listing ID
             </Text>
             <Text className="font-body-md text-body-md text-primary text-center">
-              #{publishedListing.listingId}
+              #{formatListingId(publishedListing.listingId)}
             </Text>
           </View>
         )}
@@ -86,7 +108,9 @@ export default function ConfirmationContainer() {
           onPress={handleGoHome}
           className="rounded-full py-4 items-center border border-outline-variant"
         >
-          <Text className="font-body-md text-body-md text-on-surface-variant">Go Home</Text>
+          <Text className="font-body-md text-body-md text-on-surface-variant">
+            Go Home ({secondsLeft}s)
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

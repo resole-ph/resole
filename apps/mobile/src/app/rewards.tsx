@@ -15,6 +15,15 @@ const CARD_SHADOW = {
   elevation: 2,
 };
 
+function ComingSoon({ label }: { label: string }) {
+  return (
+    <View className="items-center justify-center py-8">
+      <Ionicons name="time-outline" size={22} color="#D1D5DB" />
+      <Text className="text-gray-400 text-sm font-medium mt-2">{label} coming soon</Text>
+    </View>
+  );
+}
+
 function HistoryRow({ tx }: { tx: CoinTx }) {
   const isPositive = tx.amount > 0;
   return (
@@ -141,7 +150,7 @@ export default function RewardsScreen() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
         {/* Balance hero */}
         <View
-          className="mx-5 mb-5 rounded-3xl p-6 overflow-hidden"
+          className="mx-5 mb-5 rounded-3xl p-6 overflow-hidden items-center"
           style={{
             backgroundColor: '#059669',
             shadowColor: '#059669',
@@ -157,41 +166,40 @@ export default function RewardsScreen() {
               Recycle Coins Balance
             </Text>
           </View>
-          <Text className="text-white text-5xl font-bold mt-1 mb-1">
-            {balance.toLocaleString()}
-          </Text>
-          <Text className="text-green-200 text-sm">
-            Earn more by donating or recycling your kicks
-          </Text>
 
-          <View className="flex-row mt-5 gap-2">
-            {[
-              { label: 'Earned', value: balanceSummary.totalCoinsEarned || 0 },
-              { label: 'Redeemed', value: balanceSummary.totalCoinsRedeemed || 0 },
-              { label: 'Vouchers Owned', value: balanceSummary.voucherCount || 0 },
-            ].map((b) => (
-              <View key={b.label} className="flex-1 rounded-2xl py-2.5 px-2 items-center" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
-                <Text className="text-white font-bold text-base">{b.value}</Text>
-                <Text className="text-green-200 text-xs mt-0.5">{b.label}</Text>
-              </View>
-            ))}
+          <View className="items-center py-6">
+            <Ionicons name="time-outline" size={26} color="#A7F3D0" />
+            <Text className="text-white font-bold text-base mt-2">Coming Soon</Text>
+            <Text className="text-green-200 text-xs text-center mt-1">
+              Balance, earned, redeemed, and vouchers owned are on their way.
+            </Text>
           </View>
         </View>
 
         {/* Redeem options */}
         <Text className="text-gray-900 font-semibold text-base px-5 mb-3">Redeem</Text>
         <View className="px-5">
-          {vouchers.map((opt) => (
-            <RedeemCard key={opt.id} option={opt} balance={balance} />
-          ))}
+          {vouchers.length > 0 ? (
+            vouchers.map((opt) => (
+              <RedeemCard key={opt.id} option={opt} balance={balance} />
+            ))
+          ) : (
+            <View className="bg-white rounded-2xl" style={CARD_SHADOW}>
+              <ComingSoon label="Vouchers" />
+            </View>
+          )}
         </View>
 
         {/* Coin history */}
         <Text className="text-gray-900 font-semibold text-base px-5 mt-4 mb-1">History</Text>
         <View className="bg-white rounded-2xl mx-5 px-4" style={CARD_SHADOW}>
-          {walletHistory.map((tx) => (
-            <HistoryRow key={tx.id} tx={tx} />
-          ))}
+          {walletHistory.length > 0 ? (
+            walletHistory.map((tx) => (
+              <HistoryRow key={tx.id} tx={tx} />
+            ))
+          ) : (
+            <ComingSoon label="History" />
+          )}
         </View>
       </ScrollView>
 

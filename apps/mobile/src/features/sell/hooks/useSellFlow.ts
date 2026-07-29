@@ -1,8 +1,24 @@
 import { useSellStore } from '@/store/sell';
-import type { SellStep } from '../types/sell.types';
+import type { AiAnalysisResult, SellStep } from '../types/sell.types';
 import { ratingToLabel } from '../utils/condition';
 
 const PHOTO_ANGLES = ['top', 'leftSide', 'rightSide', 'sole', 'insoleRight', 'insoleLeft'] as const;
+
+// Dev-only placeholder so `devAdvance` can jump straight to a later step
+// without requiring real photos or a finished AI analysis.
+const DEV_MOCK_AI_RESULT: AiAnalysisResult = {
+  brand: 'Nike',
+  model: 'Air Max 90',
+  colorway: 'White / Black',
+  size: '42',
+  year: 2022,
+  conditionLabel: 'Good',
+  conditionRating: 7,
+  suggestedPriceLow: 3400,
+  suggestedPriceHigh: 4600,
+  suggestedPrice: 4000,
+  currency: 'PHP',
+};
 
 export function useSellFlow() {
   const store = useSellStore();
@@ -52,6 +68,32 @@ export function useSellFlow() {
     if (idx > 0) store.setStep(STEP_ORDER[idx - 1]);
   }
 
+  /**
+   * DEV ONLY — advances to the next step, backfilling whatever data that step
+   * needs to render (mock AI result, form) so it can be reached without
+   * actually uploading photos or waiting on a real analysis. Remove once the
+   * flow doesn't need manual step-by-step testing anymore.
+   */
+  function devAdvance() {
+    const idx = STEP_ORDER.indexOf(store.step);
+    const next = STEP_ORDER[idx + 1];
+    if (!next) return;
+
+    if (next === 'aiResults' && !store.aiResult) {
+      store.setAiResult(DEV_MOCK_AI_RESULT, -1);
+    }
+    if (next === 'editListing' && !store.form) {
+      initFormFromAiResult();
+    }
+    if (next === 'confirmation' && !store.publishedListing) {
+      store.setPublishedListing({ listingId: 'DEV-0000', listingUrl: '' });
+    }
+
+    store.setStep(next);
+  }
+
+  const isLastStep = STEP_ORDER.indexOf(store.step) === STEP_ORDER.length - 1;
+
   return {
     ...store,
     allPhotosUploaded,
@@ -59,5 +101,7 @@ export function useSellFlow() {
     priceAllowedRange,
     ratingToLabel,
     goBack,
+    devAdvance,
+    isLastStep,
   };
 }

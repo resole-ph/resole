@@ -104,9 +104,18 @@ export const ListingService = {
     });
   },
 
+  /** Permanent — the backend records this as a deletion and blocks re-listing afterward. */
   async deleteListing(id: number): Promise<undefined> {
     await apiFetch<undefined>(`/api/listings/${id}`, {
       method: 'DELETE'
+    });
+  },
+
+  /** Reversible — takes it off the market without the backend treating it as deleted, so it can still be re-listed. */
+  async archiveListing(id: number): Promise<undefined> {
+    await apiFetch<undefined>(`/api/listings/${id}`, {
+      method: 'PATCH',
+      body: { isAvailable: false },
     });
   },
 

@@ -4,13 +4,13 @@ import { Redirect, useRouter } from 'expo-router';
 import BottomNav from '@/components/organisms/BottomNav';
 import Header from '@/components/organisms/Header';
 import SearchBar from '@/components/organisms/SearchBar';
-import FavoritesToggle from '@/components/organisms/FavoritesToggle';
 import HeroBanner from '@/components/organisms/HeroBanner';
-import CategoriesRow from '@/components/organisms/CategoriesRow';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import CharitiesSection from '@/components/organisms/CharitiesSection';
 import { useOnboardingStore } from '@/store/onboarding';
 import { UserService } from '@/features/user/services/user.service';
+import { ListingService } from '@/features/listing/services/listing.service';
+import { Listing } from '@/components/molecules/ListingCard';
 
 export default function HomeScreen() {
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
@@ -21,8 +21,7 @@ export default function HomeScreen() {
   );
   const [user, setUser] = useState<any>({ name: 'Resoler' });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [myListings, setMyListings] = useState<Listing[]>([]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -51,6 +50,27 @@ export default function HomeScreen() {
     getUser();
   }, [hydrated]);
 
+  useEffect(() => {
+    if (!hydrated) return;
+
+    ListingService.getUserListings()
+      .then((data) => setMyListings(Array.isArray(data) ? data : []))
+      .catch((error) => {
+        console.error('Failed to load your listings:', error);
+        setMyListings([]);
+      });
+  }, [hydrated]);
+
+  const filteredMyListings = useMemo(() => {
+    if (!searchQuery) return myListings;
+    const q = searchQuery.toLowerCase();
+    return myListings.filter(
+      (listing) =>
+        listing.model?.toLowerCase().includes(q) ||
+        listing.brand?.toLowerCase().includes(q)
+    );
+  }, [myListings, searchQuery]);
+
   if (!hydrated) return null;
 
   if (!hasSeenOnboarding) {
@@ -76,23 +96,29 @@ export default function HomeScreen() {
         </TouchableOpacity>
         <SearchBar onSearch={setSearchQuery} />
         <HeroBanner onPress={() => router.push('/sell' as any)} />
-        <CategoriesRow onBrandPress={setSelectedBrand} />
         <BrowseFeed
-          title={favoritesOnly ? 'Your Favorites' : searchQuery ? `Results for "${searchQuery}"` : 'Listings'}
-          subtitle={favoritesOnly ? 'Listings you\'ve saved' : selectedBrand ? `Filtered by ${selectedBrand}` : 'Kickstart your day'}
-          brand={selectedBrand}
+          title="Your Listings"
+          subtitle="Shoes you've put up for sale or swap"
+          listings={filteredMyListings}
+          onViewAll={() => router.push('/profile/listings' as any)}
+        />
+        <BrowseFeed
+          title="Your Favorites"
+          subtitle="Listings you've saved"
+          favoritesOnly
           search={searchQuery}
-          favoritesOnly={favoritesOnly}
-          onViewAll={() => router.push('/market' as any)}
-          headerRight={
-            <FavoritesToggle
-              compact
-              active={favoritesOnly}
-              onToggle={() => setFavoritesOnly((prev) => !prev)}
-            />
-          }
+          onViewAll={() => router.push('/profile/favourites' as any)}
         />
         <CharitiesSection />
+        <HeroBanner
+          tag="LIMITED OFFER"
+          title={"Claim your Free\nShipping Voucher"}
+          subtitle="Valid for Metro Manila deliveries"
+          ctaLabel="Claim Now"
+          ctaVariant="pill"
+          rightIcon="car-outline"
+          onPress={() => router.push('/rewards' as any)}
+        />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
     </View>

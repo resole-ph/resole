@@ -2,13 +2,33 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingVi
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SellStepHeader from '../components/SellStepHeader';
-import ConditionSlider from '../components/ConditionSlider';
+import StepFooter from '../components/StepFooter';
+import ConditionSlider, { getConditionTone } from '../components/ConditionSlider';
 import PriceInput from '../components/PriceInput';
+import DropdownField from '../components/DropdownField';
+import SizeField from '../components/SizeField';
 import { useSellFlow } from '../hooks/useSellFlow';
 import type { ListingMode } from '../types/sell.types';
 import { validateListingForm } from '../utils/validation';
-import { usePreferencesStore } from '@/store/preferences';
-import { SIZE_SYSTEM_LABELS } from '@/features/shoe/utils/size-conversion';
+
+const COLORWAY_OPTIONS = [
+  'White',
+  'Black',
+  'White/Black',
+  'Black/White',
+  'Grey',
+  'Red',
+  'Blue',
+  'Navy',
+  'Green',
+  'Brown',
+  'Beige',
+  'Pink',
+  'Yellow',
+  'Orange',
+  'Purple',
+  'Multi-Color',
+];
 
 function listingModeDescription(mode: ListingMode) {
   switch (mode) {
@@ -71,12 +91,12 @@ function StyledInput({
 export default function EditListingContainer() {
   const router = useRouter();
   const { form, aiResult, updateFormField, priceAllowedRange, ratingToLabel, setStep, goBack } = useSellFlow();
-  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
 
   if (!form) return null;
 
   const priceRange = priceAllowedRange();
   const aiConditionRating = aiResult?.conditionRating ?? form.conditionRating;
+  const conditionTone = getConditionTone(form.conditionRating, aiConditionRating, 1, 10);
   const errors = validateListingForm(form);
   const canContinue = Object.keys(errors).length === 0;
 
@@ -90,12 +110,7 @@ export default function EditListingContainer() {
       className="flex-1 bg-surface"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <SellStepHeader
-        title="Edit Listing"
-        stepLabel="Step 3 of 4"
-        onBack={goBack}
-        onClose={() => router.back()}
-      />
+      <SellStepHeader title="Edit Listing" stepLabel="Step 3 of 4" onBack={goBack} />
 
       <ScrollView
         className="flex-1"
@@ -128,42 +143,39 @@ export default function EditListingContainer() {
               placeholder="Model"
               error={errors.model}
             />
-            <StyledInput
+            <DropdownField
               value={form.colorway}
-              onChangeText={(v) => updateFormField('colorway', v)}
+              options={COLORWAY_OPTIONS}
+              onSelect={(v) => updateFormField('colorway', v)}
               placeholder="Colorway"
+              title="Select a colorway"
               error={errors.colorway}
             />
-            <View className="flex-row gap-2">
-              <View className="flex-1">
-                <Text className="font-label-md text-label-md text-on-surface-variant mb-1">
-                  Size · {SIZE_SYSTEM_LABELS[sizeSystem]}
-                </Text>
-                <StyledInput
-                  value={form.size}
-                  onChangeText={(v) => updateFormField('size', v.replace(/[^0-9.]/g, ''))}
-                  placeholder="e.g. 10"
-                  keyboardType="numeric"
-                  error={errors.size}
-                />
-              </View>
-              <View className="flex-1">
-                <StyledInput
-                  value={form.year}
-                  onChangeText={(v) => updateFormField('year', v.replace(/[^0-9]/g, ''))}
-                  placeholder="Year"
-                  keyboardType="numeric"
-                  error={errors.year}
-                />
-              </View>
-            </View>
+            <SizeField
+              value={form.size}
+              onChange={(v) => updateFormField('size', v)}
+              error={errors.size}
+            />
+            <StyledInput
+              value={form.year}
+              onChangeText={(v) => updateFormField('year', v.replace(/[^0-9]/g, ''))}
+              placeholder="Year"
+              keyboardType="numeric"
+              error={errors.year}
+            />
           </View>
         </View>
 
-        {/* Condition */}
+        {/* Condition — the whole card is tinted by how the rating compares to
+            the AI's estimate, so the feedback reads at a glance, not just from
+            the number/label. Kept subtle (low-alpha wash + border) so it stays
+            a hint, not an error state. */}
         <View
-          className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-4 mb-4"
+          className="rounded-2xl p-4 mb-4"
           style={{
+            backgroundColor: `${conditionTone.color}12`,
+            borderWidth: 1.5,
+            borderColor: `${conditionTone.color}45`,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.04,
@@ -171,11 +183,33 @@ export default function EditListingContainer() {
             elevation: 2,
           }}
         >
-          <View className="flex-row items-center justify-between mb-3">
-            <SectionLabel>Condition</SectionLabel>
-            <View className="bg-secondary-container rounded-full px-3 py-0.5">
-              <Text className="font-label-md text-label-md text-primary">{form.conditionLabel}</Text>
+          <SectionLabel>Condition</SectionLabel>
+          <View className="items-center mb-5">
+            <View
+              style={{
+                width: 116,
+                height: 116,
+                borderRadius: 58,
+                borderWidth: 6,
+                borderColor: conditionTone.color,
+                backgroundColor: `${conditionTone.color}14`,
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: conditionTone.color,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 10,
+                elevation: 4,
+              }}
+            >
+              <Text style={{ fontSize: 30, fontWeight: '800', color: conditionTone.color, lineHeight: 34 }}>
+                {form.conditionRating}
+                <Text style={{ fontSize: 15, fontWeight: '700' }}>/10</Text>
+              </Text>
             </View>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: conditionTone.color, marginTop: 10 }}>
+              {form.conditionLabel}
+            </Text>
           </View>
           <ConditionSlider
             value={form.conditionRating}
@@ -297,29 +331,14 @@ export default function EditListingContainer() {
         </View>
       </ScrollView>
 
-      {/* CTA */}
-      <View className="px-4 pb-8 pt-2">
-        {!canContinue && (
-          <Text className="font-label-md text-label-md text-error text-center mb-2">
-            {Object.values(errors)[0]} Please fix the highlighted fields to continue.
-          </Text>
-        )}
-        <TouchableOpacity
-          onPress={() => canContinue && setStep('review')}
-          disabled={!canContinue}
-          className="bg-primary rounded-full py-4 items-center"
-          style={{
-            opacity: canContinue ? 1 : 0.4,
-            shadowColor: '#0054d3',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
-            elevation: 6,
-          }}
-        >
-          <Text className="font-body-md text-body-md text-on-primary">Review Listing</Text>
-        </TouchableOpacity>
-      </View>
+      <StepFooter
+        onCancel={() => router.back()}
+        onPrimary={() => canContinue && setStep('review')}
+        primaryLabel="Next"
+        primaryDisabled={!canContinue}
+        helperText={!canContinue ? `${Object.values(errors)[0]} Please fix the highlighted fields to continue.` : undefined}
+        helperTextError
+      />
     </KeyboardAvoidingView>
   );
 }

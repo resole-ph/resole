@@ -34,11 +34,6 @@ const SWAPS: Transaction[] = [
   { id: 'w2', item: 'NB 550 → Panda Dunk',       counterpart: 'Swapped with: @lramos', date: 'Apr 30, 2026', amount: '+₱2,000',   status: 'completed', color: '#FEF3C7' },
 ];
 
-const DONATIONS: Transaction[] = [
-  { id: 'd1', item: 'Vans Old Skool',     counterpart: 'Caritas Manila', date: 'May 22, 2026', amount: '+120 coins', status: 'donated', color: '#D1FAE5' },
-  { id: 'd2', item: 'Converse Chuck 70',  counterpart: 'Gawad Kalinga',  date: 'Apr 18, 2026', amount: '+80 coins',  status: 'donated', color: '#FEF3C7' },
-];
-
 const STATUS_STYLES: Record<Transaction['status'], { bg: string; text: string; label: string }> = {
   completed: { bg: '#F0FDF4', text: '#16A34A', label: 'Completed' },
   pending:   { bg: '#FFFBEB', text: '#D97706', label: 'Pending' },
@@ -80,7 +75,7 @@ function TxCard({ tx }: { tx: Transaction }) {
 export default function TransactionsScreen() {
   const [tab, setTab] = useState<TxTab>('sales');
 
-  const DATA: Record<TxTab, Transaction[]> = { sales: SALES, swaps: SWAPS, donations: DONATIONS };
+  const DATA: Record<TxTab, Transaction[]> = { sales: SALES, swaps: SWAPS, donations: [] };
   const currentData = DATA[tab];
 
   return (
@@ -109,15 +104,24 @@ export default function TransactionsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-        {currentData.length === 0 && (
+        {tab === 'donations' ? (
           <View className="items-center py-20">
-            <Ionicons name="receipt-outline" size={48} color="#D1D5DB" />
-            <Text className="text-gray-400 text-sm mt-3">No {tab} yet</Text>
+            <Ionicons name="heart-outline" size={48} color="#D1D5DB" />
+            <Text className="text-gray-400 text-sm font-medium mt-3">Donations coming soon</Text>
           </View>
+        ) : (
+          <>
+            {currentData.length === 0 && (
+              <View className="items-center py-20">
+                <Ionicons name="receipt-outline" size={48} color="#D1D5DB" />
+                <Text className="text-gray-400 text-sm mt-3">No {tab} yet</Text>
+              </View>
+            )}
+            {currentData.map((tx) => (
+              <TxCard key={tx.id} tx={tx} />
+            ))}
+          </>
         )}
-        {currentData.map((tx) => (
-          <TxCard key={tx.id} tx={tx} />
-        ))}
       </ScrollView>
     </View>
   );

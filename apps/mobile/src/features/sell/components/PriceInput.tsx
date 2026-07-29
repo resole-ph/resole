@@ -9,9 +9,23 @@ interface PriceInputProps {
   error?: string;
 }
 
+/** Digits plus a single decimal point, capped at 2 decimal places. */
+function sanitizePriceInput(raw: string): string {
+  let v = raw.replace(/[^0-9.]/g, '');
+  const firstDot = v.indexOf('.');
+  if (firstDot === -1) return v;
+  const intPart = v.slice(0, firstDot);
+  const decPart = v.slice(firstDot + 1).replace(/\./g, '');
+  return `${intPart}.${decPart.slice(0, 2)}`;
+}
+
+function formatPeso(n: number): string {
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function PriceInput({ value, onChange, minPrice, maxPrice, error }: PriceInputProps) {
   const hasRange = minPrice !== undefined && maxPrice !== undefined;
-  const numericValue = parseInt(value.replace(/[^0-9]/g, ''), 10);
+  const numericValue = parseFloat(value);
   const isOutOfRange =
     hasRange && !isNaN(numericValue) && value !== '' && (numericValue < minPrice! || numericValue > maxPrice!);
 
@@ -26,10 +40,10 @@ export default function PriceInput({ value, onChange, minPrice, maxPrice, error 
         </View>
         <TextInput
           value={value}
-          onChangeText={(v) => onChange(v.replace(/[^0-9]/g, ''))}
-          placeholder={hasRange ? String(minPrice) : '0'}
+          onChangeText={(v) => onChange(sanitizePriceInput(v))}
+          placeholder={hasRange ? formatPeso(minPrice!) : '0.00'}
           placeholderTextColor="#727687"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           className="flex-1 py-3 px-3 font-body-md text-body-md text-on-surface"
         />
       </View>
@@ -37,7 +51,7 @@ export default function PriceInput({ value, onChange, minPrice, maxPrice, error 
       {hasRange && (
         <View className="flex-row items-center justify-between">
           <Text className="font-label-md text-label-md text-on-surface-variant">
-            AI range: ₱{minPrice!.toLocaleString()} – ₱{maxPrice!.toLocaleString()}
+            AI range: ₱{formatPeso(minPrice!)} – ₱{formatPeso(maxPrice!)}
           </Text>
           {!error && isOutOfRange && (
             <Text className="font-label-md text-label-md text-error">Outside ±15%</Text>

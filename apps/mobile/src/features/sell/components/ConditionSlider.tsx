@@ -1,10 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { View, Text, PanResponder, LayoutChangeEvent } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 
 const THUMB_SIZE = 24;
 const TRACK_HEIGHT = 10;
-const SEGMENT_COUNT = 24;
 
 const GOOD = { r: 0x05, g: 0x96, b: 0x69 };  // #059669
 const WARN = { r: 0xd9, g: 0x77, b: 0x06 };  // #d97706
@@ -40,6 +39,13 @@ function toneFor(deviation: number): 'good' | 'warn' | 'bad' {
   if (deviation <= 0.15) return 'good';
   if (deviation <= 0.35) return 'warn';
   return 'bad';
+}
+
+/** Shared with EditListingContainer so the big rating number/label can carry
+ * the same tone color as this slider, instead of it living only in the bar. */
+export function getConditionTone(value: number, aiValue: number, min: number, max: number) {
+  const deviation = deviationFor(value, aiValue, min, max);
+  return { color: colorForDeviation(deviation), tone: toneFor(deviation) };
 }
 
 function messageFor(tone: 'good' | 'warn' | 'bad', aiValue: number) {
@@ -128,15 +134,6 @@ export default function ConditionSlider({ value, min, max, aiValue, onChange }: 
     transform: [{ translateX: thumbX.value - THUMB_SIZE / 2 }],
   }));
 
-  // Segment colors only depend on where the AI estimate sits, not on the
-  // dragged value, so they're computed once instead of on every drag frame.
-  const segments = useMemo(() => {
-    return Array.from({ length: SEGMENT_COUNT }, (_, i) => {
-      const segValue = min + ((i + 0.5) / SEGMENT_COUNT) * (max - min);
-      return colorForDeviation(deviationFor(segValue, aiValue, min, max));
-    });
-  }, [min, max, aiValue]);
-
   const deviation = deviationFor(displayValue, aiValue, min, max);
   const tone = toneFor(deviation);
   const toneColor = colorForDeviation(deviation);
@@ -146,11 +143,6 @@ export default function ConditionSlider({ value, min, max, aiValue, onChange }: 
     <View className="gap-1">
       <View className="flex-row items-center justify-between">
         <Text className="font-label-md text-label-md text-on-surface-variant">{min}</Text>
-        <View className="rounded-full px-3 py-0.5" style={{ backgroundColor: `${toneColor}1a` }}>
-          <Text className="font-label-md text-label-md" style={{ color: toneColor }}>
-            {displayValue} / 10
-          </Text>
-        </View>
         <Text className="font-label-md text-label-md text-on-surface-variant">{max}</Text>
       </View>
 
@@ -160,23 +152,11 @@ export default function ConditionSlider({ value, min, max, aiValue, onChange }: 
         onLayout={onLayout}
         {...panResponder.panHandlers}
       >
-        {/* Colored field: every position tinted by how far it is from the AI estimate */}
+        {/* Plain track */}
         <View
-          className="flex-row rounded-full overflow-hidden"
-          style={{ height: TRACK_HEIGHT }}
-        >
-          {segments.map((segColor, i) => (
-            <View
-              key={i}
-              style={{
-                flex: 1,
-                backgroundColor: segColor,
-                marginRight: i < SEGMENT_COUNT - 1 ? 1 : 0,
-                opacity: 0.85,
-              }}
-            />
-          ))}
-        </View>
+          className="rounded-full"
+          style={{ height: TRACK_HEIGHT, backgroundColor: '#e0e2ec' }}
+        />
 
         {/* AI estimate marker */}
         {width > 0 && (
