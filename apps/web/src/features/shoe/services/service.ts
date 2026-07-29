@@ -635,6 +635,7 @@ export async function analyzeShoePhotos(photoUrls: {
     '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size should be a plain US size number string like "10" or "10.5".',
     '• Condition & Defects: Set conditionScore (0-10, where 10 = brand new/unworn) based on the worse shoe of the pair. Prefix each defect entry with "Left: ", "Right: ", or "Both: ".',
     '• Estimated Price: Estimate typical brand-new retail price in PHP for this shoe model.',
+    '• Year: Provide a valid Gregorian calendar year (e.g., 2026, 2016, 2006) of the release of the model.',
   ].join('\n');
 
   const response = await ai.models.generateContent({
