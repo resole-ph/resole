@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import SellStepHeader from '../components/SellStepHeader';
+import StepFooter from '../components/StepFooter';
 import ListingPreviewCard from '../components/ListingPreviewCard';
 import { useSellFlow } from '../hooks/useSellFlow';
 import { usePublishListingMutation, useUpdateListingMutation } from '../queries/sell.queries';
@@ -56,7 +57,6 @@ export default function ReviewContainer() {
         title={isEditing ? 'Review Changes' : 'Review Listing'}
         stepLabel="Step 4 of 4"
         onBack={goBack}
-        onClose={() => router.back()}
       />
 
       <ScrollView
@@ -87,39 +87,13 @@ export default function ReviewContainer() {
         )}
       </ScrollView>
 
-      {/* CTAs */}
-      <View className="px-4 pb-8 pt-2 gap-3">
-        <TouchableOpacity
-          onPress={handlePublish}
-          disabled={isPending}
-          className="rounded-full py-4 items-center"
-          style={{
-            backgroundColor: isPending ? '#c2c6d8' : '#0054d3',
-            shadowColor: isPending ? 'transparent' : '#0054d3',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
-            elevation: isPending ? 0 : 6,
-          }}
-        >
-          <Text
-            className="font-body-md text-body-md"
-            style={{ color: isPending ? '#727687' : '#ffffff' }}
-          >
-            {isEditing
-              ? isPending ? 'Saving...' : 'Save Changes'
-              : isPending ? 'Publishing...' : 'Publish Listing'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={goBack}
-          disabled={isPending}
-          className="rounded-full py-4 items-center border border-outline-variant"
-        >
-          <Text className="font-body-md text-body-md text-on-surface-variant">Edit</Text>
-        </TouchableOpacity>
-      </View>
+      <StepFooter
+        onCancel={() => router.back()}
+        onPrimary={handlePublish}
+        primaryLabel={isEditing ? 'Save Changes' : 'Publish Listing'}
+        primaryDisabled={isPending}
+        primaryLoading={isPending}
+      />
     </View>
   );
 }

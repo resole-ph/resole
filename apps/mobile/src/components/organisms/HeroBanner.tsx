@@ -46,7 +46,22 @@ export default function HeroBanner({
   };
 
   return (
-    <View className="mx-5 mb-4">
+    <View
+      className="mx-5 mb-4"
+      style={{
+        borderRadius: 24,
+        shadowColor: '#2563EB',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 14,
+        elevation: 10,
+      }}
+    >
+      {/* Shadow (elevation) and clipping (overflow: hidden) fight each other on
+          Android when applied to the same view — the card can render collapsed
+          on first paint until something forces a re-layout (e.g. switching
+          tabs). Keeping overflow: hidden on this inner view, with elevation on
+          the wrapper above, avoids the conflict. */}
       <View
         style={{
           position: 'relative',
@@ -54,11 +69,6 @@ export default function HeroBanner({
           borderRadius: 24,
           overflow: 'hidden',
           padding: 20,
-          shadowColor: '#2563EB',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.35,
-          shadowRadius: 14,
-          elevation: 10,
         }}
       >
         {/* Decorative circles */}

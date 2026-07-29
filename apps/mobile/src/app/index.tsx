@@ -117,6 +117,7 @@ export default function HomeScreen() {
           ctaLabel="Claim Now"
           ctaVariant="pill"
           rightIcon="car-outline"
+          onPress={() => router.push('/rewards' as any)}
         />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />

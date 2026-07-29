@@ -71,7 +71,10 @@ export default function ListingPreviewCard({ photos, form }: ListingPreviewCardP
         <FieldRow label={`Size (${SIZE_SYSTEM_LABELS[sizeSystem]})`} value={form.size} />
         <FieldRow label="Year" value={form.year} />
         <FieldRow label="Condition" value={`${form.conditionLabel} (${form.conditionRating}/10)`} />
-        <FieldRow label="Price" value={`₱${parseInt(form.price || '0').toLocaleString()}`} />
+        <FieldRow
+          label="Price"
+          value={`₱${(parseFloat(form.price) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+        />
         <FieldRow label="Listing type" value={MODE_LABELS[form.mode]} />
         {form.description ? (
           <View className="pt-2">

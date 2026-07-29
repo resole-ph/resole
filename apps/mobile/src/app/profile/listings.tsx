@@ -23,7 +23,7 @@ type Tab = 'active' | 'pending';
 
 const TAB_LABELS: Record<Tab, string> = {
   active: 'Active',
-  pending: 'Removed',
+  pending: 'Archived',
 };
 
 /**
@@ -52,12 +52,12 @@ function ActiveCard({
   item,
   onPress,
   onEdit,
-  onDelete,
+  onArchive,
 }: {
   item: Listing;
   onPress: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onArchive: () => void;
 }) {
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   return (
@@ -95,11 +95,11 @@ function ActiveCard({
           <Ionicons name="create-outline" size={18} color="#6B7280" />
         </TouchableOpacity>
         <TouchableOpacity
-          className="w-9 h-9 rounded-xl bg-red-50 items-center justify-center"
+          className="w-9 h-9 rounded-xl bg-gray-50 items-center justify-center"
           activeOpacity={0.7}
-          onPress={(e) => { e.stopPropagation(); onDelete(); }}
+          onPress={(e) => { e.stopPropagation(); onArchive(); }}
         >
-          <Ionicons name="trash-outline" size={18} color="#EF4444" />
+          <Ionicons name="archive-outline" size={18} color="#6B7280" />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -110,10 +110,12 @@ function PendingCard({
   item,
   onRelist,
   onDonate,
+  onDelete,
 }: {
   item: Listing;
   onRelist: () => void;
   onDonate: () => void;
+  onDelete: () => void;
 }) {
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   return (
@@ -134,12 +136,12 @@ function PendingCard({
           <Text className="text-blue-600 font-bold text-sm mt-1">Price: ₱{item.price.toLocaleString()}</Text>
           <View className="flex-row items-center mt-1">
             <View className="w-1.5 h-1.5 rounded-full bg-gray-300 mr-1" />
-            <Text className="text-gray-400 text-xs">Removed from market</Text>
+            <Text className="text-gray-400 text-xs">Archived</Text>
           </View>
         </View>
       </View>
 
-      <View className="flex-row gap-2">
+      <View className="flex-row gap-2 mb-2">
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-center rounded-xl py-2.5"
           style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
@@ -163,6 +165,18 @@ function PendingCard({
           </Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        className="flex-row items-center justify-center rounded-xl py-2.5"
+        style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' }}
+        activeOpacity={0.8}
+        onPress={onDelete}
+      >
+        <Ionicons name="trash-outline" size={14} color="#EF4444" />
+        <Text style={{ color: '#EF4444', fontSize: 12.5, fontWeight: '700', marginLeft: 5 }}>
+          Delete Permanently
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -215,31 +229,57 @@ export default function ListingsScreen() {
     fetchUserListings();
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleArchive = async (id: string) => {
     const item = active.find((l) => l.id === id);
 
-    Alert.alert('Remove listing?', 'This will take it off the market. You can re-list or donate it later.', [
+    Alert.alert('Archive listing?', 'This will take it off the market. You can re-list or donate it later.', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Remove',
+        text: 'Archive',
         style: 'destructive',
         onPress: async () => {
-          // Only move it once the server confirms the delete — an optimistic
-          // removal here previously made a failed delete look like it succeeded,
+          // Only move it once the server confirms the change — an optimistic
+          // removal here previously made a failed request look like it succeeded,
           // when the listing was still live server-side.
           try {
-            await ListingService.deleteListing(Number(id));
+            await ListingService.archiveListing(Number(id));
             setActive((prev) => prev.filter((l) => l.id !== id));
             if (item) {
               setPending((prev) => [...prev, { ...item, isAvailable: false }]);
             }
           } catch (error) {
-            console.error('Failed to delete listing:', error);
-            Alert.alert('Could not remove listing', 'Please try again.');
+            console.error('Failed to archive listing:', error);
+            Alert.alert('Could not archive listing', 'Please try again.');
           }
         }
       },
     ]);
+  };
+
+  // Only listings already archived can be permanently deleted — the backend
+  // records this as a real deletion (deletedAt) and blocks re-listing
+  // afterward, unlike archiving which just flips isAvailable off.
+  const handlePermanentDelete = (id: string) => {
+    Alert.alert(
+      'Delete permanently?',
+      'This cannot be undone — the listing will be gone for good.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await ListingService.deleteListing(Number(id));
+              setPending((prev) => prev.filter((l) => l.id !== id));
+            } catch (error) {
+              console.error('Failed to delete listing:', error);
+              Alert.alert('Could not delete listing', 'Please try again.');
+            }
+          }
+        },
+      ]
+    );
   };
 
   const handleRelist = async (id: string) => {
@@ -339,12 +379,12 @@ export default function ListingsScreen() {
               item={item}
               onPress={() => router.push({ pathname: '/listing/[id]', params: { id: item.id } })}
               onEdit={() => handleEdit(item.id)}
-              onDelete={() => handleDelete(item.id)}
+              onArchive={() => handleArchive(item.id)}
             />
           ))}
 
         {tab === 'pending' && pending.length === 0 && (
-          <EmptyState label="No removed listings" />
+          <EmptyState label="No archived listings" />
         )}
         {tab === 'pending' &&
           pending.map((item) => (
@@ -353,6 +393,7 @@ export default function ListingsScreen() {
               item={item}
               onRelist={() => handleRelist(item.id)}
               onDonate={() => openDonateModal(item.id)}
+              onDelete={() => handlePermanentDelete(item.id)}
             />
           ))}
       </ScrollView>

@@ -6,10 +6,9 @@ interface SellStepHeaderProps {
   title: string;
   stepLabel?: string;
   onBack?: () => void;
-  onClose: () => void;
 }
 
-export default function SellStepHeader({ title, stepLabel, onBack, onClose }: SellStepHeaderProps) {
+export default function SellStepHeader({ title, stepLabel, onBack }: SellStepHeaderProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -36,12 +35,8 @@ export default function SellStepHeader({ title, stepLabel, onBack, onClose }: Se
           <Text className="font-title-md text-title-md text-on-surface">{title}</Text>
         </View>
 
-        <TouchableOpacity
-          onPress={onClose}
-          className="w-9 h-9 items-center justify-center rounded-full"
-        >
-          <Ionicons name="close" size={22} color="#424655" />
-        </TouchableOpacity>
+        {/* Spacer to keep the title centered now that the close button is gone */}
+        <View className="w-9 h-9" />
       </View>
     </View>
   );

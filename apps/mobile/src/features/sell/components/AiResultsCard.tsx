@@ -1,6 +1,9 @@
-import { View, Text } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import type { AiAnalysisResult } from '../types/sell.types';
+import { usePreferencesStore } from '@/store/preferences';
+import { SIZE_SYSTEMS, SIZE_SYSTEM_LABELS, formatSize } from '@/features/shoe/utils/size-conversion';
 
 interface AiResultsCardProps {
   result: AiAnalysisResult;
@@ -15,7 +18,15 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function formatPrice(n: number): string {
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function AiResultsCard({ result }: AiResultsCardProps) {
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
+  const setSizeSystem = usePreferencesStore((s) => s.setSizeSystem);
+  const [showSizeMenu, setShowSizeMenu] = useState(false);
+
   return (
     <View className="gap-4">
       {/* Valuation banner */}
@@ -36,10 +47,10 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
           </Text>
         </View>
         <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-primary">
-          ₱{result.suggestedPriceLow.toLocaleString()} – ₱{result.suggestedPriceHigh.toLocaleString()}
+          ₱{formatPrice(result.suggestedPriceLow)} – ₱{formatPrice(result.suggestedPriceHigh)}
         </Text>
         <Text className="font-body-md text-body-md text-on-primary mt-0.5" style={{ opacity: 0.75 }}>
-          Suggested: ₱{result.suggestedPrice.toLocaleString()}
+          Suggested: ₱{formatPrice(result.suggestedPrice)}
         </Text>
       </View>
 
@@ -63,8 +74,27 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
 
         <DetailRow label="Brand" value={result.brand} />
         <DetailRow label="Model" value={result.model} />
-        <DetailRow label="Colorway" value={result.colorway} />
-        <DetailRow label="Size" value={result.size} />
+
+        {/* Size, with a dropdown to change the display system */}
+        <View className="flex-row items-center justify-between py-2 border-b border-outline-variant">
+          <Text className="font-label-md text-label-md text-on-surface-variant">Size</Text>
+          <View className="flex-row items-center gap-2">
+            <Text className="font-body-md text-body-md text-on-surface">
+              {formatSize(Number(result.size), sizeSystem)}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowSizeMenu(true)}
+              activeOpacity={0.7}
+              className="flex-row items-center gap-0.5 rounded-full px-2 py-1 bg-secondary-container"
+            >
+              <Text className="font-label-md text-label-md text-primary">
+                {SIZE_SYSTEM_LABELS[sizeSystem]}
+              </Text>
+              <Ionicons name="chevron-down" size={12} color="#0054d3" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <DetailRow label="Year" value={String(result.year)} />
 
         <View className="flex-row items-center justify-between pt-2">
@@ -81,6 +111,40 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
           </View>
         </View>
       </View>
+
+      {/* Size system picker */}
+      <Modal visible={showSizeMenu} transparent animationType="slide" onRequestClose={() => setShowSizeMenu(false)}>
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
+          activeOpacity={1}
+          onPress={() => setShowSizeMenu(false)}
+        />
+        <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, paddingBottom: 32 }}>
+          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 }} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', paddingHorizontal: 20, marginBottom: 8 }}>
+            Shoe size system
+          </Text>
+          {SIZE_SYSTEMS.map((system) => (
+            <TouchableOpacity
+              key={system}
+              className="flex-row items-center px-5 py-3.5"
+              activeOpacity={0.7}
+              onPress={() => {
+                setSizeSystem(system);
+                setShowSizeMenu(false);
+              }}
+            >
+              <Text
+                className="flex-1 text-gray-900 text-sm"
+                style={{ fontWeight: system === sizeSystem ? '700' : '400' }}
+              >
+                {SIZE_SYSTEM_LABELS[system]}
+              </Text>
+              {system === sizeSystem && <Ionicons name="checkmark" size={18} color="#2563EB" />}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Modal>
     </View>
   );
 }

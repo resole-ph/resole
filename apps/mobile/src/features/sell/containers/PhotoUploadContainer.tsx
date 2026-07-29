@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions, Alert, Linking, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions, Alert, Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import SellStepHeader from '../components/SellStepHeader';
+import StepFooter from '../components/StepFooter';
 import PhotoGrid from '../components/PhotoGrid';
 import { Ionicons } from '@expo/vector-icons';
 import { useSellFlow } from '../hooks/useSellFlow';
@@ -183,11 +184,7 @@ export default function PhotoUploadContainer() {
 
   return (
     <View className="flex-1 bg-surface">
-      <SellStepHeader
-        title="Upload Photos"
-        stepLabel="Step 1 of 4"
-        onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-      />
+      <SellStepHeader title="Upload Photos" stepLabel="Step 1 of 4" />
 
       <ScrollView
         className="flex-1"
@@ -219,42 +216,14 @@ export default function PhotoUploadContainer() {
         </Text>
       </ScrollView>
 
-      <View className="px-4 pb-8 pt-2">
-        {isEditingUnchanged && (
-          <Text className="font-label-md text-label-md text-on-surface-variant text-center mb-2">
-            Photos are unchanged — no need to re-analyze.
-          </Text>
-        )}
-        <TouchableOpacity
-          onPress={isEditingUnchanged ? handleContinueUnchanged : handleAnalyze}
-          disabled={isEditingUnchanged ? false : !allPhotosUploaded || uploading}
-          className="rounded-full py-4 items-center"
-          style={{
-            backgroundColor: isEditingUnchanged || allPhotosUploaded ? '#0054d3' : '#c2c6d8',
-            shadowColor: isEditingUnchanged || allPhotosUploaded ? '#0054d3' : 'transparent',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
-            elevation: isEditingUnchanged || allPhotosUploaded ? 6 : 0,
-          }}
-        >
-          {uploading ? (
-            <View className="flex-row items-center gap-2">
-              <ActivityIndicator size="small" color="#ffffff" />
-              <Text className="font-body-md text-body-md" style={{ color: '#ffffff' }}>
-                Uploading…
-              </Text>
-            </View>
-          ) : (
-            <Text
-              className="font-body-md text-body-md"
-              style={{ color: isEditingUnchanged || allPhotosUploaded ? '#ffffff' : '#727687' }}
-            >
-              {isEditingUnchanged ? 'Continue' : 'Analyze with AI'}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      <StepFooter
+        onCancel={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onPrimary={isEditingUnchanged ? handleContinueUnchanged : handleAnalyze}
+        primaryLabel={isEditingUnchanged ? 'Continue' : 'Analyze with AI'}
+        primaryDisabled={isEditingUnchanged ? false : !allPhotosUploaded || uploading}
+        primaryLoading={uploading}
+        helperText={isEditingUnchanged ? 'Photos are unchanged — no need to re-analyze.' : undefined}
+      />
 
       {/* Photo source picker */}
       <Modal
