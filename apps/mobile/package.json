@@ -6,7 +6,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@tanstack/react-query": "^5.100.14",
     "babel-preset-expo": "~54.0.10",
-    "expo": "~54.0.0",
+    "expo": "^54.0.36",
     "expo-constants": "~18.0.13",
     "expo-font": "~14.0.12",
     "expo-image-manipulator": "~14.0.8",
