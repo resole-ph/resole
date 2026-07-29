@@ -273,9 +273,11 @@ export default function ListingDetailScreen() {
           </View>
 
           <Text className="text-gray-900 text-2xl font-bold mb-1">{listing.model}</Text>
-          {listing.size && (
+          {(listing.size || listing.year) && (
             <Text className="text-gray-400 text-sm mb-4">
-              Size: {formatSize(Number(listing.size), sizeSystem)}
+              {listing.size ? `Size: ${formatSize(Number(listing.size), sizeSystem)}` : ''}
+              {listing.size && listing.year ? '  ·  ' : ''}
+              {listing.year ? `Year: ${listing.year}` : ''}
             </Text>
           )}
 

@@ -110,6 +110,14 @@ export default function HomeScreen() {
           onViewAll={() => router.push('/profile/favourites' as any)}
         />
         <CharitiesSection />
+        <HeroBanner
+          tag="LIMITED OFFER"
+          title={"Claim your Free\nShipping Voucher"}
+          subtitle="Valid for Metro Manila deliveries"
+          ctaLabel="Claim Now"
+          ctaVariant="pill"
+          rightIcon="car-outline"
+        />
       </ScrollView>
       <BottomNav activeTab="home" onFabPress={() => router.push('/sell' as any)} />
     </View>

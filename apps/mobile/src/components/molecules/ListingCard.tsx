@@ -3,6 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { useSellStore } from '@/store/sell';
+import { usePreferencesStore } from '@/store/preferences';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 export interface Listing {
   id: string;
@@ -21,6 +23,7 @@ export interface Listing {
   listingMode?: 'Swap' | 'Sale' | 'Both' | 'Hot' | 'Flash Deal';
   description?: string;
   size?: string;
+  year?: string | number;
   colorway?: string;
   sold?: string;
   freeShipping?: boolean;
@@ -73,6 +76,8 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
   const isOwnListing = !!currentUserId && listing.seller.id === currentUserId;
   const daysLeft = listing.daysLeft ?? (listing.createdAt ? ListingService.getDaysLeft(listing.createdAt) : undefined);
   const resetSell = useSellStore((s) => s.reset);
+  const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
+  const sizeLabel = listing.size ? formatSize(Number(listing.size), sizeSystem) : null;
 
   const handlePress = () => {
     router.push({
@@ -131,7 +136,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
           >
             <Ionicons name={badge.icon} size={10} color={badge.text} />
             <Text style={{ color: badge.text }} className="text-xs font-semibold ml-1">
-              {listing.listingMode}
+              {listing.listingMode === 'Both' ? 'Swap & Sell' : listing.listingMode}
             </Text>
           </View>
         )}
@@ -143,6 +148,16 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
             style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#D1FAE5' }}
           >
             <Text style={{ color: '#059669', fontSize: 9, fontWeight: '600' }}>Free Ship</Text>
+          </View>
+        )}
+
+        {/* Size badge */}
+        {sizeLabel && (
+          <View
+            className={`absolute bottom-2 ${listing.freeShipping ? 'left-20' : 'left-2'}`}
+            style={{ backgroundColor: 'rgba(17,24,39,0.85)', borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2 }}
+          >
+            <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>Size {sizeLabel}</Text>
           </View>
         )}
 
@@ -165,9 +180,12 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
 
       {/* Info area */}
       <View className="p-3">
-        {/* Brand + condition */}
+        {/* Brand + size + condition */}
         <View className="flex-row items-center justify-between mb-0.5">
-          <Text className="text-xs text-gray-400 font-medium">{listing.brand}</Text>
+          <Text className="text-xs text-gray-400 font-medium" numberOfLines={1}>
+            {listing.brand}
+            {sizeLabel ? `  ·  Size ${sizeLabel}` : ''}
+          </Text>
           <View className="flex-row items-center">
             <View
               className="w-1.5 h-1.5 rounded-full mr-1"
