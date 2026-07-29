@@ -1,3 +1,16 @@
+export type TxTab = 'sales' | 'swaps' | 'donations';
+
+export type Transaction = {
+  id: string;
+  type: 'sale' | 'swap' | 'donate',
+  item: string;
+  counterpart: string;
+  date: string;
+  amount?: string;
+  status: 'completed' | 'pending' | 'donated';
+  color: string;
+};
+
 export type RedeemOption = {
   id: string;
   title: string;

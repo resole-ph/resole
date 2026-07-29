@@ -1,3 +1,4 @@
+import { Transaction, TxTab } from "../types/transaction.types";
 import { RedeemOption, CoinTx } from "../types/transaction.types";
 import { apiFetch } from "@/lib/api-client";
 
@@ -30,6 +31,28 @@ export const TransactionService = {
       default:
         return { label: 'unknown', sub: 'unk', icon: 'ellipsis-horizontal-outline' };
     }
+  },
+
+  async getUserTransactions(): Promise<Omit<Transaction, 'color'>[]> {
+    const res = await apiFetch<any>(`api/users/me/transactions`, {
+      method: 'GET'
+    });
+
+    return res.map((item: any) => {
+      return {
+        id: item.id,
+        type: item.type,
+        item: item.listing.shoe.brand + " " + item.listing.shoe.model,
+        counterpart: item.details.donation.charity.name ?? item.relatedUser.name,
+        date: (item.completedAt ?? item.createdAt).toDateString().slice(4),
+        amount: item.amount ?? null,
+        status: item.completedAt
+          ? item.type === 'donate'
+            ? 'donated'
+            : 'completed'
+          : 'pending'
+      }
+    })
   },
 
   async getUserCoinBalance(): Promise<any> {

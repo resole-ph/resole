@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
+import { Transaction, TxTab } from '@/features/transaction/types/transaction.types';
+import { TransactionService } from '@/features/transaction/services/transaction.service';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -10,29 +12,6 @@ const CARD_SHADOW = {
   shadowRadius: 8,
   elevation: 2,
 };
-
-type TxTab = 'sales' | 'swaps' | 'donations';
-
-type Transaction = {
-  id: string;
-  item: string;
-  counterpart: string;
-  date: string;
-  amount: string;
-  status: 'completed' | 'pending' | 'donated';
-  color: string;
-};
-
-const SALES: Transaction[] = [
-  { id: 's1', item: 'Jordan 1 Retro High',  counterpart: 'Buyer: @jmendoza', date: 'May 28, 2026', amount: '₱18,000', status: 'completed', color: '#DBEAFE' },
-  { id: 's2', item: 'Nike SB Dunk Low',     counterpart: 'Buyer: @kevinr',   date: 'May 15, 2026', amount: '₱9,500',  status: 'completed', color: '#EDE9FE' },
-  { id: 's3', item: 'Adidas Samba OG',      counterpart: 'Buyer: @amirag',   date: 'May 3, 2026',  amount: '₱7,800',  status: 'pending',   color: '#D1FAE5' },
-];
-
-const SWAPS: Transaction[] = [
-  { id: 'w1', item: 'Yeezy 350 v2 → Air Max 97', counterpart: 'Swapped with: @pdc',    date: 'May 20, 2026', amount: 'Even swap', status: 'completed', color: '#FCE7F3' },
-  { id: 'w2', item: 'NB 550 → Panda Dunk',       counterpart: 'Swapped with: @lramos', date: 'Apr 30, 2026', amount: '+₱2,000',   status: 'completed', color: '#FEF3C7' },
-];
 
 const STATUS_STYLES: Record<Transaction['status'], { bg: string; text: string; label: string }> = {
   completed: { bg: '#F0FDF4', text: '#16A34A', label: 'Completed' },
@@ -59,7 +38,7 @@ function TxCard({ tx }: { tx: Transaction }) {
           <Text className="text-gray-300 text-xs mt-0.5">{tx.date}</Text>
         </View>
         <View className="items-end">
-          <Text className="text-gray-900 font-bold text-sm">{tx.amount}</Text>
+          <Text className="text-gray-900 font-bold text-sm">{tx.amount ?? ""}</Text>
           <View
             className="rounded-full px-2.5 py-0.5 mt-1"
             style={{ backgroundColor: s.bg }}
@@ -74,9 +53,44 @@ function TxCard({ tx }: { tx: Transaction }) {
 
 export default function TransactionsScreen() {
   const [tab, setTab] = useState<TxTab>('sales');
+  const [data, setData] = useState<Record<TxTab, Transaction[]>>({
+    sales: [],
+    swaps: [],
+    donations: [],
+  });
 
-  const DATA: Record<TxTab, Transaction[]> = { sales: SALES, swaps: SWAPS, donations: [] };
-  const currentData = DATA[tab];
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const data = await TransactionService.getUserTransactions();
+
+        const groupedData = data.reduce(
+          (acc, item) => {
+            const formattedItem = {
+              ...item,
+              color: STATUS_STYLES[item.status].bg,
+            };
+
+            if (item.type === 'sale') acc.sales.push(formattedItem);
+            else if (item.type === 'swap') acc.swaps.push(formattedItem);
+            else if (item.type === 'donate') acc.donations.push(formattedItem);
+
+            return acc;
+          },
+
+          { sales: [] as Transaction[], swaps: [] as Transaction[], donations: [] as Transaction[] } 
+        );
+
+        setData(groupedData);
+      } catch (error) {
+        console.error('Failed to load user transactions:', error);
+      }
+    }
+
+    loadData();
+  }, [])
+
+  const currentData = data[tab];
 
   return (
     <View className="flex-1 bg-gray-50">

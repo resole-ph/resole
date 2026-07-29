@@ -122,7 +122,9 @@ function SavedItemsCard({ onPress }: { onPress: () => void }) {
       .catch((error) => console.error('Failed to load favourites:', error));
   }, []);
 
-  const previews = items.slice(0, 4);
+  const previews = items.slice(0, PREVIEW_COUNT);
+  const remaining = Math.max((favourites?.totalCount ?? items.length) - previews.length, 0);
+
 
   return (
     <TouchableOpacity
@@ -137,6 +139,11 @@ function SavedItemsCard({ onPress }: { onPress: () => void }) {
         {previews.map((item) => (
           <PreviewThumb key={item.id} uri={item.imageUrl} />
         ))}
+        {remaining > 0 && (
+          <View className="w-20 h-20 rounded-xl bg-gray-100 items-center justify-center">
+            <Text className="text-gray-500 font-bold text-sm">+{remaining}</Text>
+          </View>
+        )}
       </View>
 
       <Text className="text-gray-400 text-xs">
