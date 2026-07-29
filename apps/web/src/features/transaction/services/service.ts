@@ -501,7 +501,9 @@ export async function acceptOffer(id: number) {
       .update(transaction)
       .set({ 
         isAccepted: true,
-        acceptedAt: new Date() 
+        isCompleted: true,
+        acceptedAt: new Date(),
+        completedAt: new Date() 
       })
       .where(eq(transaction.id, id))
       .returning({ id: transaction.id });

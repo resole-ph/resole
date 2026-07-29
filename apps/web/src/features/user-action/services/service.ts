@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
 import { aliasedTable, and, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
-import { referal, rating, save, user, shoe, shoeListing } from '@/db/schema';
+import { referal, rating, save, user, shoe, shoeListing, transaction } from '@/db/schema';
 import { 
   Referal,
   CreateReferal,
@@ -229,6 +229,29 @@ export async function getRatingByRateeId(id: string) {
   }
 }
 
+export async function getRatingByTransactionId(id: number) {
+  try {
+    const rows = await db
+      .select({
+        rater: getTableColumns(user),
+        ratee: getTableColumns(user),
+        transaction: getTableColumns(transaction),
+        ...getTableColumns(rating)
+      })
+      .from(rating)
+      .innerJoin(user, eq(rating.raterId, user.id))
+      .innerJoin(user, eq(rating.rateeId, user.id))
+      .innerJoin(transaction, eq(rating.transactionId, transaction.id))
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .where(eq(rating.transactionId, id));
+    
+    return rows[0] as Rating ?? null;
+  } catch (error) {
+    console.error("Error fetching rating.", error);
+    return null;
+  }
+}
+
 export async function getSaveById(id: number) {
   try {
     const rows = await db
@@ -435,4 +458,13 @@ export async function getReviewsForUser(userId: string) {
     console.error("Error fetching reviews for user.", error);
     return null;
   }
+}
+
+export async function checkIfTransactionIsRated(transactionId: number): Promise<boolean> {
+  const existingRating = await db.query.rating.findFirst({
+    where: eq(rating.transactionId, transactionId),
+    columns: { id: true }, 
+  });
+
+  return !!existingRating;
 }

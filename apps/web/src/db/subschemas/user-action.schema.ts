@@ -6,10 +6,12 @@ import {
   integer,
   serial,
   check,
+  uniqueIndex
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 import { shoe, shoeListing } from './shoe.schema';
+import { transaction } from './transaction.schema';
 
 export const referalEnum = pgEnum('referal_enum', [
   'facebook',
@@ -42,6 +44,8 @@ export const rating = pgTable('rating', {
   rateeId: text('ratee_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
+  transactionId: integer('transaction_id')
+    .references(() => transaction.id, { onDelete: 'set null' }),
   rating: integer('rating').notNull(),
   comment: text('comment'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -52,7 +56,8 @@ export const rating = pgTable('rating', {
   deletedAt: timestamp('deleted_at')
 }, (table) => [
   check('rating_id_check', sql`${table.raterId} != ${table.rateeId}`),
-  check('rating_check', sql`${table.rating} BETWEEN 0 AND 5`)
+  check('rating_check', sql`${table.rating} BETWEEN 0 AND 5`),
+  uniqueIndex('rating_transaction_id_idx').on(table.transactionId)
 ]);
 
 export const save = pgTable('save', {

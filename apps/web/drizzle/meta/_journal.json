@@ -141,6 +141,13 @@
       "when": 1785222550820,
       "tag": "0019_stiff_blur",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1785338933788,
+      "tag": "0020_unusual_northstar",
+      "breakpoints": true
     }
   ]
 }
