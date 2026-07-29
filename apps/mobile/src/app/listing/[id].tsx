@@ -150,11 +150,12 @@ export default function ListingDetailScreen() {
   const isOwnListing   = !!currentUserId && listing.seller.id === currentUserId;
 
   const photoUrls = [
+    listing.imageUrlTop,
     listing.imageUrlLeftSide,
     listing.imageUrlRightSide,
-    listing.imageUrlTop,
     listing.imageUrlSole,
-    listing.imageUrlInsole,
+    (listing as any).imageUrlInsoleRight || listing.imageUrlInsole,
+    (listing as any).imageUrlInsoleLeft || listing.imageUrlInsole,
   ].filter((url): url is string => Boolean(url));
 
   const similarItems = similarListings?.filter(

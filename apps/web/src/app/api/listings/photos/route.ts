@@ -38,18 +38,19 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const top = formData.get('top') as File;
-    const leftSide = formData.get('leftSide') as File;
-    const rightSide = formData.get('rightSide') as File;
+    const leftSide = (formData.get('leftSide') || formData.get('side')) as File;
+    const rightSide = (formData.get('rightSide') || formData.get('side')) as File;
     const sole = formData.get('sole') as File;
-    const insole = formData.get('insole') as File;
+    const insoleRight = (formData.get('insoleRight') || formData.get('insole')) as File;
+    const insoleLeft = (formData.get('insoleLeft') || formData.get('insole')) as File;
 
-    if (!top || !leftSide || !rightSide || !sole || !insole) {
-      return NextResponse.json({ error: 'Missing one or more required photos (top, leftSide, rightSide, sole, insole)' }, { status: 400 });
+    if (!top || !leftSide || !rightSide || !sole || !insoleRight || !insoleLeft) {
+      return NextResponse.json({ error: 'Missing one or more required photos (top, leftSide, rightSide, sole, insoleRight, insoleLeft)' }, { status: 400 });
     }
 
-    const files = { top, leftSide, rightSide, sole, insole };
+    const files = { top, leftSide, rightSide, sole, insoleRight, insoleLeft };
 
-    const oversizedEntries = Object.entries(files).filter(([, file]) => file.size > MAX_PHOTO_SIZE_BYTES);
+    const oversizedEntries = Object.entries(files).filter(([, file]) => file?.size > MAX_PHOTO_SIZE_BYTES);
     if (oversizedEntries.length > 0) {
       const details = oversizedEntries
         .map(([key, file]) => `${key} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`)
@@ -73,7 +74,8 @@ export async function POST(request: Request) {
       leftSide: 'imageUrlLeftSide',
       rightSide: 'imageUrlRightSide',
       sole: 'imageUrlSole',
-      insole: 'imageUrlInsole',
+      insoleRight: 'imageUrlInsoleRight',
+      insoleLeft: 'imageUrlInsoleLeft',
     } as const;
 
     const uploads = await Promise.all(

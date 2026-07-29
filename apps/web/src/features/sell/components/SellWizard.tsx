@@ -24,14 +24,16 @@ import type {
   UploadedPhotoUrls,
 } from '../types/sell.types';
 
-const ANGLES: PhotoAngle[] = ['top', 'side', 'sole', 'insole'];
+const ANGLES: PhotoAngle[] = ['top', 'leftSide', 'rightSide', 'sole', 'insoleRight', 'insoleLeft'];
 const STEP_ORDER: SellStep[] = ['photos', 'results', 'editListing', 'review', 'confirmation'];
 
 const INITIAL_PHOTOS: Record<PhotoAngle, SellPhoto | null> = {
   top: null,
-  side: null,
+  leftSide: null,
+  rightSide: null,
   sole: null,
-  insole: null,
+  insoleRight: null,
+  insoleLeft: null,
 };
 
 function initFormFromAiResult(ai: AiAnalysisResult): ListingFormData {
@@ -181,9 +183,11 @@ export default function SellWizard() {
       if (!finalUrls) {
         finalUrls = {
           imageUrlTop: photos.top?.previewUrl || '',
-          imageUrlSide: photos.side?.previewUrl || '',
+          imageUrlLeftSide: photos.leftSide?.previewUrl || '',
+          imageUrlRightSide: photos.rightSide?.previewUrl || '',
           imageUrlSole: photos.sole?.previewUrl || '',
-          imageUrlInsole: photos.insole?.previewUrl || '',
+          imageUrlInsoleRight: photos.insoleRight?.previewUrl || '',
+          imageUrlInsoleLeft: photos.insoleLeft?.previewUrl || '',
         };
       }
 

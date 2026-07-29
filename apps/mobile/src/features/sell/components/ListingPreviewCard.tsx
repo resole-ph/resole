@@ -3,7 +3,7 @@ import type { ListingFormData, SellPhoto, PhotoAngle } from '../types/sell.types
 import { usePreferencesStore } from '@/store/preferences';
 import { SIZE_SYSTEM_LABELS } from '@/features/shoe/utils/size-conversion';
 
-const PHOTO_ANGLES: PhotoAngle[] = ['leftSide', 'rightSide', 'top', 'sole', 'insole'];
+const PHOTO_ANGLES: PhotoAngle[] = ['top', 'leftSide', 'rightSide', 'sole', 'insoleRight', 'insoleLeft'];
 
 const MODE_LABELS = { sell: 'Sell', swap: 'Swap', both: 'Sell & Swap' };
 
@@ -34,14 +34,14 @@ export default function ListingPreviewCard({ photos, form }: ListingPreviewCardP
         elevation: 2,
       }}
     >
-      {/* 2×2 photo grid */}
+      {/* 3×2 photo grid */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, padding: 12 }}>
         {PHOTO_ANGLES.map((angle) => {
           const photo = photos[angle];
           return (
             <View
               key={angle}
-              style={{ width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden' }}
+              style={{ width: '31.5%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden' }}
               className="bg-surface-container"
             >
               {photo ? (

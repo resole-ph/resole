@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
-import { getUserById } from '@/features/auth/services/service';
+import { getUserProfileById, getUserStatsById } from '@/features/auth/services/service';
 
+/**
+ * Public profile of another user. Deliberately narrower than `/api/users/me`:
+ * contact details and account settings never leave the owner's own endpoint.
+ */
 export async function GET(
-  request: Request, 
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   const currentUser = await getAuthenticatedUser(request);
@@ -14,15 +18,29 @@ export async function GET(
 
   const { id } = await context.params;
   if (!id) {
-    return NextResponse.json({ error: 'Invalid notification id' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid user id' }, { status: 400 });
   }
 
-  const user = await getUserById(id);
-  if (!user) {
+  const profile = await getUserProfileById(id);
+  if (!profile) {
     return NextResponse.json({ error: 'Invalid user id' }, { status: 404 });
   }
 
+  const stats = await getUserStatsById(id);
+
   return NextResponse.json({
-    user: user
-  })
+    user: {
+      id: profile.id,
+      name: profile.name,
+      image: profile.image,
+      description: profile.description,
+      location: profile.location,
+      overallRating: profile.overallRating,
+      reviewCount: profile.reviewCount,
+      joinedYear: profile.joinedYear,
+      listingCount: stats?.listingCount ?? 0,
+      salesCount: stats?.salesCount ?? 0,
+      swapsCount: stats?.swapsCount ?? 0,
+    },
+  });
 }
