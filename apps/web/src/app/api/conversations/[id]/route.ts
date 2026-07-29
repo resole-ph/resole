@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getConversationById, getConversationMessages } from '@/features/inbox/services/service';
 import { getTransactionById, getTransactionDetails } from '@/features/transaction/services/service';
+import { checkIfTransactionIsRated } from '@/features/user-action/services/service'; 
 
 function parseConversationId(rawId: string) {
   const conversationId = Number.parseInt(rawId, 10);
@@ -45,8 +46,6 @@ export async function GET(
     return NextResponse.json({ error: 'Messages not found' }, { status: 404 });
   }
 
-  // Every offer/swap made within this thread is tagged on its originating message
-  // via transactionId, so a thread can carry more than one offer over time.
   const transactionIds = Array.from(
     new Set(messages.map((m) => m.transactionId).filter((tid): tid is number => tid != null))
   );
@@ -56,7 +55,16 @@ export async function GET(
       transactionIds.map(async (transactionId) => {
         const transaction = await getTransactionById(transactionId);
         if (!transaction) return null;
-        return getTransactionDetails(transaction);
+        
+        const details = await getTransactionDetails(transaction);
+        if (!details) return null;
+
+        const isRated = await checkIfTransactionIsRated(transactionId);
+
+        return {
+          ...details,
+          isRated,
+        };
       })
     )
   ).filter((offer): offer is NonNullable<typeof offer> => offer != null);
@@ -64,5 +72,5 @@ export async function GET(
   return NextResponse.json({
     messages: messages,
     offers: offers
-  })
+  });
 }
