@@ -234,25 +234,9 @@ function CheckoutContent() {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
-
   return (
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'); * { box-sizing: border-box; }`}</style>
-
-      {/* Header */}
-      <header style={{ position: "sticky", top: 0, zIndex: 20, background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", gap: 14 }}>
-          <button onClick={() => router.back()} style={{ width: 34, height: 34, borderRadius: 9999, border: `1px solid ${COLORS.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={COLORS.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-          </button>
-          <span style={{ fontWeight: 700, fontSize: 16, color: COLORS.textMain }}>Secure Checkout</span>
-          <span onClick={() => router.push('/')} style={{ fontWeight: 800, fontSize: 18, color: COLORS.primary, marginLeft: "auto", cursor: "pointer" }}>Resole</span>
-        </div>
-      </header>
 
       {/* Suspense context wrapper required for client-side search parameter parsing in Next.js */}
       <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: COLORS.textMuted }}>Initializing secure session...</div>}>

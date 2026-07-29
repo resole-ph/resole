@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { useAuthGate } from '@/providers/AuthGateProvider';
+import ListingCard from '@/components/ListingCard';
 import { getConditionLabel } from '@/features/sell/utils/condition';
 
 /* ---------------------------------------------------------
@@ -64,7 +65,7 @@ function favouriteToListing(row: any) {
 }
 
 /* ---------------------------------------------------------
-   UI Components
+   UI Sub-components
    --------------------------------------------------------- */
 function Pill({
   children,
@@ -181,110 +182,6 @@ function ActiveFilterChip({ label, onRemove }: { label: string; onRemove: () => 
   );
 }
 
-function ListingCard({
-  listing,
-  isSaved,
-  onSave,
-}: {
-  listing: any;
-  isSaved: boolean;
-  onSave: (id: string) => void;
-}) {
-  const { requireAuth } = useAuthGate();
-  return (
-    <div
-      style={{
-        background: COLORS.surface,
-        borderRadius: 16,
-        overflow: 'hidden',
-        boxShadow: CARD_SHADOW,
-        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-      }}
-      className="group hover:-translate-y-1 hover:shadow-lg"
-    >
-      <div style={{ position: 'relative', aspectRatio: '1/1', background: '#F3F4F6', overflow: 'hidden' }}>
-        <Link href={`/listings/${listing.id}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={listing.imageUrl || listing.imageUrlTop || 'https://images.unsplash.com/photo-1539185441755-769473a23570?q=80&w=600&auto=format&fit=crop'}
-            alt={`${listing.brand} ${listing.model}`}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.5)' }}
-          />
-        </Link>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            requireAuth(() => onSave(listing.id), 'Log in to save listings to your favourites.');
-          }}
-          aria-label="Save listing"
-          style={{
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            width: 30,
-            height: 30,
-            borderRadius: 9999,
-            background: 'rgba(255,255,255,0.9)',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            zIndex: 10,
-          }}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{
-              fontSize: 18,
-              color: isSaved ? COLORS.red : '#6B7280',
-              fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0",
-            }}
-          >
-            favorite
-          </span>
-        </button>
-      </div>
-
-      <div style={{ padding: '12px 14px 14px' }}>
-        <Link href={`/listings/${listing.id}`}>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: COLORS.textFaint, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            {listing.brand}
-          </div>
-          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 14.5, fontWeight: 700, color: COLORS.textMain, margin: '2px 0 4px' }} className="hover:text-primary transition-colors truncate">
-            {listing.model}
-          </div>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 10 }}>
-          <span style={{ width: 6, height: 6, borderRadius: 9999, background: COLORS.green }} />
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: COLORS.textMuted }}>{listing.condition || 'Good Condition'}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 18, fontWeight: 700, color: COLORS.textMain }}>
-            ₱{Number(listing.price || 0).toLocaleString()}
-          </span>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 9999,
-              background: COLORS.primary,
-              color: '#fff',
-              fontSize: 11,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            {listing.seller?.name ? listing.seller.name.substring(0, 1).toUpperCase() : 'R'}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function CharityCard({ charity, selected, onClick }: { charity: any; selected: boolean; onClick: () => void }) {
   return (
@@ -365,6 +262,8 @@ function CharitiesSection({ selectedCharity, onSelect }: { selectedCharity: stri
    Main Page Component
    --------------------------------------------------------- */
 export default function ResoleHome() {
+  const { requireAuth } = useAuthGate();
+
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeBrand, setActiveBrand] = useState<string | null>(null);
   const [selectedCharity, setSelectedCharity] = useState<string | null>(null);
@@ -830,16 +729,21 @@ export default function ResoleHome() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
               gap: 20,
             }}
           >
             {visibleListings.map((l) => (
               <ListingCard
                 key={l.id}
-                listing={l}
+                item={l}
                 isSaved={savedIds.has(String(l.id))}
-                onSave={handleSaveListing}
+                onFavorite={(id) => {
+                  requireAuth(() => handleSaveListing(id), 'Log in to save listings to your favourites.');
+                }}
+                onRequireApp={() => {
+                  requireAuth(() => {}, 'Log in to interact with listings.');
+                }}
               />
             ))}
           </div>
