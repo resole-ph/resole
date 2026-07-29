@@ -58,6 +58,7 @@ interface AnalyzeResponse {
     description: string;
     defects: string[];
     estimatedPrice: number;
+    lightingWarning?: string;
     pricing: {
       baselinePrice: number | null;
       matchedShoeId: number | null;
@@ -181,6 +182,7 @@ export const sellService: SellService = {
       suggestedPriceLow: Math.round(suggestedPrice * 0.85),
       suggestedPriceHigh: Math.round(suggestedPrice * 1.15),
       currency: 'PHP',
+      lightingWarning: analysis.lightingWarning || undefined,
     };
 
     return { result, analysisId };

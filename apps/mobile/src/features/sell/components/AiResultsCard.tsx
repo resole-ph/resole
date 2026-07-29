@@ -29,6 +29,19 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
 
   return (
     <View className="gap-4">
+      {/* Lighting warning */}
+      {result.lightingWarning && (
+        <View
+          className="flex-row items-start gap-2.5 rounded-xl px-4 py-3"
+          style={{ backgroundColor: '#FEF3C7' }}
+        >
+          <MaterialIcons name="warning-amber" size={20} color="#F59E0B" />
+          <Text className="font-body-md text-body-md flex-1" style={{ color: '#92400E' }}>
+            {result.lightingWarning}
+          </Text>
+        </View>
+      )}
+
       {/* Valuation banner */}
       <View
         className="rounded-2xl bg-primary p-4"

@@ -30,6 +30,8 @@ export interface ShoeAnalysis {
   defects: string[];
   /** Gemini's own brand-new / market baseline price estimate in PHP. */
   estimatedPrice: number;
+  /** Non-blocking lighting tip; unset when lighting was fine. */
+  lightingWarning?: string;
 }
 
 /** Result of the pgvector baseline lookup + depreciation math. */

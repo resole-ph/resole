@@ -18,6 +18,7 @@ export interface AiAnalysisResult {
   conditionScore: number;
   description: string;
   estimatedPrice: number;
+  lightingWarning?: string;
 }
 
 export interface UploadedPhotoUrls {

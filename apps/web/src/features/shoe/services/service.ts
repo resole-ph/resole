@@ -616,19 +616,20 @@ export async function analyzeShoePhotos(photoUrls: {
     '6. "Insole Left" — left shoe tilted open, insole and size label visible',
     '',
     'LIGHTING & QUALITY ASSESSMENT:',
-    '• Photos must have clear, well-lit conditions with bright, even lighting to inspect details, stitching, logos, sole wear, and size tags.',
-    '• Reject photos with severe lighting flaws such as pitch-black/underexposed framing, heavy dark shadows obscuring key features, or extreme glare/reflections washing out details.',
+    '• Photos are ideally clear and well-lit so details, stitching, logos, sole wear, and size tags are easy to inspect.',
+    '• Be LENIENT about lighting — never reject the whole photo set just because lighting is imperfect. Do your best to identify brand, model, condition, and defects even from photos with dim, shadowed, or glare-y lighting, as long as the shoe itself and its key details are still discernible.',
     '',
     'VALIDATION RULES:',
-    '1. Set `isValidPhotoSet` to FALSE if:',
+    '1. Set `isValidPhotoSet` to FALSE ONLY if:',
     '   a) Any photo clearly does NOT show footwear (e.g. random scene, person, non-shoe object, blank/corrupted image).',
-    '   b) Any photo has severe lighting defects (pitch-black, dark, or heavily shadowed so details/materials are unreadable).',
+    '   b) Any photo is so pitch-black, blown-out, or blurred that literally NOTHING about the shoe is visible or usable — not merely dim or somewhat shadowed.',
     '2. If `isValidPhotoSet` is FALSE:',
-    '   • Provide a clear `rejectionReason` naming the offending photo(s) ONLY by their exact label from the list above (e.g. "Sole View", "Insole Right", "Insole Left") — NEVER reference them by number.',
-    '   • Explain the exact issue (e.g. "The \'Sole View\' photo is too dark and poorly lit to inspect outsole details.") and ask the user to retake the photo in bright, clear lighting.',
+    '   • Set `rejectionReason` naming the offending photo(s) ONLY by their exact label from the list above (e.g. "Sole View", "Insole Right", "Insole Left") — NEVER reference them by number.',
     '   • Fill all other schema fields with neutral placeholders (empty string / 0 / empty array).',
-    '3. If photos are valid footwear and readable:',
-    '   • Set `isValidPhotoSet` to TRUE and `rejectionReason` to "". (Note: minor framing issues or inexact angles do NOT invalidate the set).',
+    '3. If `isValidPhotoSet` is TRUE:',
+    '   • If one or more photos have noticeably poor lighting (dim, shadowed, or glare) that made analysis harder but still possible, set `rejectionReason` to a short, friendly, non-alarming one-sentence lighting tip naming the affected photo(s) by label (e.g. "The \'Sole View\' photo is a bit dark — retaking it in brighter light can improve accuracy."). This is just a tip, NOT a rejection — the set is still valid.',
+    '   • Otherwise (lighting was fine), set `rejectionReason` to "".',
+    '   • (Note: minor framing issues or inexact angles do NOT invalidate the set and do NOT need a lighting tip either.)',
     '',
     'ANALYSIS & VALUATION RULES:',
     '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size should be a plain US size number string like "10" or "10.5".',
@@ -672,8 +673,9 @@ export async function analyzeShoePhotos(photoUrls: {
     throw new InvalidShoePhotoError(parsed.rejectionReason || 'One or more uploaded photos do not appear to show a pair of shoes.');
   }
 
+  // Valid sets repurpose `rejectionReason` as a non-blocking lighting tip.
   const { isValidPhotoSet, rejectionReason, ...analysis } = parsed;
-  return analysis;
+  return { ...analysis, lightingWarning: rejectionReason || undefined };
 }
 
 /**
