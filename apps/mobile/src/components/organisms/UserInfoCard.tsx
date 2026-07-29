@@ -15,13 +15,15 @@ function StatBox({ value, label }: UserStat) {
   );
 }
 
-export default function UserInfoCard() {
+export default function UserInfoCard({ userId }: { userId?: string } = {}) {
   const [userInfo, setUserInfo] = useState<UserInfoCardProps>(USERINFOCARDDUMMY);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await UserService.getUserInfoForCard();
+        const data = userId
+          ? await UserService.getPublicUserInfoForCard(userId)
+          : await UserService.getUserInfoForCard();
         setUserInfo(data);
       } catch (error) {
         console.error('Failed to load user info:', error);
@@ -29,7 +31,7 @@ export default function UserInfoCard() {
     };
 
     loadData();
-  }, []);
+  }, [userId]);
 
   return (
     <View

@@ -32,3 +32,15 @@ export interface ListingSummary {
 export interface FavouritesSummary {
   totalCount: number;
 }
+
+export interface UserReview {
+  id: number;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  rater: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+}
