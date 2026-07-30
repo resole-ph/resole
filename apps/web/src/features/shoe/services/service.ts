@@ -278,7 +278,12 @@ export async function getShoeListingsByUserId(userId: string) {
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(and(eq(shoeListing.userId, userId), isNull(shoeListing.deletedAt)))
+      .where(
+        and(
+          eq(shoeListing.userId, userId), 
+          eq(shoeListing.isAvailable, true)
+        )
+      )
       .orderBy(desc(shoeListing.updatedAt));
 
     return rows ?? null;
