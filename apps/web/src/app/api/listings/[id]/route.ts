@@ -6,6 +6,7 @@ import {
   updateShoeListing
 } from '@/features/shoe/services/service';
 import type { UpdateShoeListing } from '@/features/shoe/types/types';
+import { createListingView } from '@/features/view/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
 
 function parseShoeListingId(rawId: string) {
@@ -37,6 +38,16 @@ export async function GET(
   const shoeListing = await getShoeListingById(shoeListingId);
   if (!shoeListing) {
     return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const isViewMode = searchParams.get('view') === 'true';
+
+  if (isViewMode) {
+    await createListingView({
+      listingId: shoeListing.id,
+      viewerId: currentUser.user.id
+    });
   }
 
   return NextResponse.json({
