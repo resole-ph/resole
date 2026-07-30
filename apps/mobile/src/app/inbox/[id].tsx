@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
+  View, Text, ScrollView, TouchableOpacity, Keyboard,
   TextInput, Image, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -264,6 +264,8 @@ export default function ConversationScreen() {
 
   const [updates, setUpdates] = useState<SystemUpdate[]>([]);
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
   const loadConversation = useCallback(async () => {
     setIsLoadingConversation(true);
     try {
@@ -327,6 +329,16 @@ export default function ConversationScreen() {
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100);
   }, [messages.length]);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const handleSend = async (text: string) => {
     try {
@@ -406,7 +418,11 @@ export default function ConversationScreen() {
     <View className="flex-1 bg-gray-50">
       <ConvoHeader sender={sender} avatarInitial={avatarInitial} avatarColor={avatarColor} isSystem={false} onBack={() => router.back()} />
 
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1, padding: 0 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : (keyboardVisible ? 'height' : undefined)} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
         <ScrollView
           ref={scrollRef}
           className="flex-1"
