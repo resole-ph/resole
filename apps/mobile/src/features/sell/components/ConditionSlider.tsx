@@ -35,10 +35,17 @@ function colorForDeviation(deviation: number) {
   return toHex({ r: lerp(WARN.r, BAD.r, step), g: lerp(WARN.g, BAD.g, step), b: lerp(WARN.b, BAD.b, step) });
 }
 
-function toneFor(deviation: number): 'good' | 'warn' | 'bad' {
-  if (deviation <= 0.15) return 'good';
-  if (deviation <= 0.35) return 'warn';
-  return 'bad';
+export type DeviationTone = 'exact' | 'close' | 'slight' | 'off' | 'far';
+
+/** Thresholds are picked against a 1–10 scale (9-point spread), so each tier
+ * lines up with a whole/half-point difference from the AI estimate: 0 exact,
+ * up to 1 close, up to 2 slight, up to 3.5 off, 4+ far. */
+function toneFor(deviation: number): DeviationTone {
+  if (deviation <= 0.03) return 'exact';
+  if (deviation <= 0.14) return 'close';
+  if (deviation <= 0.25) return 'slight';
+  if (deviation <= 0.41) return 'off';
+  return 'far';
 }
 
 /** Shared with EditListingContainer so the big rating number/label can carry
@@ -48,14 +55,36 @@ export function getConditionTone(value: number, aiValue: number, min: number, ma
   return { color: colorForDeviation(deviation), tone: toneFor(deviation) };
 }
 
-function messageFor(tone: 'good' | 'warn' | 'bad', aiValue: number) {
+/** Short read on how the current rating tracks the AI estimate — meant to sit
+ * where the raw condition word (Good/Poor/etc.) used to, since that word alone
+ * didn't tell the seller anything about agreement with the AI. */
+export function getDeviationLabel(tone: DeviationTone): string {
   switch (tone) {
-    case 'good':
-      return `Matches our AI's estimate of ${aiValue}/10 — looks good.`;
-    case 'warn':
-      return `A bit different from our AI's estimate of ${aiValue}/10. Double-check before continuing.`;
-    case 'bad':
-      return `Way off from our AI's estimate of ${aiValue}/10. Buyers may flag this listing as inaccurate.`;
+    case 'exact':
+      return 'Accurate';
+    case 'close':
+      return 'Close';
+    case 'slight':
+      return 'Slightly Different';
+    case 'off':
+      return 'Quite Different';
+    case 'far':
+      return 'Way Off';
+  }
+}
+
+function messageFor(tone: DeviationTone, aiValue: number, conditionLabel: string) {
+  switch (tone) {
+    case 'exact':
+      return `Condition is ${conditionLabel} — it matches our AI's estimate.`;
+    case 'close':
+      return `Condition is ${conditionLabel} — close to our AI's estimate of ${aiValue}/10.`;
+    case 'slight':
+      return `Condition is ${conditionLabel} — slightly different from our AI's estimate of ${aiValue}/10. Double-check before continuing.`;
+    case 'off':
+      return `Condition is ${conditionLabel} — quite different from our AI's estimate of ${aiValue}/10. Buyers may question this listing.`;
+    case 'far':
+      return `Condition is ${conditionLabel} — way off our AI's estimate of ${aiValue}/10. Buyers may flag this listing as inaccurate.`;
   }
 }
 
@@ -67,7 +96,8 @@ function valueToX(v: number, min: number, max: number, w: number) {
 function xToValue(x: number, min: number, max: number, w: number) {
   if (w === 0) return min;
   const raw = (x / w) * (max - min) + min;
-  return Math.round(Math.max(min, Math.min(max, raw)) * 10) / 10;
+  const clamped = Math.max(min, Math.min(max, raw));
+  return Math.round(clamped * 2) / 2;
 }
 
 interface ConditionSliderProps {
@@ -76,10 +106,12 @@ interface ConditionSliderProps {
   max: number;
   /** The AI-suggested condition rating this value is measured against. */
   aiValue: number;
+  /** The condition word (Good/Poor/etc.) for the current value, used in the bottom message. */
+  conditionLabel: string;
   onChange: (value: number) => void;
 }
 
-export default function ConditionSlider({ value, min, max, aiValue, onChange }: ConditionSliderProps) {
+export default function ConditionSlider({ value, min, max, aiValue, conditionLabel, onChange }: ConditionSliderProps) {
   const trackWidth = useRef(0);
   const thumbX = useSharedValue(0);
   const [displayValue, setDisplayValue] = useState(value);
@@ -188,7 +220,7 @@ export default function ConditionSlider({ value, min, max, aiValue, onChange }: 
       </View>
 
       <Text className="font-label-md text-label-md mt-1" style={{ color: toneColor }}>
-        {messageFor(tone, aiValue)}
+        {messageFor(tone, aiValue, conditionLabel)}
       </Text>
     </View>
   );
