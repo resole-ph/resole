@@ -42,8 +42,8 @@ export const ListingService = {
     return res.shoeSearch;
   },
   
-  async getListingById(id: number): Promise<Listing> {
-    const res = await apiFetch<{ shoeListing: Listing }>(`/api/listings/${id}`, {
+  async getListingById(id: number, view: boolean = false): Promise<Listing> {
+    const res = await apiFetch<{ shoeListing: Listing }>(`/api/listings/${id}?view=${view}`, {
       method: 'GET'
     });
 

@@ -32,3 +32,10 @@ export interface ListingSummary {
 export interface FavouritesSummary {
   totalCount: number;
 }
+
+export interface UserMetric { 
+  label: string, 
+  value: number, 
+  delta: string, 
+  up: boolean 
+}

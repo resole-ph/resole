@@ -15,6 +15,7 @@ const MIN_SIZE = 1;
 const MAX_SIZE = 50;
 const MIN_YEAR = 1900;
 const MIN_PRICE = 1;
+const MAX_PRICE = 100000;
 
 export function validateListingForm(form: ListingFormData): ListingFormErrors {
   const errors: ListingFormErrors = {};
@@ -45,6 +46,8 @@ export function validateListingForm(form: ListingFormData): ListingFormErrors {
     errors.price = 'Price is required.';
   } else if (!Number.isFinite(price) || price < MIN_PRICE) {
     errors.price = 'Price must be greater than ₱0.';
+  } else if (price > MAX_PRICE) {
+    errors.price = 'Price must not exceed ₱100,000.'
   }
 
   return errors;
