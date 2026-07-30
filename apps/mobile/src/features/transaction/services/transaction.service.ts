@@ -1,4 +1,4 @@
-import { Transaction, TxTab } from "../types/transaction.types";
+import { Transaction, TransactionFetch } from "../types/transaction.types";
 import { RedeemOption, CoinTx } from "../types/transaction.types";
 import { apiFetch } from "@/lib/api-client";
 
@@ -33,7 +33,7 @@ export const TransactionService = {
     }
   },
 
-  async getUserTransactions(): Promise<Omit<Transaction, 'color'>[]> {
+  async getUserTransactions(): Promise<TransactionFetch[]> {
     const res = await apiFetch<any>(`api/users/me/transactions`, {
       method: 'GET'
     });

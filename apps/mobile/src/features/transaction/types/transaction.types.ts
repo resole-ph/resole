@@ -11,6 +11,8 @@ export type Transaction = {
   color: string;
 };
 
+export type TransactionFetch = Omit<Transaction, 'color'>;
+
 export type RedeemOption = {
   id: string;
   title: string;
