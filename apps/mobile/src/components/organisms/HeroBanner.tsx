@@ -69,6 +69,7 @@ export default function HeroBanner({
           borderRadius: 24,
           overflow: 'hidden',
           padding: 20,
+          minHeight: 180
         }}
       >
         {/* Decorative circles */}
