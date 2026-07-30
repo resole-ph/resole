@@ -7,6 +7,7 @@ import { ListingService } from '@/features/listing/services/listing.service';
 import { ListingSummary, FavouritesSummary } from '@/features/user/types/user.types';
 import { Listing } from '@/components/molecules/ListingCard';
 import { FavItem } from '@/features/listing/types/listing.types';
+import { UserMetric } from '@/features/user/types/user.types';
 
 const PREVIEW_COUNT = 3;
 
@@ -122,7 +123,9 @@ function SavedItemsCard({ onPress }: { onPress: () => void }) {
       .catch((error) => console.error('Failed to load favourites:', error));
   }, []);
 
-  const previews = items.slice(0, 4);
+  const previews = items.slice(0, PREVIEW_COUNT);
+  const remaining = Math.max((favourites?.totalCount ?? items.length) - previews.length, 0);
+
 
   return (
     <TouchableOpacity
@@ -137,6 +140,11 @@ function SavedItemsCard({ onPress }: { onPress: () => void }) {
         {previews.map((item) => (
           <PreviewThumb key={item.id} uri={item.imageUrl} />
         ))}
+        {remaining > 0 && (
+          <View className="w-20 h-20 rounded-xl bg-gray-100 items-center justify-center">
+            <Text className="text-gray-500 font-bold text-sm">+{remaining}</Text>
+          </View>
+        )}
       </View>
 
       <Text className="text-gray-400 text-xs">
@@ -198,11 +206,16 @@ function QuickLinksCard({ onTransactions }: { onTransactions: () => void }) {
 
 /* ── Seller Analytics ── */
 function SellerAnalyticsCard() {
-  const metrics = [
-    { label: 'Profile views', value: '1,240', delta: '+18%', up: true },
-    { label: 'Watchers',      value: '84',    delta: '+5%',  up: true },
-    { label: 'Saves',         value: '31',    delta: '-2%',  up: false },
-  ];
+  const [metrics, setMetrics] = useState<UserMetric[]>([]);
+
+  useEffect(() => {
+    const getUserAnalytics = async () => {
+      const data = await UserService.getUserSellerAnalytics();
+      setMetrics(data);
+    };
+
+    getUserAnalytics();
+  }, [])
 
   return (
     <View className="bg-white rounded-2xl mx-5 mb-3 p-4" style={CARD_SHADOW}>

@@ -176,12 +176,59 @@ export async function getAllShoeListing(filters?: ShoeListingFilters) {
       .where(
         and(
           eq(shoeListing.isAvailable, true), 
-          isNull(shoeListing.deletedAt), 
           ...buildShoeListingFilters(filters)
         )
       )
       .orderBy(desc(shoeListing.updatedAt))
       .limit(20);
+
+    return rows as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe listings.", error);
+    return null;
+  }
+}
+
+export async function getAllShoeListingForSale(filters?: ShoeListingFilters) {
+  try {
+    const rows = await db
+      .select({
+        seller: getTableColumns(user),
+        shoe: getTableColumns(shoe),
+        ...getTableColumns(shoeListing)
+      })
+      .from(shoeListing)
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(and(
+        eq(shoeListing.isAvailable, true),
+        or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')),
+        ...buildShoeListingFilters(filters)
+      ));
+
+    return rows as ShoeListing[] ?? null;
+  } catch (error) {
+    console.error("Error fetching shoe listings.", error);
+    return null;
+  }
+}
+
+export async function getAllShoeListingForSwap(filters?: ShoeListingFilters) {
+  try {
+    const rows = await db
+      .select({
+        seller: getTableColumns(user),
+        shoe: getTableColumns(shoe),
+        ...getTableColumns(shoeListing)
+      })
+      .from(shoeListing)
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .where(and(
+        eq(shoeListing.isAvailable, true),
+        or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')),
+        ...buildShoeListingFilters(filters)
+      ));
 
     return rows as ShoeListing[] ?? null;
   } catch (error) {
@@ -231,7 +278,12 @@ export async function getShoeListingsByUserId(userId: string) {
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(and(eq(shoeListing.userId, userId), isNull(shoeListing.deletedAt)))
+      .where(
+        and(
+          eq(shoeListing.userId, userId), 
+          eq(shoeListing.isAvailable, true)
+        )
+      )
       .orderBy(desc(shoeListing.updatedAt));
 
     return rows ?? null;
@@ -289,56 +341,6 @@ export async function getShoeBrands() {
     return rows.map(item => item.categories) ?? null;
   } catch (error) {
     console.error("Error fetching shoe brands.", error);
-    return null;
-  }
-}
-
-export async function getAllShoeListingForSale(filters?: ShoeListingFilters) {
-  try {
-    const rows = await db
-      .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
-        ...getTableColumns(shoeListing)
-      })
-      .from(shoeListing)
-      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
-      .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(and(
-        eq(shoeListing.isAvailable, true),
-        isNull(shoeListing.deletedAt),
-        or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')),
-        ...buildShoeListingFilters(filters)
-      ));
-
-    return rows as ShoeListing[] ?? null;
-  } catch (error) {
-    console.error("Error fetching shoe listings.", error);
-    return null;
-  }
-}
-
-export async function getAllShoeListingForSwap(filters?: ShoeListingFilters) {
-  try {
-    const rows = await db
-      .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
-        ...getTableColumns(shoeListing)
-      })
-      .from(shoeListing)
-      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
-      .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(and(
-        eq(shoeListing.isAvailable, true),
-        isNull(shoeListing.deletedAt),
-        or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')),
-        ...buildShoeListingFilters(filters)
-      ));
-
-    return rows as ShoeListing[] ?? null;
-  } catch (error) {
-    console.error("Error fetching shoe listings.", error);
     return null;
   }
 }
@@ -635,6 +637,7 @@ export async function analyzeShoePhotos(photoUrls: {
     '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size should be a plain US size number string like "10" or "10.5".',
     '• Condition & Defects: Set conditionScore (0-10, where 10 = brand new/unworn) based on the worse shoe of the pair. Prefix each defect entry with "Left: ", "Right: ", or "Both: ".',
     '• Estimated Price: Estimate typical brand-new retail price in PHP for this shoe model.',
+    '• Year: Provide a valid Gregorian calendar year (e.g., 2026, 2016, 2006) of the release of the model.',
   ].join('\n');
 
   const response = await ai.models.generateContent({

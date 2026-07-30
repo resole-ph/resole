@@ -13,6 +13,7 @@ import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { UserService } from '@/features/user/services/user.service';
+import { TransactionService } from '@/features/transaction/services/transaction.service';
 import { useSellStore } from '@/store/sell';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
@@ -78,7 +79,7 @@ export default function ListingDetailScreen() {
     const loadData = async () => {
       setIsLoadingListing(true);
       try {
-        const fetchedListing = await ListingService.getListingById(id);
+        const fetchedListing = await ListingService.getListingById(id, true);
         setListing(fetchedListing);
 
         if (fetchedListing && fetchedListing.model) {
@@ -437,6 +438,7 @@ export default function ListingDetailScreen() {
 
             <TouchableOpacity
               onPress={offerPrice ? handleSendOffer : undefined}
+              disabled={isLoadingOffer}
               style={{ backgroundColor: offerPrice ? '#D97706' : '#E5E7EB', borderRadius: 18, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, ...(offerPrice ? BTN_SHADOW('#D97706') : {}) }}
               activeOpacity={offerPrice ? 0.85 : 1}
             >

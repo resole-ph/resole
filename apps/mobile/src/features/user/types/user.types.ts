@@ -44,3 +44,10 @@ export interface UserReview {
     image: string | null;
   };
 }
+
+export interface UserMetric { 
+  label: string, 
+  value: number, 
+  delta: string, 
+  up: boolean 
+}

@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api-client';
-import { UserStat, UserInfoCardProps, ListingSummary, FavouritesSummary, UserReview } from '../types/user.types';
+import { UserStat, UserInfoCardProps, ListingSummary, FavouritesSummary, UserMetric, UserReview } from '../types/user.types';
 
 const STAT_LABELS: Record<string, string> = {
   pairsSaved: 'Pairs saved',
@@ -88,7 +88,6 @@ export const UserService = {
     return { totalCount };
   },
 
-  /** Public profile of another user — narrower than `getUserInfoForCard`, no contact/account details. */
   async getPublicUserInfoForCard(userId: string): Promise<UserInfoCardProps> {
     const { user } = await apiFetch<{ user: any }>(`/api/users/${userId}`, {
       method: 'GET'
@@ -121,5 +120,29 @@ export const UserService = {
     });
 
     return reviews;
-  }
+  },
+
+  async getUserSellerAnalytics(): Promise<UserMetric[]> {
+    const { listingViews, profileViews, listingSaves } = await apiFetch<{ 
+      listingViews: any,
+      profileViews: any,
+      listingSaves: any 
+    }>(`/api/users/me/seller-analytics`, {
+      method: 'GET'
+    });
+
+    let sellerAnalytics = [ listingViews, profileViews, listingSaves ];
+    const labels = ['Listing Views', 'Profile Views', 'Listing Saves'];
+
+    sellerAnalytics = sellerAnalytics.map((item, index) => {
+      return {
+        label: labels[index],
+        value: item.total,
+        delta: `${(item.thisWeek - item.lastWeek) / item.lastWeek}%`,
+        up: item.thisWeek >= item.lastWeek
+      };
+    });
+    
+    return sellerAnalytics;
+  } 
 }
