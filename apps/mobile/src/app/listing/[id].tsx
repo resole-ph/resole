@@ -79,7 +79,7 @@ export default function ListingDetailScreen() {
     const loadData = async () => {
       setIsLoadingListing(true);
       try {
-        const fetchedListing = await ListingService.getListingById(id);
+        const fetchedListing = await ListingService.getListingById(id, true);
         setListing(fetchedListing);
 
         if (fetchedListing && fetchedListing.model) {
