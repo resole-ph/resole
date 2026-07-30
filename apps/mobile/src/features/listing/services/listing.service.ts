@@ -58,6 +58,14 @@ export const ListingService = {
     return res.shoeListings;
   },
 
+  async getUserListingsById(userId: string): Promise<Listing[]> {
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/users/${userId}/listings`, {
+      method: 'GET'
+    });
+
+    return res.shoeListings;
+  },
+
   async getUserFavourites(): Promise<FavItem[]> {
     const res = await apiFetch<{ favourites: any[] }>(`/api/users/me/favourites`, {
       method: 'GET'

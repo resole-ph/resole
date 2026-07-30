@@ -78,6 +78,13 @@ export const TransactionService = {
     })
   },
 
+  async submitRating(transactionId: number, rating: number, comment?: string): Promise<{ rating: any }> {
+    return apiFetch<{ rating: any }>(`api/transactions/${transactionId}/rating`, {
+      method: 'POST',
+      body: { rating, comment: comment || undefined },
+    });
+  },
+
   async getVouchers(): Promise<RedeemOption[]> {
     const res = await apiFetch<any>(`api/rewards/redeem-options`, {
       method: 'GET'

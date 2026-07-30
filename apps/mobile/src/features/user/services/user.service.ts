@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api-client';
-import { UserStat, UserInfoCardProps, ListingSummary, FavouritesSummary, UserMetric } from '../types/user.types';
+import { UserStat, UserInfoCardProps, ListingSummary, FavouritesSummary, UserMetric, UserReview } from '../types/user.types';
 
 const STAT_LABELS: Record<string, string> = {
   pairsSaved: 'Pairs saved',
@@ -86,6 +86,40 @@ export const UserService = {
     });
 
     return { totalCount };
+  },
+
+  async getPublicUserInfoForCard(userId: string): Promise<UserInfoCardProps> {
+    const { user } = await apiFetch<{ user: any }>(`/api/users/${userId}`, {
+      method: 'GET'
+    });
+
+    const stats: UserStat[] = [
+      { value: String(user.listingCount ?? 0), label: 'Listings' },
+      { value: String(user.salesCount ?? 0), label: 'Sales' },
+      { value: String(user.swapsCount ?? 0), label: 'Swaps' },
+    ];
+
+    return {
+      name: user.name,
+      initials: user.name
+        .split(' ')
+        .map((item: string) => item.charAt(0))
+        .join('')
+        .toUpperCase(),
+      rating: user.overallRating ?? 0,
+      reviewCount: user.reviewCount ?? 0,
+      location: user.location ?? '',
+      joinYear: user.joinedYear ?? 0,
+      stats: stats
+    };
+  },
+
+  async getUserReviews(userId: string): Promise<UserReview[]> {
+    const { reviews } = await apiFetch<{ reviews: UserReview[] }>(`/api/users/${userId}/reviews`, {
+      method: 'GET'
+    });
+
+    return reviews;
   },
 
   async getUserSellerAnalytics(): Promise<UserMetric[]> {

@@ -33,6 +33,18 @@ export interface FavouritesSummary {
   totalCount: number;
 }
 
+export interface UserReview {
+  id: number;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  rater: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+}
+
 export interface UserMetric { 
   label: string, 
   value: number, 

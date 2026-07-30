@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, Keyboard,
   TextInput, Image, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { InboxService, RESOLE_THREAD_ID } from '@/features/inbox/services/inbox.service';
@@ -11,7 +11,9 @@ import { SystemUpdate } from '@/features/inbox/types/inbox.types';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { UserService } from '@/features/user/services/user.service';
+import { TransactionService } from '@/features/transaction/services/transaction.service';
 import { Listing } from '@/components/molecules/ListingCard';
+import RatingModal from '@/components/organisms/RatingModal';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -32,13 +34,14 @@ function getOfferStatus(offer: any): OfferStatus {
 // ─── Header ──────────────────────────────────────────────────────────────────
 
 function ConvoHeader({
-  sender, avatarInitial, avatarColor, isSystem, onBack,
+  sender, avatarInitial, avatarColor, isSystem, onBack, onPressProfile,
 }: {
   sender: string;
   avatarInitial: string;
   avatarColor: string;
   isSystem: boolean;
   onBack: () => void;
+  onPressProfile?: () => void;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -50,22 +53,28 @@ function ConvoHeader({
         <Ionicons name="chevron-back" size={22} color="#6B7280" />
       </TouchableOpacity>
 
-      <View
-        className="w-10 h-10 rounded-2xl items-center justify-center mr-3"
-        style={{ backgroundColor: avatarColor || '#EFF6FF' }}
+      <TouchableOpacity
+        className="flex-1 flex-row items-center"
+        activeOpacity={onPressProfile ? 0.7 : 1}
+        onPress={onPressProfile}
+        disabled={!onPressProfile}
       >
-        {isSystem ? (
-          <Ionicons name="notifications-outline" size={18} color="#2563EB" />
-        ) : (
-          <Text className="text-blue-700 font-bold">{avatarInitial}</Text>
-        )}
-      </View>
+        <View
+          className="w-10 h-10 rounded-2xl items-center justify-center mr-3"
+          style={{ backgroundColor: avatarColor || '#EFF6FF' }}
+        >
+          {isSystem ? (
+            <Ionicons name="notifications-outline" size={18} color="#2563EB" />
+          ) : (
+            <Text className="text-blue-700 font-bold">{avatarInitial}</Text>
+          )}
+        </View>
 
-      <View className="flex-1">
-        <Text className="text-gray-900 font-semibold text-sm">{sender}</Text>
-        {!isSystem && <Text className="text-gray-400 text-xs mt-0.5">Active recently</Text>}
-      </View>
-
+        <View className="flex-1">
+          <Text className="text-gray-900 font-semibold text-sm">{sender}</Text>
+          {!isSystem && <Text className="text-gray-400 text-xs mt-0.5">Active recently</Text>}
+        </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -108,7 +117,7 @@ function TextBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
 }
 
 function OfferCard({
-  type, listing, swapItem, price, status, canRespond, onAccept, onDecline, time, isMe, disabled
+  type, listing, swapItem, price, status, canRespond, onAccept, onDecline, time, isMe, isAccepting, isDeclining
 }: {
   type: 'sale' | 'swap';
   listing: Listing | null;
@@ -120,13 +129,15 @@ function OfferCard({
   onDecline: () => void;
   time: string;
   isMe: boolean;
-  disabled: boolean;
+  isAccepting: boolean;
+  isDeclining: boolean;
 }) {
   const isSwap = type === 'swap';
+  const disabled = isAccepting || isDeclining;
 
   return (
-    <View className={`px-4 mb-1 ${isMe ? 'items-end' : 'items-start'}`}>
-      <View className="bg-white rounded-2xl p-4 max-w-[84%]" style={CARD_SHADOW}>
+    <View className="px-4 mb-1">
+      <View className="bg-white rounded-2xl p-5 w-full" style={CARD_SHADOW}>
         <View className="flex-row items-center mb-3">
           <View className="bg-blue-50 rounded-xl px-2.5 py-1 flex-row items-center">
             <Ionicons name={isSwap ? 'swap-horizontal-outline' : 'pricetag-outline'} size={12} color="#2563EB" />
@@ -170,24 +181,53 @@ function OfferCard({
 
         {status === 'pending' ? (
           canRespond ? (
-            <View className="flex-row gap-2">
-              <TouchableOpacity className="flex-1 bg-gray-100 rounded-xl py-2.5 items-center" activeOpacity={disabled ? 0.6 : 0.85} onPress={onDecline} disabled={disabled}>
-                <Text className="text-gray-600 font-semibold text-xs">Decline</Text>
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                className="flex-1 flex-row items-center justify-center bg-gray-100 rounded-2xl py-3.5 gap-1.5"
+                activeOpacity={disabled ? 0.6 : 0.8}
+                onPress={onDecline}
+                disabled={disabled}
+              >
+                {isDeclining ? (
+                  <ActivityIndicator size="small" color="#6B7280" />
+                ) : (
+                  <>
+                    <Ionicons name="close" size={16} color="#6B7280" />
+                    <Text className="text-gray-600 font-bold text-sm">Decline</Text>
+                  </>
+                )}
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 bg-blue-600 rounded-xl py-2.5 items-center" activeOpacity={disabled ? 0.6 : 0.85} onPress={onAccept} disabled={disabled}>
-                <Text className="text-white font-semibold text-xs">Accept</Text>
+              <TouchableOpacity
+                className="flex-1 flex-row items-center justify-center bg-blue-600 rounded-2xl py-3.5 gap-1.5"
+                activeOpacity={disabled ? 0.6 : 0.85}
+                onPress={onAccept}
+                disabled={disabled}
+                style={
+                  !disabled
+                    ? { shadowColor: '#2563EB', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 3 }
+                    : undefined
+                }
+              >
+                {isAccepting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                    <Text className="text-white font-bold text-sm">Accept</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           ) : (
-            <View className="rounded-xl py-2.5 items-center bg-amber-50 flex-row justify-center gap-1.5">
-              <Ionicons name="time-outline" size={15} color="#D97706" />
-              <Text className="text-amber-600 font-semibold text-xs">Waiting for seller's response</Text>
+            <View className="rounded-2xl py-3.5 items-center bg-amber-50 flex-row justify-center gap-1.5">
+              <Ionicons name="time-outline" size={16} color="#D97706" />
+              <Text className="text-amber-600 font-semibold text-sm">Waiting for seller's response</Text>
             </View>
           )
         ) : (
-          <View className={`rounded-xl py-2.5 items-center flex-row justify-center gap-1.5 ${status === 'accepted' ? 'bg-green-50' : 'bg-gray-100'}`}>
-            <Ionicons name={status === 'accepted' ? 'checkmark-circle' : 'close-circle'} size={15} color={status === 'accepted' ? '#10B981' : '#9CA3AF'} />
-            <Text className={`font-semibold text-xs ${status === 'accepted' ? 'text-green-600' : 'text-gray-400'}`}>
+          <View className={`rounded-2xl py-3.5 items-center flex-row justify-center gap-1.5 ${status === 'accepted' ? 'bg-green-50' : 'bg-gray-100'}`}>
+            <Ionicons name={status === 'accepted' ? 'checkmark-circle' : 'close-circle'} size={16} color={status === 'accepted' ? '#10B981' : '#9CA3AF'} />
+            <Text className={`font-bold text-sm ${status === 'accepted' ? 'text-green-600' : 'text-gray-400'}`}>
               {status === 'accepted' ? 'Offer accepted' : 'Offer declined'}
             </Text>
           </View>
@@ -242,7 +282,7 @@ function InputBar({ onSend, disabled }: { onSend: (text: string) => void, disabl
 
 export default function ConversationScreen() {
   const params = useLocalSearchParams<{
-    id: string; sender?: string; avatarInitial?: string; avatarColor?: string; isSystem?: string;
+    id: string; sender?: string; avatarInitial?: string; avatarColor?: string; isSystem?: string; otherUserId?: string;
   }>();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -253,7 +293,7 @@ export default function ConversationScreen() {
 
   const [isLoadingConversation, setIsLoadingConversation] = useState(true);
   const [isLoadingSend, setIsLoadingSend] = useState(false);
-  const [isLoadingOffer, setIsLoadingOffer] = useState(false);
+  const [pendingOffer, setPendingOffer] = useState<{ id: number; action: 'accept' | 'decline' } | null>(null);
 
   const [notFound, setNotFound] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -265,6 +305,10 @@ export default function ConversationScreen() {
   const [updates, setUpdates] = useState<SystemUpdate[]>([]);
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+  const [ratingTarget, setRatingTarget] = useState<{ transactionId: number; sellerId: string; sellerName: string } | null>(null);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [skippedRatingIds, setSkippedRatingIds] = useState<Set<number>>(new Set());
 
   const loadConversation = useCallback(async () => {
     setIsLoadingConversation(true);
@@ -317,14 +361,19 @@ export default function ConversationScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    UserService.getUserInfo().then((user) => setCurrentUserId(user.id)).catch(() => {});
-    if (isSystemRoute) {
-      loadUpdates();
-    } else {
-      loadConversation();
-    }
-  }, [isSystemRoute, loadConversation, loadUpdates]);
+  // Refetch on every focus, not just mount — this screen can stay mounted in the
+  // stack while the other party accepts/rates elsewhere, or while switching
+  // accounts, so a mount-only effect can leave currentUserId/offers stale.
+  useFocusEffect(
+    useCallback(() => {
+      UserService.getUserInfo().then((user) => setCurrentUserId(user.id)).catch(() => {});
+      if (isSystemRoute) {
+        loadUpdates();
+      } else {
+        loadConversation();
+      }
+    }, [isSystemRoute, loadConversation, loadUpdates])
+  );
 
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100);
@@ -339,6 +388,26 @@ export default function ConversationScreen() {
       hideSubscription.remove();
     };
   }, []);
+  
+  // The buyer (recipient) is the only party allowed to submit a rating — prompt
+  // them once they land on a conversation with an accepted-but-unrated offer.
+  useEffect(() => {
+    if (!currentUserId || ratingTarget) return;
+
+    const pending = Object.values(offersById).find(
+      (offer: any) =>
+        offer.isAccepted === true &&
+        !offer.isRated &&
+        offer.recipientId === currentUserId &&
+        !skippedRatingIds.has(offer.id)
+    );
+    if (!pending) return;
+
+    const seller = offerExtrasById[pending.id]?.listing?.seller;
+    if (!seller?.id) return;
+
+    setRatingTarget({ transactionId: pending.id, sellerId: seller.id, sellerName: seller.name });
+  }, [currentUserId, offersById, offerExtrasById, skippedRatingIds, ratingTarget]);
 
   const handleSend = async (text: string) => {
     try {
@@ -355,26 +424,49 @@ export default function ConversationScreen() {
 
   const handleAccept = async (transactionId: number) => {
     try {
-      setIsLoadingOffer(true);
+      setPendingOffer({ id: transactionId, action: 'accept' });
       await OfferService.acceptOffer(transactionId);
       setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: true } }));
     } catch (error) {
       console.error('Failed to accept offer:', error);
     } finally {
-      setIsLoadingOffer(false);
+      setPendingOffer(null);
     }
   };
 
   const handleDecline = async (transactionId: number) => {
     try {
-      setIsLoadingOffer(true);
+      setPendingOffer({ id: transactionId, action: 'decline' });
       await OfferService.declineOffer(transactionId);
       setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: false } }));
     } catch (error) {
       console.error('Failed to decline offer:', error);
     } finally {
-      setIsLoadingSend(false);
+      setPendingOffer(null);
     }
+  };
+
+  const handleSubmitRating = async (rating: number, comment: string) => {
+    if (!ratingTarget) return;
+    try {
+      setIsSubmittingRating(true);
+      await TransactionService.submitRating(ratingTarget.transactionId, rating, comment);
+      setOffersById((prev) => ({
+        ...prev,
+        [ratingTarget.transactionId]: { ...prev[ratingTarget.transactionId], isRated: true },
+      }));
+      setRatingTarget(null);
+    } catch (error) {
+      console.error('Failed to submit rating:', error);
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
+  const handleSkipRating = () => {
+    if (!ratingTarget) return;
+    setSkippedRatingIds((prev) => new Set(prev).add(ratingTarget.transactionId));
+    setRatingTarget(null);
   };
 
   if (isLoadingConversation) {
@@ -416,7 +508,14 @@ export default function ConversationScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <ConvoHeader sender={sender} avatarInitial={avatarInitial} avatarColor={avatarColor} isSystem={false} onBack={() => router.back()} />
+      <ConvoHeader
+        sender={sender}
+        avatarInitial={avatarInitial}
+        avatarColor={avatarColor}
+        isSystem={false}
+        onBack={() => router.back()}
+        onPressProfile={params.otherUserId ? () => router.push(`/profile/${params.otherUserId}` as any) : undefined}
+      />
 
       <KeyboardAvoidingView 
         style={{ flex: 1, padding: 0 }} 
@@ -450,7 +549,8 @@ export default function ConversationScreen() {
                     onDecline={() => handleDecline(offerItem.id)}
                     time={new Date(msg.createdAt).toLocaleDateString()}
                     isMe={isMe}
-                    disabled={isLoadingOffer}
+                    isAccepting={!!pendingOffer && pendingOffer.id === offerItem.id && pendingOffer.action === 'accept'}
+                    isDeclining={!!pendingOffer && pendingOffer.id === offerItem.id && pendingOffer.action === 'decline'}
                   />
                 )}
               </View>
@@ -458,11 +558,19 @@ export default function ConversationScreen() {
           })}
         </ScrollView>
 
-        <InputBar 
-          onSend={handleSend} 
-          disabled={isLoadingSend} 
+        <InputBar
+          onSend={handleSend}
+          disabled={isLoadingSend}
         />
       </KeyboardAvoidingView>
+
+      <RatingModal
+        visible={!!ratingTarget}
+        targetName={ratingTarget?.sellerName ?? ''}
+        submitting={isSubmittingRating}
+        onSubmit={handleSubmitRating}
+        onSkip={handleSkipRating}
+      />
     </View>
   );
 }

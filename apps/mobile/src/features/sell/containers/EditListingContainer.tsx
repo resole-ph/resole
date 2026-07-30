@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SellStepHeader from '../components/SellStepHeader';
 import StepFooter from '../components/StepFooter';
-import ConditionSlider, { getConditionTone } from '../components/ConditionSlider';
+import ConditionSlider, { getConditionTone, getDeviationLabel } from '../components/ConditionSlider';
 import PriceInput from '../components/PriceInput';
 import DropdownField from '../components/DropdownField';
 import SizeField from '../components/SizeField';
@@ -197,8 +197,18 @@ export default function EditListingContainer() {
             elevation: 2,
           }}
         >
-          <SectionLabel>Condition</SectionLabel>
-          <View className="items-center mb-5">
+          <View className="flex-row items-center justify-between mb-1 mt-1">
+            <Text className="font-label-md text-label-md text-on-surface-variant">CONDITION</Text>
+            <View
+              className="rounded-full px-3 py-1"
+              style={{ backgroundColor: `${conditionTone.color}1F` }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: conditionTone.color }}>
+                {form.conditionLabel}
+              </Text>
+            </View>
+          </View>
+          <View className="items-center mb-5 mt-3">
             <View
               style={{
                 width: 116,
@@ -222,7 +232,7 @@ export default function EditListingContainer() {
               </Text>
             </View>
             <Text style={{ fontSize: 16, fontWeight: '700', color: conditionTone.color, marginTop: 10 }}>
-              {form.conditionLabel}
+              {getDeviationLabel(conditionTone.tone)}
             </Text>
           </View>
           <ConditionSlider
@@ -230,6 +240,7 @@ export default function EditListingContainer() {
             min={1}
             max={10}
             aiValue={aiConditionRating}
+            conditionLabel={form.conditionLabel}
             onChange={handleConditionChange}
           />
         </View>
