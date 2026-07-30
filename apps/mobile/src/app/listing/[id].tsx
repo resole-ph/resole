@@ -296,7 +296,9 @@ export default function ListingDetailScreen() {
           <TouchableOpacity
             className="flex-row items-center bg-white rounded-2xl p-4 mb-6"
             style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}
-            activeOpacity={0.8}
+            activeOpacity={isOwnListing || !listing.seller.id ? 1 : 0.8}
+            disabled={isOwnListing || !listing.seller.id}
+            onPress={() => router.push(`/profile/${listing.seller.id}` as any)}
           >
             <View className="w-12 h-12 rounded-full items-center justify-center mr-3" style={{ backgroundColor: (listing.seller.avatarColor ?? '#2563EB') + '20' }}>
               <Text className="text-lg font-bold" style={{ color: listing.seller.avatarColor ?? '#2563EB' }}>{listing.seller.name[0].toUpperCase()}</Text>

@@ -93,6 +93,7 @@ export const InboxService = {
         id: `o${item.id}`,
         tab: 'offers' as MsgTab,
         sender: name,
+        userId: item.user?.id,
         avatarInitial: name.charAt(0).toUpperCase() || '?',
         preview: item.latestMessage?.content ?? 'No messages yet',
         time: formatTimestamp(item.latestMessage?.createdAt ?? item.updatedAt),

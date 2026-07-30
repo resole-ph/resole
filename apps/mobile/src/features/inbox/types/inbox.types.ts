@@ -16,6 +16,8 @@ export type Message = {
   id: string;
   tab: MsgTab;
   sender: string;
+  /** The other party's user id — absent for the system/Resole thread. */
+  userId?: string;
   avatarColor?: string;
   avatarInitial: string;
   preview: string;

@@ -252,7 +252,15 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
               )}
             </View>
 
-            <View className="flex-row items-center mb-3">
+            <TouchableOpacity
+              className="flex-row items-center mb-3"
+              activeOpacity={isOwnListing || !listing.seller.id ? 1 : 0.7}
+              disabled={isOwnListing || !listing.seller.id}
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push(`/profile/${listing.seller.id}` as any);
+              }}
+            >
               <View className="w-5 h-5 rounded-full bg-blue-100 items-center justify-center mr-1.5">
                 <Text className="text-blue-600 text-xs font-bold">
                   {listing.seller.name[0].toUpperCase()}
@@ -273,7 +281,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                   </>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
 
             {isOwnListing ? (
               <TouchableOpacity

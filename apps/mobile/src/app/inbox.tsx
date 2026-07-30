@@ -151,6 +151,7 @@ export default function InboxScreen() {
                 params: {
                   id: msg.id,
                   sender: msg.sender,
+                  otherUserId: msg.userId ?? '',
                   avatarInitial: msg.avatarInitial,
                   avatarColor: msg.avatarColor ?? '',
                   isSystem: msg.isSystem ? '1' : '0',
