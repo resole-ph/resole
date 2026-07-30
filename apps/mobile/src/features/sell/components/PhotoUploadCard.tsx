@@ -13,14 +13,14 @@ const ANGLE_LABELS: Record<PhotoAngle, string> = {
   insoleLeft: 'Insole Left',
 };
 
-const ANGLE_ICONS: Record<PhotoAngle, keyof typeof Ionicons.glyphMap> = {
-  top: 'arrow-up-circle-outline',
-  leftSide: 'arrow-back-circle-outline',
-  rightSide: 'arrow-forward-circle-outline',
-  sole: 'footsteps-outline',
-  insoleRight: 'layers-outline',
-  insoleLeft: 'layers-outline',
-};
+// const ANGLE_ICONS: Record<PhotoAngle, keyof typeof Ionicons.glyphMap> = {
+//   top: 'cloud-upload-outline',
+//   leftSide: 'cloud-upload-outline',
+//   rightSide: 'cloud-upload-outline',
+//   sole: 'cloud-upload-outline',
+//   insoleRight: 'cloud-upload-outline',
+//   insoleLeft: 'cloud-upload-outline',
+// };
 
 interface PhotoUploadCardProps {
   angle: PhotoAngle;
@@ -72,7 +72,7 @@ export default function PhotoUploadCard({ angle, photo, onPress }: PhotoUploadCa
           }}
         >
           <View className="w-10 h-10 rounded-full bg-secondary-container items-center justify-center mb-2">
-            <Ionicons name={ANGLE_ICONS[angle]} size={20} color="#0054d3" />
+            <Ionicons name={'cloud-upload-outline'} size={20} color="#0054d3" />
           </View>
           <Text className="font-body-md text-body-md text-on-surface text-center">
             {ANGLE_LABELS[angle]}

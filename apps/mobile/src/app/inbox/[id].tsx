@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
+  View, Text, ScrollView, TouchableOpacity, Keyboard,
   TextInput, Image, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
@@ -304,6 +304,8 @@ export default function ConversationScreen() {
 
   const [updates, setUpdates] = useState<SystemUpdate[]>([]);
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
   const [ratingTarget, setRatingTarget] = useState<{ transactionId: number; sellerId: string; sellerName: string } | null>(null);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [skippedRatingIds, setSkippedRatingIds] = useState<Set<number>>(new Set());
@@ -377,6 +379,16 @@ export default function ConversationScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100);
   }, [messages.length]);
 
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+  
   // The buyer (recipient) is the only party allowed to submit a rating — prompt
   // them once they land on a conversation with an accepted-but-unrated offer.
   useEffect(() => {
@@ -505,7 +517,11 @@ export default function ConversationScreen() {
         onPressProfile={params.otherUserId ? () => router.push(`/profile/${params.otherUserId}` as any) : undefined}
       />
 
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1, padding: 0 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : (keyboardVisible ? 'height' : undefined)} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
         <ScrollView
           ref={scrollRef}
           className="flex-1"

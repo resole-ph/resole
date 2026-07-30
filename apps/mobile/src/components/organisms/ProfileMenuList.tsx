@@ -228,14 +228,12 @@ function SellerAnalyticsCard() {
             <Text className="text-gray-400 text-xs mt-0.5 mb-1.5">{m.label}</Text>
             <View className="flex-row items-center">
               <Ionicons
-                name={m.up ? 'trending-up' : 'trending-down'}
+                name={m.delta === '0%' ? 'remove-outline' : (m.up ? 'trending-up' : 'trending-down')}
                 size={12}
-                color={m.up ? '#10B981' : '#EF4444'}
+                color={m.delta === '0%' ? '#9ca3af' : (m.up ? '#10B981' : '#EF4444')}
               />
               <Text
-                className={`text-xs font-semibold ml-0.5 ${
-                  m.up ? 'text-green-500' : 'text-red-400'
-                }`}
+                className={`text-xs font-semibold ml-0.5 ${m.delta === '0%' ? 'text-gray-400' : m.up ? 'text-green-500' : 'text-red-400'}`}
               >
                 {m.delta}
               </Text>
