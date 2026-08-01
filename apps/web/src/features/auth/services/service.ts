@@ -519,14 +519,13 @@ export async function createPasswordResetToken(email: string): Promise<string | 
       .orderBy(desc(verification.createdAt))
       .limit(1);
 
-    // Compare against expiresAt (set by this process via Date.now()) rather than the
-    // DB-written createdAt, so throttle timing never depends on DB/app clock drift.
+    // Uses expiresAt (app-set) instead of createdAt (DB-set) to avoid clock drift.
     const mostRecent = existingTokens[0];
     if (mostRecent && mostRecent.expiresAt.getTime() - RESET_TOKEN_TTL_MS + RESET_TOKEN_THROTTLE_MS > Date.now()) {
       return null;
     }
 
-    // Deletes ALL verification rows for this identifier regardless of purpose; add a purpose/type column before reusing this table for a second use case.
+    // Deletes ALL rows for this identifier; add a purpose column if this table gains a second use case.
     await db.delete(verification).where(eq(verification.identifier, normalizedEmail));
 
     const token = randomBytes(RESET_TOKEN_BYTES).toString('base64url');
@@ -581,8 +580,7 @@ export async function consumePasswordResetToken(token: string, newPassword: stri
       return false;
     }
 
-    // Wrap password update, token deletion, and session invalidation in a transaction
-    // to ensure atomicity: either all succeed or all fail (token remains valid on failure)
+    // Transaction: token stays valid if any step fails.
     await db.transaction(async (tx) => {
       const hashed = hashPassword(newPassword);
       await tx

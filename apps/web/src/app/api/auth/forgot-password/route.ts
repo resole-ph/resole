@@ -7,8 +7,7 @@ const GENERIC_RESPONSE = {
   message: "If an account with that email exists, we've sent a password reset link.",
 };
 
-// Floor every response to this duration so response timing can't be used to
-// distinguish "account exists" from "account doesn't exist" / "throttled" (timing side channel).
+// Floors response time so timing can't reveal whether the account exists.
 const MIN_RESPONSE_TIME_MS = 1200;
 
 async function handleForgotPassword(email: string): Promise<void> {
