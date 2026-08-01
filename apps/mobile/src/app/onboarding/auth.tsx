@@ -355,7 +355,9 @@ export default function AuthScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  editable={!forgotLoading}
                   className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
+                  style={{ opacity: forgotLoading ? 0.6 : 1 }}
                 />
               </View>
 

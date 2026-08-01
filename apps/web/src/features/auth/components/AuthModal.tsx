@@ -339,7 +339,8 @@ export default function AuthModal({ initialMode = 'sign-in', prompt, onClose, on
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   autoComplete="email"
-                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  disabled={forgotSubmitting}
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-60"
                   required
                 />
 
