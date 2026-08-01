@@ -32,6 +32,8 @@ export interface ShoeAnalysis {
   estimatedPrice: number;
   /** Non-blocking lighting tip; unset when lighting was fine. */
   lightingWarning?: string;
+  /** Non-blocking angle-mismatch tip; unset when all photos matched their labeled angle. */
+  angleWarning?: string;
 }
 
 /** Result of the pgvector baseline lookup + depreciation math. */

@@ -19,6 +19,7 @@ export interface AiAnalysisResult {
   description: string;
   estimatedPrice: number;
   lightingWarning?: string;
+  angleWarning?: string;
 }
 
 export interface UploadedPhotoUrls {
