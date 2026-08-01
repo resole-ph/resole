@@ -519,11 +519,14 @@ export async function createPasswordResetToken(email: string): Promise<string | 
       .orderBy(desc(verification.createdAt))
       .limit(1);
 
+    // Compare against expiresAt (set by this process via Date.now()) rather than the
+    // DB-written createdAt, so throttle timing never depends on DB/app clock drift.
     const mostRecent = existingTokens[0];
-    if (mostRecent && Date.now() - mostRecent.createdAt.getTime() < RESET_TOKEN_THROTTLE_MS) {
+    if (mostRecent && mostRecent.expiresAt.getTime() - RESET_TOKEN_TTL_MS + RESET_TOKEN_THROTTLE_MS > Date.now()) {
       return null;
     }
 
+    // Deletes ALL verification rows for this identifier regardless of purpose; add a purpose/type column before reusing this table for a second use case.
     await db.delete(verification).where(eq(verification.identifier, normalizedEmail));
 
     const token = randomBytes(RESET_TOKEN_BYTES).toString('base64url');
@@ -537,7 +540,7 @@ export async function createPasswordResetToken(email: string): Promise<string | 
 
     return token;
   } catch (error) {
-    console.error('Error creating password reset token:', error);
+    console.error('Error creating password reset token:', error instanceof Error ? error.message : error);
     return null;
   }
 }
@@ -561,16 +564,8 @@ export async function getEmailForValidResetToken(token: string): Promise<string 
 
     return record.identifier;
   } catch (error) {
-    console.error('Error validating password reset token:', error);
+    console.error('Error validating password reset token:', error instanceof Error ? error.message : error);
     return null;
-  }
-}
-
-export async function invalidateUserSessions(userId: string): Promise<void> {
-  try {
-    await db.delete(session).where(eq(session.userId, userId));
-  } catch (error) {
-    console.error('Error invalidating sessions:', error);
   }
 }
 
@@ -605,7 +600,7 @@ export async function consumePasswordResetToken(token: string, newPassword: stri
 
     return true;
   } catch (error) {
-    console.error('Error consuming password reset token:', error);
+    console.error('Error consuming password reset token:', error instanceof Error ? error.message : error);
     return false;
   }
 }
