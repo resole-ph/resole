@@ -586,13 +586,22 @@ export async function consumePasswordResetToken(token: string, newPassword: stri
       return false;
     }
 
-    const success = await changePassword(userRecord.id, newPassword);
-    if (!success) {
-      return false;
-    }
+    // Wrap password update, token deletion, and session invalidation in a transaction
+    // to ensure atomicity: either all succeed or all fail (token remains valid on failure)
+    await db.transaction(async (tx) => {
+      const hashed = hashPassword(newPassword);
+      await tx
+        .update(account)
+        .set({
+          password: hashed,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(account.userId, userRecord.id), eq(account.providerId, 'credentials')));
 
-    await db.delete(verification).where(eq(verification.value, token));
-    await invalidateUserSessions(userRecord.id);
+      await tx.delete(verification).where(eq(verification.value, token));
+
+      await tx.delete(session).where(eq(session.userId, userRecord.id));
+    });
 
     return true;
   } catch (error) {
