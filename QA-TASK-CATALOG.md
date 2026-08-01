@@ -88,7 +88,7 @@ Navbar, footer, mobile bottom nav, and the auth modal appear (or can be triggere
 | `AUTH-2` | **Log In** toggle pill | Form switches back, removes confirm field |
 | `AUTH-3` | Eye icon on Password field | Toggles masked/plaintext |
 | `AUTH-4` | Eye icon on Confirm password (sign-up) | Same toggle, independent of `AUTH-3` |
-| `AUTH-5` | "Forgot password?" (sign-in only) | 🚩 button has no click handler wired |
+| `AUTH-5` | "Forgot password?" (sign-in only) | Opens the reset-password step; submitting an email shows "Check your email" |
 | `AUTH-6` | Submit sign-up with a weak password | Inline error: password rule message (8+ chars, upper, lower, number) |
 | `AUTH-7` | Submit sign-up with mismatched passwords | Inline error: "Passwords do not match." |
 | `AUTH-8` | **Create Account** / **Log In** submit | Button reads "Please wait…", then modal closes and resumes the action that triggered it |
@@ -476,8 +476,7 @@ to hunt for them while running a workflow.
   wired.
 - **Checkout stubs.** `CHK-2` ("Edit" address) and `CHK-4` ("Apply" promo) have no click
   handlers.
-- **Auth stubs.** `AUTH-5` ("Forgot password?") and `AUTH-9` (social logins) are visual
-  only.
+- **Auth stubs.** `AUTH-9` (social logins) is visual only. `AUTH-5` ("Forgot password?") is now wired — see the new `/reset-password` page for the rest of the flow.
 - **Session stubs.** `PSET-7` / `PSET-8` show real confirm dialogs, but the underlying
   sign-out/delete calls are marked pending in the code — confirm current behavior
   rather than assuming either is broken.
