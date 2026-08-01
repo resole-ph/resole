@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/providers/AuthProvider';
 
 type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
 
@@ -125,6 +127,8 @@ function ActionRow({
 }
 
 export default function SettingsSections() {
+  const router = useRouter();
+  const { signOut } = useAuth();
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
     messages: true,
     offers: false,
@@ -135,9 +139,10 @@ export default function SettingsSections() {
   const toggle = (key: NotifKey) => () =>
     setNotifs((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('Log out? You will need to sign in again.')) {
-      // Sign-out wiring pending auth integration.
+      await signOut();
+      router.push('/');
     }
   };
 
