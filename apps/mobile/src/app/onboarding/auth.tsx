@@ -16,12 +16,14 @@ import { isStrongPassword, PASSWORD_REQUIREMENT_MESSAGE } from '@/features/auth/
 import { useOnboardingStore } from '@/store/onboarding';
 
 type AuthMode = 'login' | 'signup';
+type AuthStep = 'credentials' | 'forgot-password' | 'check-email';
 
 export default function AuthScreen() {
   const router = useRouter();
   const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
 
   const [mode, setMode] = useState<AuthMode>('signup');
+  const [step, setStep] = useState<AuthStep>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,6 +31,10 @@ export default function AuthScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const resetFields = () => {
     setEmail('');
@@ -80,6 +86,34 @@ export default function AuthScreen() {
     }
   };
 
+  const openForgotPassword = () => {
+    setForgotEmail(email);
+    setForgotError(null);
+    setStep('forgot-password');
+  };
+
+  const backToCredentials = () => {
+    setForgotError(null);
+    setStep('credentials');
+  };
+
+  const handleForgotPasswordSubmit = async () => {
+    setForgotError(null);
+    if (forgotEmail.length === 0) {
+      setForgotError('Please enter a valid email.');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await authService.forgotPassword(forgotEmail);
+      setStep('check-email');
+    } catch (e: any) {
+      setForgotError(e?.message ?? 'Something went wrong. Please try again.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-surface"
@@ -96,207 +130,291 @@ export default function AuthScreen() {
           logo
         />
 
-        <View className="px-8 gap-8 mt-2">
-          {/* Welcome section */}
-          <View className="items-center gap-1">
-            <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center">
-              Welcome to Resole
-            </Text>
-            <Text className="font-body-md text-body-md text-on-surface-variant text-center">
-              Sign up to start swapping.
-            </Text>
-          </View>
-
-          {/* Mode toggle */}
-          <View
-            className="flex-row rounded-full bg-surface-container-low p-1"
-            style={{ borderWidth: 1, borderColor: '#e0e2ec' }}
-          >
-            <TouchableOpacity
-              onPress={() => {
-                setMode('signup');
-                resetFields();
-              }}
-              className="flex-1 py-2 rounded-full items-center"
-              style={{ backgroundColor: mode === 'signup' ? '#ffffff' : 'transparent' }}
-            >
-              <Text
-                className="font-body-md text-body-md"
-                style={{ color: mode === 'signup' ? '#1a1c20' : '#727687' }}
-              >
-                Sign Up
+        {step === 'credentials' && (
+          <View className="px-8 gap-8 mt-2">
+            {/* Welcome section */}
+            <View className="items-center gap-1">
+              <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center">
+                Welcome to Resole
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setMode('login');
-                resetFields();
-              }}
-              className="flex-1 py-2 rounded-full items-center"
-              style={{ backgroundColor: mode === 'login' ? '#ffffff' : 'transparent' }}
-            >
-              <Text
-                className="font-body-md text-body-md"
-                style={{ color: mode === 'login' ? '#1a1c20' : '#727687' }}
-              >
-                Log In
+              <Text className="font-body-md text-body-md text-on-surface-variant text-center">
+                Sign up to start swapping.
               </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Email / password fields */}
-          <View className="gap-3">
-            <View className="flex-row items-center bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Email address"
-                placeholderTextColor="#727687"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
-              />
             </View>
 
-            <View className="flex-row items-center bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Password"
-                placeholderTextColor="#727687"
-                secureTextEntry={!showPassword}
-                className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
-              />
+            {/* Mode toggle */}
+            <View
+              className="flex-row rounded-full bg-surface-container-low p-1"
+              style={{ borderWidth: 1, borderColor: '#e0e2ec' }}
+            >
               <TouchableOpacity
-                onPress={() => setShowPassword((v) => !v)}
-                className="px-3"
+                onPress={() => {
+                  setMode('signup');
+                  resetFields();
+                }}
+                className="flex-1 py-2 rounded-full items-center"
+                style={{ backgroundColor: mode === 'signup' ? '#ffffff' : 'transparent' }}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color="#727687"
-                />
+                <Text
+                  className="font-body-md text-body-md"
+                  style={{ color: mode === 'signup' ? '#1a1c20' : '#727687' }}
+                >
+                  Sign Up
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setMode('login');
+                  resetFields();
+                }}
+                className="flex-1 py-2 rounded-full items-center"
+                style={{ backgroundColor: mode === 'login' ? '#ffffff' : 'transparent' }}
+              >
+                <Text
+                  className="font-body-md text-body-md"
+                  style={{ color: mode === 'login' ? '#1a1c20' : '#727687' }}
+                >
+                  Log In
+                </Text>
               </TouchableOpacity>
             </View>
 
-            {mode === 'signup' && (
+            {/* Email / password fields */}
+            <View className="gap-3">
               <View className="flex-row items-center bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
                 <TextInput
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Confirm password"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email address"
                   placeholderTextColor="#727687"
-                  secureTextEntry={!showConfirmPassword}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
+                />
+              </View>
+
+              <View className="flex-row items-center bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Password"
+                  placeholderTextColor="#727687"
+                  secureTextEntry={!showPassword}
                   className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
                 />
                 <TouchableOpacity
-                  onPress={() => setShowConfirmPassword((v) => !v)}
+                  onPress={() => setShowPassword((v) => !v)}
                   className="px-3"
                 >
                   <Ionicons
-                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
                     color="#727687"
                   />
                 </TouchableOpacity>
               </View>
-            )}
 
-            {mode === 'login' && (
-              <TouchableOpacity className="self-end">
-                <Text className="font-body-sm text-body-sm text-primary">
-                  Forgot password?
+              {mode === 'signup' && (
+                <View className="flex-row items-center bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+                  <TextInput
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Confirm password"
+                    placeholderTextColor="#727687"
+                    secureTextEntry={!showConfirmPassword}
+                    className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword((v) => !v)}
+                    className="px-3"
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#727687"
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {mode === 'login' && (
+                <TouchableOpacity className="self-end" onPress={openForgotPassword}>
+                  <Text className="font-body-sm text-body-sm text-primary">
+                    Forgot password?
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {error && (
+                <Text className="font-body-sm text-body-sm text-error text-center">
+                  {error}
+                </Text>
+              )}
+            </View>
+
+            {/* Submit */}
+            <TouchableOpacity
+              onPress={handleSubmit}
+              disabled={loading}
+              className="bg-primary rounded-full py-3 items-center"
+              style={{
+                opacity: loading ? 0.6 : 1,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.08,
+                shadowRadius: 20,
+                elevation: 6,
+              }}
+            >
+              <Text className="font-body-md text-body-md text-on-primary">
+                {loading ? 'Please wait…' : mode === 'signup' ? 'Create Account' : 'Log In'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View className="flex-row items-center gap-3">
+              <View className="flex-1 h-px bg-outline-variant" />
+              <Text className="font-body-sm text-body-sm text-on-surface-variant">or</Text>
+              <View className="flex-1 h-px bg-outline-variant" />
+            </View>
+
+            {/* Social auth buttons */}
+            <View className="gap-2">
+              <TouchableOpacity
+                className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full bg-surface-container-lowest border border-outline-variant"
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 12,
+                  elevation: 2,
+                }}
+              >
+                <Ionicons name="logo-google" size={18} color="#424655" />
+                <Text className="font-body-md text-body-md text-on-surface">
+                  Continue with Google
                 </Text>
               </TouchableOpacity>
-            )}
 
-            {error && (
-              <Text className="font-body-sm text-body-sm text-error text-center">
-                {error}
-              </Text>
-            )}
+              <TouchableOpacity
+                className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
+                style={{
+                  backgroundColor: '#131b2e',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 12,
+                  elevation: 2,
+                }}
+              >
+                <Ionicons name="logo-apple" size={18} color="#ffffff" />
+                <Text className="font-body-md text-body-md text-on-primary">
+                  Continue with Apple ID
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
+                style={{
+                  backgroundColor: '#1877F2',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 12,
+                  elevation: 2,
+                }}
+              >
+                <Ionicons name="logo-facebook" size={18} color="#ffffff" />
+                <Text className="font-body-md text-body-md text-on-primary">
+                  Continue with Facebook
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
+        )}
 
-          {/* Submit */}
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={loading}
-            className="bg-primary rounded-full py-3 items-center"
-            style={{
-              opacity: loading ? 0.6 : 1,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.08,
-              shadowRadius: 20,
-              elevation: 6,
-            }}
-          >
-            <Text className="font-body-md text-body-md text-on-primary">
-              {loading ? 'Please wait…' : mode === 'signup' ? 'Create Account' : 'Log In'}
+        {step === 'forgot-password' && (
+          <View className="px-8 gap-8 mt-2">
+            <View className="items-center gap-1">
+              <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center">
+                Reset your password
+              </Text>
+              <Text className="font-body-md text-body-md text-on-surface-variant text-center">
+                Enter your account email and we'll send you a link to set a new password.
+              </Text>
+            </View>
+
+            <View className="gap-3">
+              <View className="flex-row items-center bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+                <TextInput
+                  value={forgotEmail}
+                  onChangeText={setForgotEmail}
+                  placeholder="Email address"
+                  placeholderTextColor="#727687"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
+                />
+              </View>
+
+              {forgotError && (
+                <Text className="font-body-sm text-body-sm text-error text-center">
+                  {forgotError}
+                </Text>
+              )}
+            </View>
+
+            <TouchableOpacity
+              onPress={handleForgotPasswordSubmit}
+              disabled={forgotLoading}
+              className="bg-primary rounded-full py-3 items-center"
+              style={{
+                opacity: forgotLoading ? 0.6 : 1,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.08,
+                shadowRadius: 20,
+                elevation: 6,
+              }}
+            >
+              <Text className="font-body-md text-body-md text-on-primary">
+                {forgotLoading ? 'Please wait…' : 'Send reset link'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={backToCredentials} className="items-center">
+              <Text className="font-body-sm text-body-sm text-on-surface-variant">
+                Back to log in
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {step === 'check-email' && (
+          <View className="px-8 gap-4 mt-2 items-center">
+            <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center">
+              Check your email
             </Text>
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View className="flex-row items-center gap-3">
-            <View className="flex-1 h-px bg-outline-variant" />
-            <Text className="font-body-sm text-body-sm text-on-surface-variant">or</Text>
-            <View className="flex-1 h-px bg-outline-variant" />
-          </View>
-
-          {/* Social auth buttons */}
-          <View className="gap-2">
+            <Text className="font-body-md text-body-md text-on-surface-variant text-center">
+              If an account exists for {forgotEmail}, we've sent a link to reset your password.
+              Open it on this device to set a new password, then come back here to log in.
+            </Text>
             <TouchableOpacity
-              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full bg-surface-container-lowest border border-outline-variant"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.04,
-                shadowRadius: 12,
-                elevation: 2,
+              onPress={() => {
+                resetFields();
+                setMode('login');
+                setStep('credentials');
               }}
+              className="mt-2"
             >
-              <Ionicons name="logo-google" size={18} color="#424655" />
-              <Text className="font-body-md text-body-md text-on-surface">
-                Continue with Google
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
-              style={{
-                backgroundColor: '#131b2e',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.04,
-                shadowRadius: 12,
-                elevation: 2,
-              }}
-            >
-              <Ionicons name="logo-apple" size={18} color="#ffffff" />
-              <Text className="font-body-md text-body-md text-on-primary">
-                Continue with Apple ID
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
-              style={{
-                backgroundColor: '#1877F2',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.04,
-                shadowRadius: 12,
-                elevation: 2,
-              }}
-            >
-              <Ionicons name="logo-facebook" size={18} color="#ffffff" />
-              <Text className="font-body-md text-body-md text-on-primary">
-                Continue with Facebook
+              <Text className="font-body-sm text-body-sm text-primary">
+                I've reset my password — back to log in
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
