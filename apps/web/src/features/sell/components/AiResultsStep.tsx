@@ -73,6 +73,20 @@ export default function AiResultsStep({
             </div>
           )}
 
+          {result.angleWarning && (
+            <div
+              className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-4"
+              style={{ backgroundColor: '#FEF3C7' }}
+            >
+              <span className="material-symbols-outlined text-[20px]" style={{ color: '#F59E0B' }}>
+                warning
+              </span>
+              <p className="text-[13px] leading-snug" style={{ color: '#92400E' }}>
+                {result.angleWarning}
+              </p>
+            </div>
+          )}
+
           <div className="md:grid md:grid-cols-2 md:gap-5 md:items-stretch">
             <div className="rounded-2xl bg-primary text-on-primary p-5 md:p-8 flex flex-col md:justify-center shadow-[0px_6px_20px_rgba(0,74,198,0.25)]">
               <div className="flex items-center gap-1.5 mb-1 opacity-80">

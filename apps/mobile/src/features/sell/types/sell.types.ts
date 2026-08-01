@@ -26,6 +26,7 @@ export interface AiAnalysisResult {
   suggestedPrice: number;
   currency: 'PHP';
   lightingWarning?: string;
+  angleWarning?: string;
 }
 
 export interface ListingFormData {

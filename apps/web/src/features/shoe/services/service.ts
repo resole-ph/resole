@@ -631,7 +631,13 @@ export async function analyzeShoePhotos(photoUrls: {
     '3. If `isValidPhotoSet` is TRUE:',
     '   • If one or more photos have noticeably poor lighting (dim, shadowed, or glare) that made analysis harder but still possible, set `rejectionReason` to a short, friendly, non-alarming one-sentence lighting tip naming the affected photo(s) by label (e.g. "The \'Sole View\' photo is a bit dark — retaking it in brighter light can improve accuracy."). This is just a tip, NOT a rejection — the set is still valid.',
     '   • Otherwise (lighting was fine), set `rejectionReason` to "".',
-    '   • (Note: minor framing issues or inexact angles do NOT invalidate the set and do NOT need a lighting tip either.)',
+    '',
+    'ANGLE VERIFICATION:',
+    '• For each of the 6 labeled photos, check whether it plausibly shows the angle named by its label above.',
+    '• If one or more photos clearly show the wrong angle for their slot (e.g. the "Sole View" slot actually contains a side-view shot), set `angleWarning` to a short, friendly, non-alarming one-sentence heads-up naming the mismatched photo(s) by label (e.g. "The \'Sole View\' photo looks like a side view — double-check you uploaded the outsole photo in that slot."). This is just a heads-up, NOT a rejection.',
+    '• Minor tilt/framing differences do NOT count as a mismatch — only flag photos that clearly show a different angle than labeled.',
+    '• If all photos reasonably match their labels, set `angleWarning` to "".',
+    '• Angle mismatches never affect `isValidPhotoSet` — that field is governed solely by the VALIDATION RULES above.',
     '',
     'ANALYSIS & VALUATION RULES:',
     '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size should be a plain US size number string like "10" or "10.5".',
@@ -650,6 +656,7 @@ export async function analyzeShoePhotos(photoUrls: {
         properties: {
           isValidPhotoSet: { type: 'BOOLEAN' },
           rejectionReason: { type: 'STRING' },
+          angleWarning: { type: 'STRING' },
           brand: { type: 'STRING' },
           model: { type: 'STRING' },
           colorway: { type: 'STRING' },
@@ -660,7 +667,7 @@ export async function analyzeShoePhotos(photoUrls: {
           defects: { type: 'ARRAY', items: { type: 'STRING' } },
           estimatedPrice: { type: 'NUMBER' },
         },
-        required: ['isValidPhotoSet', 'rejectionReason', 'brand', 'model', 'colorway', 'size', 'year', 'conditionScore', 'description', 'defects', 'estimatedPrice'],
+        required: ['isValidPhotoSet', 'rejectionReason', 'angleWarning', 'brand', 'model', 'colorway', 'size', 'year', 'conditionScore', 'description', 'defects', 'estimatedPrice'],
       },
     },
   });
@@ -670,15 +677,15 @@ export async function analyzeShoePhotos(photoUrls: {
     throw new Error('Failed to generate content from AI model');
   }
 
-  const parsed = JSON.parse(resultText) as ShoeAnalysis & { isValidPhotoSet: boolean; rejectionReason: string };
+  const parsed = JSON.parse(resultText) as ShoeAnalysis & { isValidPhotoSet: boolean; rejectionReason: string; angleWarning: string };
 
   if (!parsed.isValidPhotoSet) {
     throw new InvalidShoePhotoError(parsed.rejectionReason || 'One or more uploaded photos do not appear to show a pair of shoes.');
   }
 
   // Valid sets repurpose `rejectionReason` as a non-blocking lighting tip.
-  const { isValidPhotoSet, rejectionReason, ...analysis } = parsed;
-  return { ...analysis, lightingWarning: rejectionReason || undefined };
+  const { isValidPhotoSet, rejectionReason, angleWarning, ...analysis } = parsed;
+  return { ...analysis, lightingWarning: rejectionReason || undefined, angleWarning: angleWarning || undefined };
 }
 
 /**
