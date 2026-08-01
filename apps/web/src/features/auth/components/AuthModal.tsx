@@ -14,6 +14,7 @@ function isStrongPassword(password: string): boolean {
 }
 
 type AuthModalMode = 'sign-in' | 'sign-up';
+type AuthModalStep = 'credentials' | 'forgot-password' | 'check-email';
 
 interface AuthModalProps {
   initialMode?: AuthModalMode;
@@ -52,6 +53,7 @@ function FacebookIcon() {
 
 export default function AuthModal({ initialMode = 'sign-in', prompt, onClose, onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<AuthModalMode>(initialMode);
+  const [step, setStep] = useState<AuthModalStep>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -59,6 +61,10 @@ export default function AuthModal({ initialMode = 'sign-in', prompt, onClose, on
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -71,6 +77,12 @@ export default function AuthModal({ initialMode = 'sign-in', prompt, onClose, on
   function switchMode(nextMode: AuthModalMode) {
     setMode(nextMode);
     setError(null);
+  }
+
+  function openForgotPassword() {
+    setForgotEmail(email);
+    setForgotError(null);
+    setStep('forgot-password');
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -114,6 +126,32 @@ export default function AuthModal({ initialMode = 'sign-in', prompt, onClose, on
     }
   }
 
+  async function handleForgotPasswordSubmit(e: FormEvent) {
+    e.preventDefault();
+    setForgotError(null);
+    setForgotSubmitting(true);
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setForgotError(data.error ?? 'Something went wrong. Please try again.');
+        return;
+      }
+
+      setStep('check-email');
+    } catch {
+      setForgotError('Network error. Please try again.');
+    } finally {
+      setForgotSubmitting(false);
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4"
@@ -138,144 +176,210 @@ export default function AuthModal({ initialMode = 'sign-in', prompt, onClose, on
         </div>
 
         <div className="px-6 pt-5 pb-6 flex flex-col gap-6">
-          {/* Welcome section */}
-          <div className="flex flex-col items-center gap-1 text-center">
-            <h2 className="text-[22px] font-bold text-on-surface leading-tight">Welcome to Resole</h2>
-            <p className="text-[14px] text-on-surface-variant">
-              {mode === 'sign-up' ? 'Sign up to start swapping.' : 'Log in to continue.'}
-            </p>
-            {prompt && <p className="text-[13px] text-on-surface-variant mt-1">{prompt}</p>}
-          </div>
+          {step === 'credentials' && (
+            <>
+              {/* Welcome section */}
+              <div className="flex flex-col items-center gap-1 text-center">
+                <h2 className="text-[22px] font-bold text-on-surface leading-tight">Welcome to Resole</h2>
+                <p className="text-[14px] text-on-surface-variant">
+                  {mode === 'sign-up' ? 'Sign up to start swapping.' : 'Log in to continue.'}
+                </p>
+                {prompt && <p className="text-[13px] text-on-surface-variant mt-1">{prompt}</p>}
+              </div>
 
-          {/* Mode toggle */}
-          <div className="flex rounded-full bg-surface-container-low p-1 border border-outline-variant">
-            <button
-              type="button"
-              onClick={() => switchMode('sign-up')}
-              className={`flex-1 py-2 rounded-full text-[14px] font-medium transition-colors ${
-                mode === 'sign-up' ? 'bg-white text-on-surface shadow-sm' : 'text-on-surface-variant'
-              }`}
-            >
-              Sign Up
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode('sign-in')}
-              className={`flex-1 py-2 rounded-full text-[14px] font-medium transition-colors ${
-                mode === 'sign-in' ? 'bg-white text-on-surface shadow-sm' : 'text-on-surface-variant'
-              }`}
-            >
-              Log In
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              required
-            />
-
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-                className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 pr-11 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
-              >
-                <span className="material-symbols-outlined text-[20px]">
-                  {showPassword ? 'visibility_off' : 'visibility'}
-                </span>
-              </button>
-            </div>
-
-            {mode === 'sign-up' && (
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Confirm password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 pr-11 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  required
-                />
+              {/* Mode toggle */}
+              <div className="flex rounded-full bg-surface-container-low p-1 border border-outline-variant">
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword((v) => !v)}
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+                  onClick={() => switchMode('sign-up')}
+                  className={`flex-1 py-2 rounded-full text-[14px] font-medium transition-colors ${
+                    mode === 'sign-up' ? 'bg-white text-on-surface shadow-sm' : 'text-on-surface-variant'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-[20px]">
-                    {showConfirmPassword ? 'visibility_off' : 'visibility'}
-                  </span>
+                  Sign Up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchMode('sign-in')}
+                  className={`flex-1 py-2 rounded-full text-[14px] font-medium transition-colors ${
+                    mode === 'sign-in' ? 'bg-white text-on-surface shadow-sm' : 'text-on-surface-variant'
+                  }`}
+                >
+                  Log In
                 </button>
               </div>
-            )}
 
-            {mode === 'sign-in' && (
-              <button type="button" className="self-end text-[13px] text-primary font-medium">
-                Forgot password?
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  required
+                />
+
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 pr-11 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {showPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
+                </div>
+
+                {mode === 'sign-up' && (
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Confirm password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
+                      className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 pr-11 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        {showConfirmPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                {mode === 'sign-in' && (
+                  <button
+                    type="button"
+                    onClick={openForgotPassword}
+                    className="self-end text-[13px] text-primary font-medium"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+
+                {error && <p className="text-[13px] text-error text-center">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-primary text-on-primary rounded-full py-3 text-[14.5px] font-semibold shadow-[0px_8px_20px_rgba(37,99,235,0.25)] disabled:opacity-60 transition-opacity mt-1"
+                >
+                  {submitting ? 'Please wait…' : mode === 'sign-up' ? 'Create Account' : 'Log In'}
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 -my-2">
+                <div className="flex-1 h-px bg-outline-variant" />
+                <span className="text-[12.5px] text-on-surface-variant">or</span>
+                <div className="flex-1 h-px bg-outline-variant" />
+              </div>
+
+              {/* Social auth (visual only) */}
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-full bg-white border border-outline-variant shadow-sm text-[14px] font-medium text-on-surface"
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </button>
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-full text-[14px] font-medium text-white"
+                  style={{ backgroundColor: '#131b2e' }}
+                >
+                  <AppleIcon />
+                  Continue with Apple ID
+                </button>
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-full text-[14px] font-medium text-white"
+                  style={{ backgroundColor: '#1877F2' }}
+                >
+                  <FacebookIcon />
+                  Continue with Facebook
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 'forgot-password' && (
+            <>
+              <div className="flex flex-col items-center gap-1 text-center">
+                <h2 className="text-[22px] font-bold text-on-surface leading-tight">Reset your password</h2>
+                <p className="text-[14px] text-on-surface-variant">
+                  Enter your account email and we&apos;ll send you a link to set a new password.
+                </p>
+              </div>
+
+              <form onSubmit={handleForgotPasswordSubmit} className="flex flex-col gap-3">
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  autoComplete="email"
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  required
+                />
+
+                {forgotError && <p className="text-[13px] text-error text-center">{forgotError}</p>}
+
+                <button
+                  type="submit"
+                  disabled={forgotSubmitting}
+                  className="bg-primary text-on-primary rounded-full py-3 text-[14.5px] font-semibold shadow-[0px_8px_20px_rgba(37,99,235,0.25)] disabled:opacity-60 transition-opacity mt-1"
+                >
+                  {forgotSubmitting ? 'Please wait…' : 'Send reset link'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep('credentials')}
+                  className="self-center text-[13px] text-on-surface-variant font-medium"
+                >
+                  Back to log in
+                </button>
+              </form>
+            </>
+          )}
+
+          {step === 'check-email' && (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <h2 className="text-[22px] font-bold text-on-surface leading-tight">Check your email</h2>
+              <p className="text-[14px] text-on-surface-variant">
+                If an account exists for <strong>{forgotEmail}</strong>, we&apos;ve sent a link to reset
+                your password. Open it to set a new password, then come back here to log in.
+              </p>
+              <button
+                type="button"
+                onClick={() => setStep('credentials')}
+                className="text-primary text-[14px] font-medium"
+              >
+                Back to log in
               </button>
-            )}
-
-            {error && <p className="text-[13px] text-error text-center">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="bg-primary text-on-primary rounded-full py-3 text-[14.5px] font-semibold shadow-[0px_8px_20px_rgba(37,99,235,0.25)] disabled:opacity-60 transition-opacity mt-1"
-            >
-              {submitting ? 'Please wait…' : mode === 'sign-up' ? 'Create Account' : 'Log In'}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 -my-2">
-            <div className="flex-1 h-px bg-outline-variant" />
-            <span className="text-[12.5px] text-on-surface-variant">or</span>
-            <div className="flex-1 h-px bg-outline-variant" />
-          </div>
-
-          {/* Social auth (visual only) */}
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-full bg-white border border-outline-variant shadow-sm text-[14px] font-medium text-on-surface"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-full text-[14px] font-medium text-white"
-              style={{ backgroundColor: '#131b2e' }}
-            >
-              <AppleIcon />
-              Continue with Apple ID
-            </button>
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-full text-[14px] font-medium text-white"
-              style={{ backgroundColor: '#1877F2' }}
-            >
-              <FacebookIcon />
-              Continue with Facebook
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

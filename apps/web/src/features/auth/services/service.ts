@@ -1,7 +1,7 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
 import { db } from '@/config/db';
 import { and, eq, desc, count, isNull, or, sql } from 'drizzle-orm';
-import { account, session, user, save, login, rating, shoeListing, transaction, classificaitonEnum } from '@/db/schema';
+import { account, session, user, save, login, rating, shoeListing, transaction, classificaitonEnum, verification } from '@/db/schema';
 import {
   createSessionToken,
   hashPassword,
@@ -475,7 +475,7 @@ export async function changePassword(
 ): Promise<boolean> {
   try {
     const hashed = hashPassword(newPassword);
-    
+
     await db
       .update(account)
       .set({
@@ -487,6 +487,118 @@ export async function changePassword(
     return true;
   } catch (error) {
     console.error('Error changing password:', error);
+    return false;
+  }
+}
+
+const RESET_TOKEN_BYTES = 32;
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+const RESET_TOKEN_THROTTLE_MS = 60 * 1000;
+
+export async function createPasswordResetToken(email: string): Promise<string | null> {
+  try {
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      return null;
+    }
+
+    const userRecord = await getUserByEmail(normalizedEmail);
+    if (!userRecord || userRecord.deletedAt) {
+      return null;
+    }
+
+    const credentialsAccount = await getAccountByUserIdAndProviderId(userRecord.id, 'credentials');
+    if (!credentialsAccount) {
+      return null;
+    }
+
+    const existingTokens = await db
+      .select()
+      .from(verification)
+      .where(eq(verification.identifier, normalizedEmail))
+      .orderBy(desc(verification.createdAt))
+      .limit(1);
+
+    // Uses expiresAt (app-set) instead of createdAt (DB-set) to avoid clock drift.
+    const mostRecent = existingTokens[0];
+    if (mostRecent && mostRecent.expiresAt.getTime() - RESET_TOKEN_TTL_MS + RESET_TOKEN_THROTTLE_MS > Date.now()) {
+      return null;
+    }
+
+    // Deletes ALL rows for this identifier; add a purpose column if this table gains a second use case.
+    await db.delete(verification).where(eq(verification.identifier, normalizedEmail));
+
+    const token = randomBytes(RESET_TOKEN_BYTES).toString('base64url');
+
+    await db.insert(verification).values({
+      id: randomUUID(),
+      identifier: normalizedEmail,
+      value: token,
+      expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    });
+
+    return token;
+  } catch (error) {
+    console.error('Error creating password reset token:', error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+export async function getEmailForValidResetToken(token: string): Promise<string | null> {
+  try {
+    if (!token) {
+      return null;
+    }
+
+    const rows = await db
+      .select()
+      .from(verification)
+      .where(eq(verification.value, token))
+      .limit(1);
+
+    const record = rows[0];
+    if (!record || record.expiresAt.getTime() < Date.now()) {
+      return null;
+    }
+
+    return record.identifier;
+  } catch (error) {
+    console.error('Error validating password reset token:', error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+export async function consumePasswordResetToken(token: string, newPassword: string): Promise<boolean> {
+  try {
+    const email = await getEmailForValidResetToken(token);
+    if (!email) {
+      return false;
+    }
+
+    const userRecord = await getUserByEmail(email);
+    if (!userRecord || userRecord.deletedAt) {
+      return false;
+    }
+
+    // Transaction: token stays valid if any step fails.
+    await db.transaction(async (tx) => {
+      const hashed = hashPassword(newPassword);
+      await tx
+        .update(account)
+        .set({
+          password: hashed,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(account.userId, userRecord.id), eq(account.providerId, 'credentials')));
+
+      await tx.delete(verification).where(eq(verification.value, token));
+
+      await tx.delete(session).where(eq(session.userId, userRecord.id));
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error consuming password reset token:', error instanceof Error ? error.message : error);
     return false;
   }
 }

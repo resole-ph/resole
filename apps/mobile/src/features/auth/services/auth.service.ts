@@ -29,6 +29,14 @@ export const authService = {
     return res;
   },
 
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    return apiFetch<{ message: string }>('/api/auth/forgot-password', {
+      method: 'POST',
+      auth: false,
+      body: { email },
+    });
+  },
+
   async signOut(): Promise<void> {
     try {
       await apiFetch('/api/auth/sign-out', { method: 'POST' });
