@@ -27,10 +27,10 @@ const CONDITION_COLORS: Record<string, string> = {
   'Poor': '#EF4444',
 };
 
-const BADGE_STYLES: Record<string, { bg: string; text: string; icon: string }> = {
+const BADGE_STYLES: Record<string, { bg: string; text: string; icon: string; label?: string }> = {
   Swap: { bg: '#2563EB', text: '#fff', icon: 'swap_horiz' },
   Sale: { bg: '#10B981', text: '#fff', icon: 'sell' },
-  Both: { bg: '#8B5CF6', text: '#fff', icon: 'published_with_changes' },
+  Both: { bg: '#8B5CF6', text: '#fff', icon: 'published_with_changes', label: 'Swap & Sell' },
   'Flash Deal': { bg: '#F59E0B', text: '#fff', icon: 'bolt' },
 };
 
@@ -71,7 +71,11 @@ export default function ListingCard({
   const conditionColor = CONDITION_COLORS[item.condition] || COLORS.green;
 
   const daysLeft = getDaysLeft(item.createdAt, item.daysLeft);
-  const sellerRating = (item.seller as { rating?: number } | null)?.rating ?? 4.9;
+  // The DTO stringifies size unconditionally, so a missing size arrives as "null"/"undefined".
+  const sizeLabel =
+    item.size && item.size !== 'null' && item.size !== 'undefined' ? `US ${item.size}` : null;
+  // Null when the seller has no ratings yet — the chip is hidden rather than defaulted.
+  const sellerRating = item.seller?.rating ?? null;
 
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -174,30 +178,54 @@ export default function ListingCard({
             <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
               {badge.icon}
             </span>
-            {item.listingMode}
+            {badge.label ?? item.listingMode}
           </div>
         )}
 
-        {/* Free Shipping Badge */}
-        {item.freeShipping && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 10,
-              left: 10,
-              background: "rgba(255,255,255,0.92)",
-              backdropFilter: "blur(4px)",
-              border: "1px solid #A7F3D0",
-              color: "#047857",
-              borderRadius: 9999,
-              padding: "3px 10px",
-              fontSize: 10.5,
-              fontWeight: 700,
-            }}
-          >
-            Free Ship
-          </div>
-        )}
+        {/* Free Shipping + Size Badges — laid out in a row so they never overlap */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 10,
+            left: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          {item.freeShipping && (
+            <div
+              style={{
+                background: "rgba(255,255,255,0.92)",
+                backdropFilter: "blur(4px)",
+                border: "1px solid #A7F3D0",
+                color: "#047857",
+                borderRadius: 9999,
+                padding: "3px 10px",
+                fontSize: 10.5,
+                fontWeight: 700,
+              }}
+            >
+              Free Ship
+            </div>
+          )}
+
+          {sizeLabel && (
+            <div
+              style={{
+                background: "rgba(17,24,39,0.85)",
+                backdropFilter: "blur(4px)",
+                color: "#FFFFFF",
+                borderRadius: 9999,
+                padding: "3px 10px",
+                fontSize: 10.5,
+                fontWeight: 700,
+              }}
+            >
+              {sizeLabel}
+            </div>
+          )}
+        </div>
 
         {/* Favorite Button */}
         <button
@@ -238,8 +266,9 @@ export default function ListingCard({
         <div>
           {/* Brand & Condition */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 11.5, color: COLORS.textFaint, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 11.5, color: COLORS.textFaint, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {item.brand}
+              {sizeLabel ? ` · ${sizeLabel}` : ""}
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: conditionColor }} />
@@ -317,9 +346,13 @@ export default function ListingCard({
                 <span style={{ fontSize: 18, fontWeight: 800, color: COLORS.primary }}>
                   ₱{Number(item.price || 0).toLocaleString()}
                 </span>
+                {/*
+                  Retail price of a NEW pair, from the scraped catalog — not a former
+                  asking price, so it is labelled rather than struck through.
+                */}
                 {item.originalPrice && (
-                  <span style={{ fontSize: 12, color: COLORS.textFaint, textDecoration: "line-through" }}>
-                    ₱{Number(item.originalPrice).toLocaleString()}
+                  <span style={{ fontSize: 11.5, color: COLORS.textFaint, fontWeight: 600 }}>
+                    Retail ₱{Number(item.originalPrice).toLocaleString()}
                   </span>
                 )}
               </div>
@@ -349,13 +382,15 @@ export default function ListingCard({
                     </span>
                   </div>
 
-                  {/* Rating Stars */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 3, background: "#FEF3C7", padding: "2px 6px", borderRadius: 6 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 13, color: COLORS.amber }}>star</span>
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "#92400E" }}>
-                      {Number(sellerRating).toFixed(1)}
-                    </span>
-                  </div>
+                  {/* Rating Stars — omitted entirely for sellers with no ratings */}
+                  {sellerRating !== null && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 3, background: "#FEF3C7", padding: "2px 6px", borderRadius: 6 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 13, color: COLORS.amber }}>star</span>
+                      <span style={{ fontSize: 11.5, fontWeight: 800, color: "#92400E" }}>
+                        {Number(sellerRating).toFixed(1)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 

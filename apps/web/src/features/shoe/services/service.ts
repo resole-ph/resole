@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count, ilike } from 'drizzle-orm';
-import { shoe, shoePrice, shoeListing, user, shoeAnalysis } from '@/db/schema';
+import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count, ilike, avg, max } from 'drizzle-orm';
+import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating } from '@/db/schema';
 import {
   Shoe,
   CreateShoe,
@@ -19,6 +19,34 @@ import { GoogleGenAI } from "@google/genai";
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-001";
 const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1536", 10);
 const BASELINE_MATCH_THRESHOLD = parseFloat(process.env.BASELINE_MATCH_THRESHOLD || "0.75");
+
+/**
+ * Average star rating per rated user. Left-joined onto listing queries so cards can
+ * show a seller's real score; sellers with no ratings yield null, not a default.
+ */
+const sellerRating = db
+  .select({
+    rateeId: rating.rateeId,
+    average: avg(rating.rating).as('average'),
+  })
+  .from(rating)
+  .where(isNull(rating.deletedAt))
+  .groupBy(rating.rateeId)
+  .as('seller_rating');
+
+/**
+ * Retail reference price per shoe, from the scraped catalog. This is the price of a
+ * NEW pair — it is not a previous asking price for the listing, so present it labelled
+ * as retail rather than as a strikethrough discount.
+ */
+const shoeRetailPrice = db
+  .select({
+    shoeId: shoePrice.shoeId,
+    retail: max(shoePrice.price).as('retail'),
+  })
+  .from(shoePrice)
+  .groupBy(shoePrice.shoeId)
+  .as('shoe_retail_price');
 
 export async function generateEmbedding(context: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -166,13 +194,15 @@ export async function getAllShoeListing(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(
         and(
           eq(shoeListing.isAvailable, true), 
@@ -193,13 +223,15 @@ export async function getAllShoeListingForSale(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(and(
         eq(shoeListing.isAvailable, true),
         or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')),
@@ -217,13 +249,15 @@ export async function getAllShoeListingForSwap(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(and(
         eq(shoeListing.isAvailable, true),
         or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')),
@@ -271,13 +305,15 @@ export async function getShoeListingsByUserId(userId: string) {
       .select({
         model: shoe.model,
         brand: shoe.brand,
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(
         and(
           eq(shoeListing.userId, userId), 
@@ -428,13 +464,15 @@ export async function getShoeListingById(id: number) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(eq(shoeListing.id, id));
     
     return rows[0] as ShoeListing ?? null;
@@ -448,13 +486,15 @@ export async function getShoeListingByModelName(model: string) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(
         and(
           eq(shoeListing.isAvailable, true),
