@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import ListingCard, { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
-import { UserService } from '@/features/user/services/user.service';
+import {
+  listingKeys,
+  useBrowseListings,
+  useFavouriteListingIds,
+} from '@/features/listing/queries/listing.queries';
+import { useUserInfo, userKeys } from '@/features/user/queries/user.queries';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -51,52 +57,46 @@ export default function BrowseFeed({
   headerRight,
   filterBarRight,
 }: BrowseFeedProps) {
-  const [fetchedListings, setFetchedListings] = useState<Listing[]>([])
-  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
-  const listings = listingsProp ?? fetchedListings;
+  // This component renders two or three times per screen. Each copy used to
+  // fetch the current user and the favourite ids independently on mount, so
+  // the home screen alone made four redundant requests. Shared cache entries
+  // now collapse those into one apiece.
+  const { data: user } = useUserInfo();
+  const { data: favouriteIds } = useFavouriteListingIds();
+
+  const { data: fetchedListings } = useBrowseListings(
+    { brand: brand ?? undefined, search },
+    // Controlled mode: the parent already supplied `listings`, so don't fetch.
+    !listingsProp
+  );
+
+  const currentUserId: string | undefined = user?.id;
+
+  const savedIds = useMemo(
+    () => new Set((favouriteIds ?? []).map(String)),
+    [favouriteIds]
+  );
+
+  const listings = listingsProp ?? fetchedListings ?? [];
   const visibleListings = favoritesOnly
     ? listings.filter((listing) => savedIds.has(listing.id))
     : listings;
 
-  useEffect(() => {
-    // Controlled mode: the parent already fetched `listings`, so skip the self-fetch.
-    if (listingsProp) return;
-
-    const fetchListings = async () => {
-      try {
-        const data = await ListingService.getListings({ brand: brand ?? undefined, search });
-        setFetchedListings(Array.isArray(data) ? data : []);
-      } catch {
-        setFetchedListings([]);
-      }
-    }
-
-    fetchListings();
-  }, [listingsProp, brand, search])
-
-  useEffect(() => {
-    UserService.getUserInfo()
-      .then((user) => setCurrentUserId(user.id))
-      .catch((error) => console.error('Failed to load current user:', error));
-  }, [])
-
-  useEffect(() => {
-    ListingService.getFavouriteListingIds()
-      .then((ids) => setSavedIds(new Set(ids.map(String))))
-      .catch((error) => console.error('Failed to load saved listings:', error));
-  }, [])
-
   const handleSave = async (listing: Listing) => {
     const wasSaved = savedIds.has(listing.id);
 
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (wasSaved) next.delete(listing.id);
-      else next.add(listing.id);
-      return next;
-    });
+    // Optimistic write to the shared entry, so every BrowseFeed on screen
+    // shows the heart change at once — not just the one that was tapped.
+    const patchIds = (saved: boolean) =>
+      queryClient.setQueryData<number[]>(listingKeys.favouriteIds(), (prev) => {
+        const ids = prev ?? [];
+        const id = Number(listing.id);
+        return saved ? [...ids, id] : ids.filter((existing) => existing !== id);
+      });
+
+    patchIds(!wasSaved);
 
     try {
       if (wasSaved) {
@@ -104,14 +104,11 @@ export default function BrowseFeed({
       } else {
         await ListingService.favouriteListing(Number(listing.id));
       }
+      // The favourites screen reads a different endpoint, so mark it stale.
+      queryClient.invalidateQueries({ queryKey: userKeys.favourites() });
     } catch (error) {
       console.error('Failed to update saved listing:', error);
-      setSavedIds((prev) => {
-        const next = new Set(prev);
-        if (wasSaved) next.add(listing.id);
-        else next.delete(listing.id);
-        return next;
-      });
+      patchIds(wasSaved);
     }
 
     onSaveListing?.(listing);

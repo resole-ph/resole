@@ -95,6 +95,20 @@ export default function EditListingContainer() {
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
+  // Reference point the condition slider measures deviation against. The edit
+  // flow has no fresh analysis, so aiResult is null here and the reference has
+  // to be the rating the listing was loaded with — captured once. Comparing the
+  // live value against itself pins the deviation at zero forever, which is why
+  // the dial stayed green and always read "Accurate" no matter where it was
+  // dragged.
+  const [baselineConditionRating, setBaselineConditionRating] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (form && baselineConditionRating === null) {
+      setBaselineConditionRating(form.conditionRating);
+    }
+  }, [form, baselineConditionRating]);
+
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
     const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
@@ -108,7 +122,8 @@ export default function EditListingContainer() {
   if (!form) return null;
 
   const priceRange = priceAllowedRange();
-  const aiConditionRating = aiResult?.conditionRating ?? form.conditionRating;
+  const aiConditionRating =
+    aiResult?.conditionRating ?? baselineConditionRating ?? form.conditionRating;
   const conditionTone = getConditionTone(form.conditionRating, aiConditionRating, 1, 10);
   const errors = validateListingForm(form);
   const canContinue = Object.keys(errors).length === 0;
@@ -190,11 +205,20 @@ export default function EditListingContainer() {
             backgroundColor: `${conditionTone.color}12`,
             borderWidth: 1.5,
             borderColor: `${conditionTone.color}45`,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.04,
-            shadowRadius: 12,
-            elevation: 2,
+            // Android gets no shadow at all here. Unlike the other cards this
+            // background is translucent (7% alpha), and Android draws the
+            // elevation shadow behind the view using its raw bounds when it
+            // cannot derive an outline — a square-cornered grey rectangle that
+            // then shows straight through the tint. The tint and border already
+            // separate the card from the page. iOS keeps its original shadow.
+            ...(Platform.OS === 'ios'
+              ? {
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 12,
+                }
+              : null),
           }}
         >
           <View className="flex-row items-center justify-between mb-1 mt-1">
@@ -219,11 +243,18 @@ export default function EditListingContainer() {
                 backgroundColor: `${conditionTone.color}14`,
                 alignItems: 'center',
                 justifyContent: 'center',
-                shadowColor: conditionTone.color,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.25,
-                shadowRadius: 10,
-                elevation: 4,
+                // iOS keeps its original shadow props untouched — the green glow
+                // renders correctly there. Android gets boxShadow instead: under
+                // the New Architecture it honours the iOS props as well as
+                // elevation and composited the two. 40 == the old 0.25 opacity.
+                ...(Platform.OS === 'ios'
+                  ? {
+                      shadowColor: conditionTone.color,
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 10,
+                    }
+                  : { boxShadow: `0px 4px 10px ${conditionTone.color}40` }),
               }}
             >
               <Text style={{ fontSize: 30, fontWeight: '800', color: conditionTone.color, lineHeight: 34 }}>

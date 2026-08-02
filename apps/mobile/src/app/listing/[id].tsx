@@ -315,8 +315,9 @@ export default function ListingDetailScreen() {
 
           <View className="flex-row items-center mb-6">
             <Text className="text-blue-600 text-3xl font-bold">₱{listing.price.toLocaleString()}</Text>
+            {/* Retail price of a NEW pair — labelled rather than struck through. */}
             {listing.originalPrice && (
-              <Text className="text-gray-400 text-base line-through ml-3">₱{listing.originalPrice.toLocaleString()}</Text>
+              <Text className="text-gray-400 text-base ml-3">Retail ₱{listing.originalPrice.toLocaleString()}</Text>
             )}
           </View>
 
@@ -344,8 +345,14 @@ export default function ListingDetailScreen() {
                 )}
               </View>
               <View className="flex-row items-center mt-0.5">
-                <Ionicons name="star" size={12} color="#F59E0B" />
-                <Text className="text-gray-500 text-xs ml-1">{listing.seller.rating?.toFixed(1) || 0} · {listing.seller.totalSales ?? 0} sales</Text>
+                {/* Star and score drop out for unrated sellers; the sales count still shows. */}
+                {listing.seller.rating != null && (
+                  <>
+                    <Ionicons name="star" size={12} color="#F59E0B" />
+                    <Text className="text-gray-500 text-xs ml-1">{listing.seller.rating.toFixed(1)} · </Text>
+                  </>
+                )}
+                <Text className="text-gray-500 text-xs">{listing.seller.totalSales ?? 0} sales</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />

@@ -22,13 +22,17 @@ export function serializeShoeListing(row: ShoeListing) {
     listingMode: row.listingMode,
     isAvailable: row.isAvailable,
     isRefurbished: row.isRefurbished,
-    freeShipping: Boolean(row.freeShipping), // Mapped if available in DB
+    // TODO: no backing column yet — shipping is a planned feature. Hardcoded false so
+    // the badge stays hidden until shoe_listing gains a real free-shipping flag.
+    freeShipping: false,
     category: row.shoe.category,
     co2Footprint: row.shoe.co2Footprint && !isNaN(Number(row.shoe.co2Footprint)) ? Number(row.shoe.co2Footprint) : null,
     description: row.description ?? undefined,
     size: String(row.size),
     colorway: row.colorway,
-    swapFor: row.swapFor ?? undefined, // 👈 CRITICAL for Swap Board cards!
+    // TODO: no backing column yet — swap cards fall back to "Open to offers" until
+    // shoe_listing can record what a seller is looking for.
+    swapFor: undefined as string | undefined,
     createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : new Date().toISOString(),
     updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : new Date().toISOString(),
     deletedAt: row.deletedAt ? new Date(row.deletedAt).toISOString() : undefined,

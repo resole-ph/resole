@@ -8,8 +8,7 @@ import HeroBanner from '@/components/organisms/HeroBanner';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import CharitiesSection from '@/components/organisms/CharitiesSection';
 import { useOnboardingStore } from '@/store/onboarding';
-import { UserService } from '@/features/user/services/user.service';
-import { ListingService } from '@/features/listing/services/listing.service';
+import { useMyListings, useUserInfo } from '@/features/user/queries/user.queries';
 import { Listing } from '@/components/molecules/ListingCard';
 
 export default function HomeScreen() {
@@ -19,9 +18,7 @@ export default function HomeScreen() {
   const [hydrated, setHydrated] = useState(
     () => useOnboardingStore.persist.hasHydrated()
   );
-  const [user, setUser] = useState<any>({ name: 'Resoler' });
   const [searchQuery, setSearchQuery] = useState('');
-  const [myListings, setMyListings] = useState<Listing[]>([]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -35,31 +32,13 @@ export default function HomeScreen() {
     return useOnboardingStore.persist.onFinishHydration(() => setHydrated(true));
   }, [hydrated]);
 
-  useEffect(() => {
-    if (!hydrated) return; 
+  // Both share their cache entries with the profile tab, so home -> profile
+  // -> home costs no requests at all inside the stale window.
+  const { data: userData } = useUserInfo(hydrated);
+  const { data: listingsData } = useMyListings(hydrated);
 
-    const getUser = async () => {
-      try {
-        const data = await UserService.getUserInfo();
-        setUser(data);
-      } catch (error) {
-        console.error("Failed to fetch user info:", error);
-      }
-    };
-
-    getUser();
-  }, [hydrated]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-
-    ListingService.getUserListings()
-      .then((data) => setMyListings(Array.isArray(data) ? data : []))
-      .catch((error) => {
-        console.error('Failed to load your listings:', error);
-        setMyListings([]);
-      });
-  }, [hydrated]);
+  const user = userData ?? { name: 'Resoler' };
+  const myListings: Listing[] = Array.isArray(listingsData) ? listingsData : [];
 
   const filteredMyListings = useMemo(() => {
     if (!searchQuery) return myListings;

@@ -51,6 +51,14 @@ interface ListingCardProps {
   currentUserId?: string;
 }
 
+const CONDITION_COLORS: Record<Listing['condition'], string> = {
+  'Like New': '#10B981',
+  'Excellent': '#3B82F6',
+  'Good':     '#F59E0B',
+  'Fair':     '#9CA3AF',
+  'Poor':     '#EF4444',
+};
+
 const BADGE_STYLES: Record<
   NonNullable<Exclude<Listing['listingMode'], 'Hot'>>,
   { bg: string; text: string; icon: keyof typeof Ionicons.glyphMap }
@@ -59,14 +67,6 @@ const BADGE_STYLES: Record<
   Sale: { bg: '#10B981', text: '#fff', icon: 'pricetag' },
   Both: { bg: '#8B5CF6', text: '#fff', icon: 'swap-horizontal' },
   'Flash Deal': { bg: '#F59E0B', text: '#fff', icon: 'flash' },
-};
-
-const CONDITION_COLORS: Record<Listing['condition'], string> = {
-  'Like New': '#10B981',
-  'Excellent': '#3B82F6',
-  'Good':     '#F59E0B',
-  'Fair':     '#9CA3AF',
-  'Poor':     '#EF4444',
 };
 
 export default function ListingCard({ listing, onSave, isSaved, currentUserId }: ListingCardProps) {
@@ -180,26 +180,30 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
 
       {/* Info area */}
       <View className="p-3">
-        {/* Brand + size + condition */}
-        <View className="flex-row items-center justify-between mb-0.5">
-          <Text className="text-xs text-gray-400 font-medium" numberOfLines={1}>
-            {listing.brand}
-            {sizeLabel ? `  ·  Size ${sizeLabel}` : ''}
-          </Text>
-          <View className="flex-row items-center">
-            <View
-              className="w-1.5 h-1.5 rounded-full mr-1"
-              style={{ backgroundColor: conditionColor }}
-            />
-            <Text className="text-xs" style={{ color: conditionColor }}>
-              {listing.condition}
-            </Text>
-          </View>
-        </View>
+        {/*
+          Brand. Size is not repeated here — it already has a badge on the image.
+        */}
+        <Text className="text-xs text-gray-400 font-medium mb-0.5" numberOfLines={1}>
+          {listing.brand}
+        </Text>
 
         {/* Name */}
-        <Text className="text-gray-900 font-semibold text-sm leading-tight mb-2" numberOfLines={2}>
+        <Text className="text-gray-900 font-semibold text-sm leading-tight mb-1" numberOfLines={2}>
           {listing.model}
+        </Text>
+
+        {/*
+          Condition sits under the name rather than beside the brand: it gets a
+          full line, so "Like New condition" is never clipped on narrow Android
+          screens, and it reads as a fact about the shoe just named. It carries
+          its own colour and no marker — the dot was purely decorative.
+        */}
+        <Text
+          className="text-xs font-semibold mb-2"
+          style={{ color: conditionColor }}
+          numberOfLines={1}
+        >
+          {listing.condition} Condition
         </Text>
 
         {listing.listingMode === 'Swap' ? (
@@ -245,9 +249,13 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
               <Text className="text-blue-600 font-bold text-base">
                 ₱{listing.price.toLocaleString()}
               </Text>
+              {/*
+                Retail price of a NEW pair, from the scraped catalog — not a former
+                asking price, so it is labelled rather than struck through.
+              */}
               {listing.originalPrice && (
-                <Text className="text-gray-400 text-xs line-through ml-2">
-                  ₱{listing.originalPrice.toLocaleString()}
+                <Text className="text-gray-400 text-xs ml-2">
+                  Retail ₱{listing.originalPrice.toLocaleString()}
                 </Text>
               )}
             </View>
@@ -273,12 +281,15 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 {listing.sold ? (
                   <Text className="text-gray-400 text-xs">Sold {listing.sold}</Text>
                 ) : (
-                  <>
-                    <Ionicons name="star" size={10} color="#F59E0B" />
-                    <Text className="text-gray-500 text-xs ml-0.5">
-                      {listing.seller.rating?.toFixed(1) || 0}
-                    </Text>
-                  </>
+                  /* Omitted for sellers with no ratings — a bare 0 reads as a bad score. */
+                  listing.seller.rating != null && (
+                    <>
+                      <Ionicons name="star" size={10} color="#F59E0B" />
+                      <Text className="text-gray-500 text-xs ml-0.5">
+                        {listing.seller.rating.toFixed(1)}
+                      </Text>
+                    </>
+                  )
                 )}
               </View>
             </TouchableOpacity>

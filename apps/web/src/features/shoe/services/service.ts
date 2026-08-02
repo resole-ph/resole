@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count, ilike } from 'drizzle-orm';
-import { shoe, shoePrice, shoeListing, user, shoeAnalysis } from '@/db/schema';
+import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count, ilike, avg, max } from 'drizzle-orm';
+import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating } from '@/db/schema';
 import {
   Shoe,
   CreateShoe,
@@ -14,11 +14,40 @@ import {
   ShoeAnalysis,
   ShoeAnalysisResult
 } from '@/features/shoe/types/types';
+import { MIN_US_MENS, MAX_US_MENS } from '@/features/shoe/utils/size-conversion';
 import { GoogleGenAI } from "@google/genai";
 
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-001";
 const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1536", 10);
 const BASELINE_MATCH_THRESHOLD = parseFloat(process.env.BASELINE_MATCH_THRESHOLD || "0.75");
+
+/**
+ * Average star rating per rated user. Left-joined onto listing queries so cards can
+ * show a seller's real score; sellers with no ratings yield null, not a default.
+ */
+const sellerRating = db
+  .select({
+    rateeId: rating.rateeId,
+    average: avg(rating.rating).as('average'),
+  })
+  .from(rating)
+  .where(isNull(rating.deletedAt))
+  .groupBy(rating.rateeId)
+  .as('seller_rating');
+
+/**
+ * Retail reference price per shoe, from the scraped catalog. This is the price of a
+ * NEW pair — it is not a previous asking price for the listing, so present it labelled
+ * as retail rather than as a strikethrough discount.
+ */
+const shoeRetailPrice = db
+  .select({
+    shoeId: shoePrice.shoeId,
+    retail: max(shoePrice.price).as('retail'),
+  })
+  .from(shoePrice)
+  .groupBy(shoePrice.shoeId)
+  .as('shoe_retail_price');
 
 export async function generateEmbedding(context: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -166,13 +195,15 @@ export async function getAllShoeListing(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(
         and(
           eq(shoeListing.isAvailable, true), 
@@ -193,13 +224,15 @@ export async function getAllShoeListingForSale(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(and(
         eq(shoeListing.isAvailable, true),
         or(eq(shoeListing.listingMode, 'Sale'), eq(shoeListing.listingMode, 'Both')),
@@ -217,13 +250,15 @@ export async function getAllShoeListingForSwap(filters?: ShoeListingFilters) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(and(
         eq(shoeListing.isAvailable, true),
         or(eq(shoeListing.listingMode, 'Swap'), eq(shoeListing.listingMode, 'Both')),
@@ -271,13 +306,15 @@ export async function getShoeListingsByUserId(userId: string) {
       .select({
         model: shoe.model,
         brand: shoe.brand,
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(
         and(
           eq(shoeListing.userId, userId), 
@@ -428,13 +465,15 @@ export async function getShoeListingById(id: number) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(eq(shoeListing.id, id));
     
     return rows[0] as ShoeListing ?? null;
@@ -448,13 +487,15 @@ export async function getShoeListingByModelName(model: string) {
   try {
     const rows = await db
       .select({
-        seller: getTableColumns(user),
-        shoe: getTableColumns(shoe),
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
         ...getTableColumns(shoeListing)
       })
       .from(shoeListing)
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
       .where(
         and(
           eq(shoeListing.isAvailable, true),
@@ -640,7 +681,7 @@ export async function analyzeShoePhotos(photoUrls: {
     '• Angle mismatches never affect `isValidPhotoSet` — that field is governed solely by the VALIDATION RULES above.',
     '',
     'ANALYSIS & VALUATION RULES:',
-    '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size should be a plain US size number string like "10" or "10.5".',
+    '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size must be a plain US MEN\'S size number string like "10" or "10.5" — if the tag only shows a women\'s or EU size, convert it to US Men\'s first. Never return a bare women\'s size.',
     '• Condition & Defects: Set conditionScore (0-10, where 10 = brand new/unworn) based on the worse shoe of the pair. Prefix each defect entry with "Left: ", "Right: ", or "Both: ".',
     '• Estimated Price: Estimate typical brand-new retail price in PHP for this shoe model.',
     '• Year: Provide a valid Gregorian calendar year (e.g., 2026, 2016, 2006) of the release of the model.',
@@ -828,8 +869,10 @@ export async function publishShoeListing(userId: string, data: any) {
   if (Number.isNaN(priceValue) || priceValue <= 0) {
     throw new Error('Invalid price value provided');
   }
-  if (Number.isNaN(Number.isNaN(sizeValue) || sizeValue <= 0)) {
-    throw new Error('Invalid size values provided');
+  // Sizes are stored as US Men's. The bounds match the conversion chart, so
+  // anything outside them cannot be displayed or converted meaningfully.
+  if (Number.isNaN(sizeValue) || sizeValue < MIN_US_MENS || sizeValue > MAX_US_MENS) {
+    throw new Error(`Invalid size provided — expected a US Men's size between ${MIN_US_MENS} and ${MAX_US_MENS}`);
   }
   if (Number.isNaN(scoreValue) || scoreValue <= 0 || scoreValue > 10) {
     throw new Error('Invalid score values provided');

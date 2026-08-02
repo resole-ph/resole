@@ -1,15 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PublicListingCard from './PublicListingCard';
-import { ProfileClient } from '../services/profile.client';
-import type {
-  ProfileListing,
-  PublicProfile,
-  PublicProfileTab,
-  UserReview,
-} from '../types/profile.types';
+import {
+  usePublicProfile,
+  useUserListings,
+  useUserReviews,
+} from '../queries/profile.queries';
+import type { PublicProfileTab, UserReview } from '../types/profile.types';
 
 const TABS: { id: PublicProfileTab; label: string; icon: string }[] = [
   { id: 'reviews', label: 'Reviews', icon: 'star' },
@@ -85,38 +84,27 @@ export default function PublicProfileView({ userId }: { userId: string }) {
   const router = useRouter();
 
   const [tab, setTab] = useState<PublicProfileTab>('reviews');
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [listings, setListings] = useState<ProfileListing[]>([]);
-  const [reviews, setReviews] = useState<UserReview[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [user, userListings, userReviews] = await Promise.all([
-          ProfileClient.getPublicProfile(userId),
-          ProfileClient.getUserListings(userId).catch(() => []),
-          ProfileClient.getUserReviews(userId).catch(() => []),
-        ]);
-        setProfile(user);
-        setListings(userListings);
-        setReviews(userReviews);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load this profile');
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, [userId]);
+  // Keyed by userId, so bouncing between two sellers' profiles serves each
+  // from cache on the way back instead of refetching all three endpoints.
+  const { data: profile, isPending, error } = usePublicProfile(userId);
+  const { data: listingsData } = useUserListings(userId);
+  const { data: reviewsData } = useUserReviews(userId);
 
-  if (isLoading) return <Spinner />;
+  // Listings and reviews are supplementary — the original swallowed their
+  // failures and rendered the profile regardless. Only the profile blocks.
+  const listings = listingsData ?? [];
+  const reviews = reviewsData ?? [];
+
+  if (isPending) return <Spinner />;
 
   if (error || !profile) {
     return (
       <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-10 text-center">
         <span className="material-symbols-outlined text-error text-[40px]">person_off</span>
-        <p className="text-error font-semibold text-[15px] mt-2">{error ?? 'Profile not found'}</p>
+        <p className="text-error font-semibold text-[15px] mt-2">
+          {error?.message || 'Profile not found'}
+        </p>
       </div>
     );
   }

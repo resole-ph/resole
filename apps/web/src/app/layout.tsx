@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from "@/components/Footer";
 import { AuthProvider } from '@/providers/AuthProvider';
 import { AuthGateProvider } from '@/providers/AuthGateProvider';
+import QueryProvider from '@/providers/QueryProvider';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -28,17 +29,20 @@ export default function RootLayout({
       </head>
       {/* Added "flex flex-col" to keep the page structured for a sticky footer layout */}
       <body className="flex flex-col min-h-screen bg-background text-on-surface">
-        <AuthProvider>
-          <AuthGateProvider>
-            <Navbar />
-            
-            {/* Added "flex-grow" to push the footer down if content is short */}
-            <main className="flex-grow pt-[72px]">{children}</main>
-            
-            {/* Rendered the global footer inside the auth context flow */}
-            <Footer />
-          </AuthGateProvider>
-        </AuthProvider>
+        {/* Outermost so auth-aware components can read from the cache too. */}
+        <QueryProvider>
+          <AuthProvider>
+            <AuthGateProvider>
+              <Navbar />
+
+              {/* Added "flex-grow" to push the footer down if content is short */}
+              <main className="flex-grow pt-[72px]">{children}</main>
+
+              {/* Rendered the global footer inside the auth context flow */}
+              <Footer />
+            </AuthGateProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

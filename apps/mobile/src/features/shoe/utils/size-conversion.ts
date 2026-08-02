@@ -1,19 +1,27 @@
-export type SizeSystem = 'eur' | 'us_m' | 'us_w' | 'uk' | 'jp_cm';
+export type SizeSystem = 'us_m' | 'us_w' | 'eur' | 'uk' | 'jp_cm';
 
 export const SIZE_SYSTEM_LABELS: Record<SizeSystem, string> = {
-  eur: 'EUR',
   us_m: 'US Men',
   us_w: 'US Women',
+  eur: 'EUR',
   uk: 'UK',
   jp_cm: 'Japan/CM',
 };
 
-export const SIZE_SYSTEMS: SizeSystem[] = ['eur', 'us_m', 'us_w', 'uk', 'jp_cm'];
+export const SIZE_SYSTEMS: SizeSystem[] = ['us_m', 'us_w', 'eur', 'uk', 'jp_cm'];
 
-// Reference conversion chart (EUR is the anchor column). Real size charts aren't
+/** The system every stored size is expressed in. Nothing persists a size in any other system. */
+export const ANCHOR_SYSTEM: SizeSystem = 'us_m';
+
+// Reference conversion chart (US Men is the anchor column). Real size charts aren't
 // linear — steps vary between systems — so conversion is table-driven rather
 // than formula-driven. Values between rows are linearly interpolated; values
-// outside the table are extrapolated using the nearest segment's slope.
+// outside the table are clamped to the nearest end.
+//
+// US Men is the anchor because the Philippine market sizes in US, so the common
+// path (US in, US out) needs no conversion and loses no precision. Note that
+// "US" alone is ambiguous — Men's and Women's are distinct scales roughly two
+// sizes apart — so the anchor is specifically US MEN'S, never bare "US".
 type SizeRow = { eur: number; us_m: number; us_w: number; uk: number; jp_cm: number };
 
 const SIZE_CHART: SizeRow[] = [
@@ -35,23 +43,26 @@ const SIZE_CHART: SizeRow[] = [
   { eur: 50, us_m: 16, us_w: 18, uk: 15.5, jp_cm: 34.0 },
 ];
 
-const EUR_COLUMN = SIZE_CHART.map((row) => row.eur);
+const US_M_COLUMN = SIZE_CHART.map((row) => row.us_m);
+
+/** Smallest and largest anchor sizes the chart can represent. */
+export const MIN_US_MENS = US_M_COLUMN[0];
+export const MAX_US_MENS = US_M_COLUMN[US_M_COLUMN.length - 1];
 
 function roundToHalf(n: number): number {
   return Math.round(n * 2) / 2;
 }
 
-/** Piecewise-linear interpolation; extrapolates past the ends using the nearest segment's slope. xs must be sorted ascending. */
+/**
+ * Piecewise-linear interpolation, CLAMPED at both ends. Extrapolating past the
+ * chart produced nonsense — a size below the chart could map to a negative
+ * number — so out-of-range inputs resolve to the nearest real size instead.
+ * xs must be sorted ascending.
+ */
 function interpolate(x: number, xs: number[], ys: number[]): number {
   const n = xs.length;
-  if (x <= xs[0]) {
-    const slope = (ys[1] - ys[0]) / (xs[1] - xs[0]);
-    return ys[0] + slope * (x - xs[0]);
-  }
-  if (x >= xs[n - 1]) {
-    const slope = (ys[n - 1] - ys[n - 2]) / (xs[n - 1] - xs[n - 2]);
-    return ys[n - 1] + slope * (x - xs[n - 1]);
-  }
+  if (x <= xs[0]) return ys[0];
+  if (x >= xs[n - 1]) return ys[n - 1];
   for (let i = 0; i < n - 1; i++) {
     if (x >= xs[i] && x <= xs[i + 1]) {
       const t = (x - xs[i]) / (xs[i + 1] - xs[i]);
@@ -61,27 +72,34 @@ function interpolate(x: number, xs: number[], ys: number[]): number {
   return ys[n - 1];
 }
 
-export function convertFromEUR(eur: number, system: SizeSystem): number {
-  if (system === 'eur') return roundToHalf(eur);
+/** Anchor (US Men) -> display system. */
+export function convertFromUSMens(usMens: number, system: SizeSystem): number {
+  if (system === 'us_m') return roundToHalf(usMens);
   const targetColumn = SIZE_CHART.map((row) => row[system]);
-  return roundToHalf(interpolate(eur, EUR_COLUMN, targetColumn));
+  return roundToHalf(interpolate(usMens, US_M_COLUMN, targetColumn));
 }
 
-export function convertToEUR(size: number, system: SizeSystem): number {
-  if (system === 'eur') return roundToHalf(size);
-  // Every non-EUR column is monotonically increasing across the chart, so it
+/** Display system -> anchor (US Men). */
+export function convertToUSMens(size: number, system: SizeSystem): number {
+  if (system === 'us_m') return roundToHalf(size);
+  // Every non-anchor column is monotonically increasing across the chart, so it
   // can be used directly as the x-axis for the inverse lookup.
   const sourceColumn = SIZE_CHART.map((row) => row[system]);
-  return roundToHalf(interpolate(size, sourceColumn, EUR_COLUMN));
+  return roundToHalf(interpolate(size, sourceColumn, US_M_COLUMN));
 }
 
 function formatNumber(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-/** e.g. "10 (US Men)", "28 cm (Japan)", "43 (EUR)" */
-export function formatSize(eur: number, system: SizeSystem): string {
-  const value = formatNumber(convertFromEUR(eur, system));
+/** Bare numeric string in whatever system the caller is working in, e.g. "10" or "10.5". */
+export function formatSizeValue(n: number): string {
+  return formatNumber(n);
+}
+
+/** e.g. "10 (US Men)", "28 cm (Japan)", "43 (EUR)". Input is always the stored anchor size. */
+export function formatSize(usMens: number, system: SizeSystem): string {
+  const value = formatNumber(convertFromUSMens(usMens, system));
   if (system === 'jp_cm') return `${value} cm (Japan)`;
   return `${value} (${SIZE_SYSTEM_LABELS[system]})`;
 }

@@ -1,9 +1,12 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { RedeemOption, CoinTx } from '@/features/transaction/types/transaction.types';
-import { TransactionService } from '@/features/transaction/services/transaction.service';
+import {
+  useCoinBalance,
+  useVouchers,
+  useWalletTransactions,
+} from '@/features/user/queries/user.queries';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -97,32 +100,17 @@ function RedeemCard({ option, balance }: { option: RedeemOption; balance: number
 }
 
 export default function WalletScreen() {
-  const [balance, setBalance] = useState<number>(0);
-  const [balanceSummary, setBalanceSummary] = useState<any>({});
-  const [walletHistory, setWalletHistory] = useState<CoinTx[]>([]);
-  const [vouchers, setVouchers] = useState<RedeemOption[]>([]);
+  // Three independent queries, each cached separately. Vouchers in particular
+  // change far less often than the balance, so re-entering the wallet usually
+  // needs no request for them at all.
+  const { data: coinData } = useCoinBalance();
+  const { data: walletHistoryData } = useWalletTransactions();
+  const { data: vouchersData } = useVouchers();
 
-  useEffect(() => {
-    const getBalance = async () => {
-      const data = await TransactionService.getUserCoinBalance();
-      setBalance(data.coinBalance);
-      setBalanceSummary(data.summary);
-    };
-
-    const getWalletHistory = async () => {
-      const data = await TransactionService.getUserWalletTransactions();
-      setWalletHistory(data);
-    }
-
-    const getVouchers = async () => {
-      const data = await TransactionService.getVouchers();
-      setVouchers(data);
-    };
-
-    getBalance();
-    getWalletHistory();
-    getVouchers();
-  }, []);
+  const balance: number = coinData?.coinBalance ?? 0;
+  const balanceSummary: any = coinData?.summary ?? {};
+  const walletHistory: CoinTx[] = walletHistoryData ?? [];
+  const vouchers: RedeemOption[] = vouchersData ?? [];
 
   return (
     <View className="flex-1 bg-gray-50">

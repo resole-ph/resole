@@ -5,17 +5,20 @@ import { usePreferencesStore } from '@/store/preferences';
 import {
   SIZE_SYSTEMS,
   SIZE_SYSTEM_LABELS,
-  convertFromEUR,
-  convertToEUR,
+  MIN_US_MENS,
+  MAX_US_MENS,
+  convertFromUSMens,
+  convertToUSMens,
+  formatSizeValue,
   type SizeSystem,
 } from '@/features/shoe/utils/size-conversion';
 
-// The chart itself only spans EUR 35–50, so deriving the option list from its
-// two ends (rather than hardcoding a range per system) keeps every system's
+// The chart only spans US Men 3–16, so deriving the option list from its two
+// ends (rather than hardcoding a range per system) keeps every system's
 // dropdown bounded to sizes the conversion table can actually support.
 function sizeOptionsFor(system: SizeSystem): number[] {
-  const a = convertFromEUR(35, system);
-  const b = convertFromEUR(50, system);
+  const a = convertFromUSMens(MIN_US_MENS, system);
+  const b = convertFromUSMens(MAX_US_MENS, system);
   const min = Math.min(a, b);
   const max = Math.max(a, b);
   const opts: number[] = [];
@@ -23,10 +26,6 @@ function sizeOptionsFor(system: SizeSystem): number[] {
     opts.push(Math.round(v * 2) / 2);
   }
   return opts;
-}
-
-function formatSizeValue(n: number): string {
-  return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
 interface SizeFieldProps {
@@ -49,8 +48,8 @@ export default function SizeField({ value, onChange, error }: SizeFieldProps) {
     // still means the same physical shoe size instead of being silently
     // reinterpreted (e.g. "9" under US Men suddenly meaning UK 9).
     if (value.trim()) {
-      const eur = convertToEUR(Number(value), sizeSystem);
-      onChange(formatSizeValue(convertFromEUR(eur, nextSystem)));
+      const usMens = convertToUSMens(Number(value), sizeSystem);
+      onChange(formatSizeValue(convertFromUSMens(usMens, nextSystem)));
     }
     setSizeSystem(nextSystem);
     setShowSystemMenu(false);

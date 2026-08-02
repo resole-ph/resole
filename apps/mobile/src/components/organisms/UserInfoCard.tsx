@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { UserStat, UserInfoCardProps, USERINFOCARDDUMMY } from '@/features/user/types/user.types';
-import { UserService } from '@/features/user/services/user.service';
+import { UserStat, USERINFOCARDDUMMY } from '@/features/user/types/user.types';
+import { useUserInfoCard } from '@/features/user/queries/user.queries';
 
 function StatBox({ value, label }: UserStat) {
   return (
@@ -16,22 +15,13 @@ function StatBox({ value, label }: UserStat) {
 }
 
 export default function UserInfoCard({ userId }: { userId?: string } = {}) {
-  const [userInfo, setUserInfo] = useState<UserInfoCardProps>(USERINFOCARDDUMMY);
+  // This card renders on the profile tab and on every public profile, so it
+  // remounted constantly and refetched every time. Cached per userId now.
+  const { data } = useUserInfoCard(userId);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = userId
-          ? await UserService.getPublicUserInfoForCard(userId)
-          : await UserService.getUserInfoForCard();
-        setUserInfo(data);
-      } catch (error) {
-        console.error('Failed to load user info:', error);
-      }
-    };
-
-    loadData();
-  }, [userId]);
+  // Same fallback as before: the dummy shows while loading or after a failure,
+  // rather than an empty card.
+  const userInfo = data ?? USERINFOCARDDUMMY;
 
   return (
     <View

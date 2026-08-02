@@ -10,6 +10,8 @@ import type {
 } from '../types/sell.types';
 import type { Listing } from '@/components/molecules/ListingCard';
 import { apiFetch } from '@/lib/api-client';
+import { usePreferencesStore } from '@/store/preferences';
+import { convertFromUSMens, formatSizeValue } from '@/features/shoe/utils/size-conversion';
 import { ratingToLabel } from '../utils/condition';
 
 /** Web /api/listings/photos expects field names; mobile uses 6 photo angles. */
@@ -116,7 +118,10 @@ export function listingToEditState(listing: Listing): {
     brand: listing.brand,
     model: listing.model,
     colorway: listing.colorway ?? '',
-    size: listing.size ?? '',
+    // Stored sizes are US Men; the form works in the seller's display system.
+    size: listing.size
+      ? formatSizeValue(convertFromUSMens(Number(listing.size), usePreferencesStore.getState().sizeSystem))
+      : '',
     // Existing listings don't store a manufacture year — only a fresh AI
     // analysis captures one, so leave it blank until/unless that happens.
     year: '',

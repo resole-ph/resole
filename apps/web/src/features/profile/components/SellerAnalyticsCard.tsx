@@ -1,10 +1,40 @@
-const METRICS = [
-  { label: 'Profile Views', value: '1,240', delta: '+18%', up: true },
-  { label: 'Watchers', value: '84', delta: '+5%', up: true },
-  { label: 'Saves', value: '31', delta: '-2%', up: false },
-];
+'use client';
+
+import { useSellerAnalytics } from '../queries/profile.queries';
+import type { AnalyticsMetric } from '../types/profile.types';
+
+/**
+ * Week-over-week change. With no prior week to compare against, a percentage
+ * is meaningless — the endpoint is new enough that most accounts will hit
+ * this — so show a dash rather than a fabricated "+100%".
+ */
+function toDelta(metric: AnalyticsMetric | undefined) {
+  if (!metric || metric.lastWeek === 0) {
+    return { delta: '—', up: true };
+  }
+
+  const change = ((metric.thisWeek - metric.lastWeek) / metric.lastWeek) * 100;
+  const rounded = Math.round(change);
+
+  return { delta: `${rounded >= 0 ? '+' : ''}${rounded}%`, up: rounded >= 0 };
+}
 
 export default function SellerAnalyticsCard() {
+  // Was three hardcoded figures ("1,240" profile views, "+18%") shown
+  // identically to every account. /api/users/me/seller-analytics returns real
+  // totals plus this-week/last-week counts, which is where the deltas come from.
+  const { data } = useSellerAnalytics();
+
+  const METRICS = [
+    { label: 'Profile Views', metric: data?.profileViews },
+    { label: 'Listing Views', metric: data?.listingViews },
+    { label: 'Saves', metric: data?.listingSaves },
+  ].map(({ label, metric }) => ({
+    label,
+    value: (metric?.total ?? 0).toLocaleString(),
+    ...toDelta(metric),
+  }));
+
   return (
     <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
       <div className="flex items-center gap-3 mb-4">

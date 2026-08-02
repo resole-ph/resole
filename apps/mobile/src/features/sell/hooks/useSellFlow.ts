@@ -1,4 +1,6 @@
 import { useSellStore } from '@/store/sell';
+import { usePreferencesStore } from '@/store/preferences';
+import { convertFromUSMens, formatSizeValue } from '@/features/shoe/utils/size-conversion';
 import type { AiAnalysisResult, SellStep } from '../types/sell.types';
 import { ratingToLabel } from '../utils/condition';
 
@@ -10,7 +12,7 @@ const DEV_MOCK_AI_RESULT: AiAnalysisResult = {
   brand: 'Nike',
   model: 'Air Max 90',
   colorway: 'White / Black',
-  size: '42',
+  size: '8.5',
   year: 2022,
   conditionLabel: 'Good',
   conditionRating: 7,
@@ -31,11 +33,16 @@ export function useSellFlow() {
     // Preserve fields the AI doesn't know about (listing mode, description) when
     // re-analyzing during an edit, instead of wiping out what was already there.
     const prev = store.form;
+    // The AI reads the size off the shoe in US Men (the anchor), but the form
+    // holds sizes in the seller's display system — so re-express it here rather
+    // than letting the raw anchor number be reinterpreted as, say, UK.
+    const { sizeSystem } = usePreferencesStore.getState();
+    const displaySize = formatSizeValue(convertFromUSMens(Number(ai.size), sizeSystem));
     store.setForm({
       brand: ai.brand,
       model: ai.model,
       colorway: ai.colorway,
-      size: ai.size,
+      size: displaySize,
       year: String(ai.year),
       conditionRating: ai.conditionRating,
       conditionLabel: ai.conditionLabel,

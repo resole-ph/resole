@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
+import { useMyListings, userKeys } from '@/features/user/queries/user.queries';
 import { useSellStore } from '@/store/sell';
 import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
@@ -194,40 +196,38 @@ export default function ListingsScreen() {
   const router = useRouter();
   const resetSell = useSellStore((s) => s.reset);
 
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('active');
-  const [active, setActive] = useState<Listing[]>([]);
-  const [pending, setPending] = useState<Listing[]>([]);
 
   const [donateTargetId, setDonateTargetId] = useState<string | null>(null);
   const [charities, setCharities] = useState<Charity[]>([]);
   const [charitiesLoading, setCharitiesLoading] = useState(false);
   const [donating, setDonating] = useState(false);
 
-  useEffect(() => {
-    const fetchUserListings = async () => {
-      try {
-        const data = (await ListingService.getUserListings()) || [];
-        const itemsWithDays = await Promise.all(
-          data.map(async (item) => {
-            item.daysLeft = await ListingService.getDaysLeft(item.createdAt);
-            return item;
-          })
-        );
+  // Shared with the home screen's "Your Listings" row, so arriving here from
+  // "View all" renders from cache instead of refetching the same list.
+  const { data } = useMyListings();
 
-        const activeItems = itemsWithDays.filter(
-          (item) => item.isAvailable !== false && item.daysLeft !== undefined && item.daysLeft > 0
-        );
-        const removedItems = itemsWithDays.filter((item) => item.isAvailable === false);
+  /** Applies a change to the cached list; every screen reading it updates. */
+  const patchCache = (fn: (items: Listing[]) => Listing[]) =>
+    queryClient.setQueryData<Listing[]>(userKeys.myListings(), (prev) => fn(prev ?? []));
 
-        setActive(activeItems);
-        setPending(removedItems);
-      } catch (error) {
-        console.error('Failed to load user listings:', error);
-      }
+  // Derived rather than stored in two parallel arrays, so the tabs cannot
+  // drift apart. getDaysLeft is synchronous date maths, despite the awaits
+  // that used to wrap it here.
+  const { active, pending } = useMemo(() => {
+    const items = (data ?? []).map((item) => ({
+      ...item,
+      daysLeft: ListingService.getDaysLeft(item.createdAt),
+    }));
+
+    return {
+      active: items.filter(
+        (item) => item.isAvailable !== false && item.daysLeft !== undefined && item.daysLeft > 0
+      ),
+      pending: items.filter((item) => item.isAvailable === false),
     };
-
-    fetchUserListings();
-  }, []);
+  }, [data]);
 
   const handleArchive = async (id: string) => {
     const item = active.find((l) => l.id === id);
@@ -243,10 +243,10 @@ export default function ListingsScreen() {
           // when the listing was still live server-side.
           try {
             await ListingService.archiveListing(Number(id));
-            setActive((prev) => prev.filter((l) => l.id !== id));
-            if (item) {
-              setPending((prev) => [...prev, { ...item, isAvailable: false }]);
-            }
+            // Flipping the flag is enough — the tab split is derived from it.
+            patchCache((items) =>
+              items.map((l) => (l.id === id ? { ...l, isAvailable: false } : l))
+            );
           } catch (error) {
             console.error('Failed to archive listing:', error);
             Alert.alert('Could not archive listing', 'Please try again.');
@@ -271,7 +271,7 @@ export default function ListingsScreen() {
           onPress: async () => {
             try {
               await ListingService.deleteListing(Number(id));
-              setPending((prev) => prev.filter((l) => l.id !== id));
+              patchCache((items) => items.filter((l) => l.id !== id));
             } catch (error) {
               console.error('Failed to delete listing:', error);
               Alert.alert('Could not delete listing', 'Please try again.');
@@ -285,12 +285,9 @@ export default function ListingsScreen() {
   const handleRelist = async (id: string) => {
     try {
       await ListingService.relistListing(Number(id));
-      const item = pending.find((l) => l.id === id);
-      setPending((prev) => prev.filter((l) => l.id !== id));
-      if (item) {
-        const daysLeft = await ListingService.getDaysLeft(item.createdAt);
-        setActive((prev) => [...prev, { ...item, isAvailable: true, daysLeft }]);
-      }
+      patchCache((items) =>
+        items.map((l) => (l.id === id ? { ...l, isAvailable: true } : l))
+      );
     } catch (error) {
       console.error('Failed to re-list listing:', error);
       Alert.alert('Could not re-list listing', 'Please try again.');
@@ -319,7 +316,7 @@ export default function ListingsScreen() {
     setDonating(true);
     try {
       await ListingService.donateListing(Number(donateTargetId), charityId);
-      setPending((prev) => prev.filter((l) => l.id !== donateTargetId));
+      patchCache((items) => items.filter((l) => l.id !== donateTargetId));
       setDonateTargetId(null);
       Alert.alert('Thank you!', 'Your shoe has been donated.');
     } catch (error) {
