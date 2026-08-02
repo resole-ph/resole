@@ -101,7 +101,9 @@ export const shoeListing = pgTable('shoe_listing', {
   deletedAt: timestamp('deleted_at')
 }, (table) => [
   check('value_check', sql`${table.value} > 0`),
-  check('size_check', sql`${table.size} > 0`),
+  // Sizes are stored as US Men's; bounds match the conversion chart in
+  // src/features/shoe/utils/size-conversion.ts.
+  check('size_check', sql`${table.size} >= 3 AND ${table.size} <= 16`),
   check('condition_score_check', sql`${table.conditionScore} > 0`),
 ]);
 
