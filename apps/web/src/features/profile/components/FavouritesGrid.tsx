@@ -1,36 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { profileKeys, useMyFavourites } from '../queries/profile.queries';
+import { formatSizeShort } from '@/features/shoe/utils/size-conversion';
+import type { FavouriteItem } from '../types/profile.types';
 
-type FavItem = {
+type FavCardItem = {
   id: string;
+  listingId: number;
   name: string;
   brand: string;
   size: string;
   price: string;
-  saved: boolean;
+  imageUrl: string | null;
 };
 
-const INITIAL_FAVOURITES: FavItem[] = [
-  { id: '1', name: 'Jordan 4 Retro', brand: 'Nike', size: 'US 10', price: '₱24,000', saved: true },
-  { id: '2', name: 'Yeezy Boost 350', brand: 'Adidas', size: 'US 9', price: '₱15,500', saved: true },
-  { id: '3', name: 'Air Force 1 Low', brand: 'Nike', size: 'US 10.5', price: '₱5,200', saved: true },
-  { id: '4', name: 'Samba OG', brand: 'Adidas', size: 'US 9.5', price: '₱7,800', saved: true },
-  { id: '5', name: 'Panda Dunk Low', brand: 'Nike', size: 'US 9', price: '₱12,000', saved: true },
-  { id: '6', name: 'New Balance 327', brand: 'New Balance', size: 'US 10', price: '₱4,500', saved: true },
-  { id: '7', name: 'Converse Run Star', brand: 'Converse', size: 'US 8', price: '₱3,200', saved: true },
-  { id: '8', name: 'Gel-Kayano 14', brand: 'Asics', size: 'US 9.5', price: '₱8,500', saved: true },
-];
+const PESO = new Intl.NumberFormat('en-PH', {
+  style: 'currency',
+  currency: 'PHP',
+  maximumFractionDigits: 0,
+});
 
-function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: string) => void }) {
+function toCardItem(row: FavouriteItem): FavCardItem {
+  return {
+    id: String(row.details.id),
+    listingId: row.listing.id,
+    name: row.details.model,
+    brand: row.details.brand,
+    // Same formatter the listing cards use, so "10 (US Men)" reads the same
+    // everywhere instead of this page's old hardcoded "US 10".
+    size: formatSizeShort(row.details.size) ?? '',
+    price: PESO.format(Number(row.details.price ?? 0)),
+    imageUrl: row.listing.imageUrlTop,
+  };
+}
+
+function FavCard({ item, onToggle }: { item: FavCardItem; onToggle: (item: FavCardItem) => void }) {
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-3 relative">
-      <div className="w-full h-24 rounded-lg bg-surface-container flex items-center justify-center text-outline mb-2">
-        <span className="material-symbols-outlined text-[28px]">footprint</span>
+      <div className="w-full h-24 rounded-lg bg-surface-container flex items-center justify-center text-outline mb-2 overflow-hidden">
+        {item.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span className="material-symbols-outlined text-[28px]">footprint</span>
+        )}
       </div>
 
       <button
-        onClick={() => onToggle(item.id)}
+        onClick={() => onToggle(item)}
         className="absolute top-5 right-5 w-7 h-7 rounded-full bg-white shadow-[0px_2px_6px_rgba(0,0,0,0.12)] flex items-center justify-center"
         aria-label={`Remove ${item.name} from favourites`}
       >
@@ -44,19 +62,51 @@ function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: string) => 
 
       <p className="text-on-surface-variant text-[12px]">{item.brand}</p>
       <p className="text-on-surface font-semibold text-[14px] mt-0.5 truncate">{item.name}</p>
-      <p className="text-on-surface-variant text-[12px]">US {item.size}</p>
+      <p className="text-on-surface-variant text-[12px]">{item.size}</p>
       <p className="text-primary font-bold text-[14px] mt-1">{item.price}</p>
     </div>
   );
 }
 
 export default function FavouritesGrid() {
-  const [items, setItems] = useState<FavItem[]>(INITIAL_FAVOURITES);
-  const saved = items.filter((i) => i.saved);
+  const queryClient = useQueryClient();
 
-  const handleToggle = (id: string) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, saved: !i.saved } : i)));
+  // This page previously rendered eight hardcoded sneakers, so it disagreed
+  // with the favourites count the preview card on /profile showed. Same query
+  // key as that card now, so the two cannot diverge.
+  const { data, isPending } = useMyFavourites();
+
+  const saved = (data?.favourites ?? []).map(toCardItem);
+
+  const handleToggle = async (item: FavCardItem) => {
+    // Optimistic removal, reverted by the refetch below if the request fails.
+    queryClient.setQueryData<{ totalCount: number; favourites: FavouriteItem[] }>(
+      profileKeys.myFavourites(),
+      (prev) => {
+        if (!prev) return prev;
+        const favourites = prev.favourites.filter((row) => String(row.details.id) !== item.id);
+        return { totalCount: favourites.length, favourites };
+      }
+    );
+
+    try {
+      const response = await fetch(`/api/listings/${item.listingId}/save`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to remove favourite');
+    } catch (error) {
+      console.error('Failed to remove favourite:', error);
+    } finally {
+      queryClient.invalidateQueries({ queryKey: profileKeys.myFavourites() });
+    }
   };
+
+  if (isPending) {
+    return (
+      <div className="flex flex-col items-center py-20">
+        <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-on-surface-variant text-[14px] mt-3">Loading favourites…</p>
+      </div>
+    );
+  }
 
   return (
     <div>

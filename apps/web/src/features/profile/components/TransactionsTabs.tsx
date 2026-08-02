@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMyTransactions } from '../queries/profile.queries';
+import type { TransactionRow } from '../types/profile.types';
 
 type TxTab = 'sales' | 'swaps' | 'donations';
 
@@ -13,23 +15,51 @@ type Transaction = {
   status: 'completed' | 'pending' | 'donated';
 };
 
-const SALES: Transaction[] = [
-  { id: 's1', item: 'Jordan 1 Retro High', counterpart: 'Buyer: @jmendoza', date: 'May 28, 2026', amount: '₱18,000', status: 'completed' },
-  { id: 's2', item: 'Nike SB Dunk Low', counterpart: 'Buyer: @kevinr', date: 'May 15, 2026', amount: '₱9,500', status: 'completed' },
-  { id: 's3', item: 'Adidas Samba OG', counterpart: 'Buyer: @amirag', date: 'May 3, 2026', amount: '₱7,800', status: 'pending' },
-];
+const PESO = new Intl.NumberFormat('en-PH', {
+  style: 'currency',
+  currency: 'PHP',
+  maximumFractionDigits: 0,
+});
 
-const SWAPS: Transaction[] = [
-  { id: 'w1', item: 'Yeezy 350 v2 → Air Max 97', counterpart: 'Swapped with: @pdc', date: 'May 20, 2026', amount: 'Even swap', status: 'completed' },
-  { id: 'w2', item: 'NB 550 → Panda Dunk', counterpart: 'Swapped with: @lramos', date: 'Apr 30, 2026', amount: '+₱2,000', status: 'completed' },
-];
+const DATE = new Intl.DateTimeFormat('en-PH', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
 
-const DONATIONS: Transaction[] = [
-  { id: 'd1', item: 'Vans Old Skool', counterpart: 'Caritas Manila', date: 'May 22, 2026', amount: '+120 coins', status: 'donated' },
-  { id: 'd2', item: 'Converse Chuck 70', counterpart: 'Gawad Kalinga', date: 'Apr 18, 2026', amount: '+80 coins', status: 'donated' },
-];
+/**
+ * The server returns one flat row per transaction; this shapes it into what
+ * the row component renders. Amount reads differently per type — a donation
+ * earns coins, a swap has no price — which is why it is not just a currency
+ * format of `amount`.
+ */
+function toTransaction(row: TransactionRow): Transaction {
+  const counterpart =
+    row.type === 'donate'
+      ? row.charityName ?? 'Charity'
+      : row.recipientName ?? row.ownerName ?? 'Unknown';
 
-const DATA: Record<TxTab, Transaction[]> = { sales: SALES, swaps: SWAPS, donations: DONATIONS };
+  const amount =
+    row.type === 'donate'
+      ? `+${row.coinsEarned ?? 0} coins`
+      : row.amount
+        ? PESO.format(Number(row.amount))
+        : 'Even swap';
+
+  return {
+    id: String(row.id),
+    item: `${row.shoeBrand} ${row.shoeModel}`,
+    counterpart:
+      row.type === 'sale'
+        ? `Buyer: ${counterpart}`
+        : row.type === 'swap'
+          ? `Swapped with: ${counterpart}`
+          : counterpart,
+    date: DATE.format(new Date(row.completedAt ?? row.createdAt)),
+    amount,
+    status: row.completedAt ? (row.type === 'donate' ? 'donated' : 'completed') : 'pending',
+  };
+}
 
 const STATUS_STYLES: Record<Transaction['status'], { className: string; label: string }> = {
   completed: { className: 'bg-secondary-container text-on-secondary-container', label: 'Completed' },
@@ -61,7 +91,25 @@ function TxRow({ tx }: { tx: Transaction }) {
 
 export default function TransactionsTabs() {
   const [tab, setTab] = useState<TxTab>('sales');
-  const currentData = DATA[tab];
+
+  // Real history now. This page previously rendered seven hardcoded rows,
+  // which meant every account saw the same fictional sales and donations.
+  const { data } = useMyTransactions();
+
+  const grouped = useMemo(() => {
+    const buckets: Record<TxTab, Transaction[]> = { sales: [], swaps: [], donations: [] };
+
+    for (const row of data ?? []) {
+      const tx = toTransaction(row);
+      if (row.type === 'sale') buckets.sales.push(tx);
+      else if (row.type === 'swap') buckets.swaps.push(tx);
+      else if (row.type === 'donate') buckets.donations.push(tx);
+    }
+
+    return buckets;
+  }, [data]);
+
+  const currentData = grouped[tab];
 
   return (
     <section className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-2">
