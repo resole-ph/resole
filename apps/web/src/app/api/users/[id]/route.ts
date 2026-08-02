@@ -23,7 +23,7 @@ export async function GET(
 
   const profile = await getUserProfileById(id);
   if (!profile) {
-    return NextResponse.json({ error: 'Invalid user id' }, { status: 404 });
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
   const stats = await getUserStatsById(id);

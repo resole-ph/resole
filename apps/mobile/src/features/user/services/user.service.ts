@@ -144,5 +144,13 @@ export const UserService = {
     });
     
     return sellerAnalytics;
-  } 
+  }, 
+
+  async saveUserView(userId: string) {
+    const res = await apiFetch<unknown>(`/api/users/${userId}/view`, {
+      method: 'POST'
+    });
+
+    return res;
+  }
 }

@@ -70,7 +70,7 @@ export default function PublicProfileScreen() {
   useEffect(() => {
     if (!id) return;
 
-    const load = async () => {
+    const loadProfile = async () => {
       setIsLoading(true);
       try {
         const [listingsData, reviewsData] = await Promise.all([
@@ -86,7 +86,22 @@ export default function PublicProfileScreen() {
       }
     };
 
-    load();
+    loadProfile();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const trackView = async () => {
+      try {
+        await new Promise(r => setTimeout(r, 5000));
+        await UserService.saveUserView(id);
+      } catch (error) {
+        console.error('Analytics error - failed to track view:', error);
+      }
+    };
+
+    trackView();
   }, [id]);
 
   const visibleReviews = showAllReviews ? reviews : reviews.slice(0, REVIEWS_PREVIEW_COUNT);
