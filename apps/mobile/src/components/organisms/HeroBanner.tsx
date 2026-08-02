@@ -18,7 +18,7 @@ interface HeroBannerProps {
 export default function HeroBanner({
   tag,
   title = "Know what your\nkicks are worth.",
-  subtitle = "Snap 4 photos. Get an\ninstant fair price.",
+  subtitle = "Snap photos, and get\nan instant fair price.",
   ctaLabel = 'Try Valuation',
   ctaVariant = 'link',
   rightIcon,
