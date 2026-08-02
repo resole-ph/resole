@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
+import { formatSizeShort } from "@/features/shoe/utils/size-conversion";
 
 const COLORS = {
   primary: "#2563EB",
@@ -71,9 +72,11 @@ export default function ListingCard({
   const conditionColor = CONDITION_COLORS[item.condition] || COLORS.green;
 
   const daysLeft = getDaysLeft(item.createdAt, item.daysLeft);
-  // The DTO stringifies size unconditionally, so a missing size arrives as "null"/"undefined".
-  const sizeLabel =
-    item.size && item.size !== 'null' && item.size !== 'undefined' ? `US ${item.size}` : null;
+  // Sizes are stored as US Men's; the DTO stringifies unconditionally, so a
+  // missing size arrives as "null"/"undefined" and formatSizeShort rejects it.
+  const sizeLabel = formatSizeShort(
+    item.size === 'null' || item.size === 'undefined' ? null : item.size
+  );
   // Null when the seller has no ratings yet — the chip is hidden rather than defaulted.
   const sellerRating = item.seller?.rating ?? null;
 

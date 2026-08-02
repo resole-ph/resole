@@ -14,6 +14,7 @@ import {
   ShoeAnalysis,
   ShoeAnalysisResult
 } from '@/features/shoe/types/types';
+import { MIN_US_MENS, MAX_US_MENS } from '@/features/shoe/utils/size-conversion';
 import { GoogleGenAI } from "@google/genai";
 
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-001";
@@ -680,7 +681,7 @@ export async function analyzeShoePhotos(photoUrls: {
     '• Angle mismatches never affect `isValidPhotoSet` — that field is governed solely by the VALIDATION RULES above.',
     '',
     'ANALYSIS & VALUATION RULES:',
-    '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size should be a plain US size number string like "10" or "10.5".',
+    '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size must be a plain US MEN\'S size number string like "10" or "10.5" — if the tag only shows a women\'s or EU size, convert it to US Men\'s first. Never return a bare women\'s size.',
     '• Condition & Defects: Set conditionScore (0-10, where 10 = brand new/unworn) based on the worse shoe of the pair. Prefix each defect entry with "Left: ", "Right: ", or "Both: ".',
     '• Estimated Price: Estimate typical brand-new retail price in PHP for this shoe model.',
     '• Year: Provide a valid Gregorian calendar year (e.g., 2026, 2016, 2006) of the release of the model.',
@@ -868,8 +869,10 @@ export async function publishShoeListing(userId: string, data: any) {
   if (Number.isNaN(priceValue) || priceValue <= 0) {
     throw new Error('Invalid price value provided');
   }
-  if (Number.isNaN(Number.isNaN(sizeValue) || sizeValue <= 0)) {
-    throw new Error('Invalid size values provided');
+  // Sizes are stored as US Men's. The bounds match the conversion chart, so
+  // anything outside them cannot be displayed or converted meaningfully.
+  if (Number.isNaN(sizeValue) || sizeValue < MIN_US_MENS || sizeValue > MAX_US_MENS) {
+    throw new Error(`Invalid size provided — expected a US Men's size between ${MIN_US_MENS} and ${MAX_US_MENS}`);
   }
   if (Number.isNaN(scoreValue) || scoreValue <= 0 || scoreValue > 10) {
     throw new Error('Invalid score values provided');

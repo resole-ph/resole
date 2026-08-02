@@ -44,7 +44,7 @@ function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: string) => 
 
       <p className="text-on-surface-variant text-[12px]">{item.brand}</p>
       <p className="text-on-surface font-semibold text-[14px] mt-0.5 truncate">{item.name}</p>
-      <p className="text-on-surface-variant text-[12px]">{item.size}</p>
+      <p className="text-on-surface-variant text-[12px]">US {item.size}</p>
       <p className="text-primary font-bold text-[14px] mt-1">{item.price}</p>
     </div>
   );

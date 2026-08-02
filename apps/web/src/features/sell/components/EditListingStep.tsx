@@ -97,7 +97,7 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Size (US) *" error={errors.size}>
+                <Field label="Size (US Men's) *" error={errors.size}>
                   <input
                     className={fieldInputClass(errors.size)}
                     value={form.size}
