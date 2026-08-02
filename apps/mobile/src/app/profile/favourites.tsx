@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { ListingService } from '@/features/listing/services/listing.service';
+import { useFavourites, userKeys } from '@/features/user/queries/user.queries';
 import { FavItem } from '@/features/listing/types/listing.types';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
@@ -88,23 +89,21 @@ function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: number) => 
 }
 
 export default function FavouritesScreen() {
-  const [items, setItems] = useState<FavItem[]>([]);
+  const queryClient = useQueryClient();
+  const { data } = useFavourites();
 
-  useEffect(() => {
-    const loadData = async () => {
-      const fetchedListing = await ListingService.getUserFavourites();
-      setItems(fetchedListing);
-    };
-
-    loadData();
-  }, []);
-
+  const items = data ?? [];
   const saved = items.filter((i) => i.saved);
+
+  const setItems = (fn: (prev: FavItem[]) => FavItem[]) =>
+    queryClient.setQueryData<FavItem[]>(userKeys.favourites(), (prev) => fn(prev ?? []));
 
   const handleToggle = async (id: number) => {
     const item = items.find((i) => i.id === id);
     if (!item) return;
 
+    // Optimistic toggle written to the cache, so the change is also visible
+    // anywhere else reading this entry — not just this screen's local state.
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, saved: !i.saved } : i)));
     try {
       await ListingService.unfavouriteListing(item.listingId);

@@ -1,8 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthGate } from '@/providers/AuthGateProvider';
+import {
+  profileKeys,
+  useMyFavourites,
+  useMyListings,
+  useMyProfile,
+} from '@/features/profile/queries/profile.queries';
 import ListingCard from '@/components/ListingCard';
 import { getConditionLabel } from '@/features/sell/utils/condition';
 
@@ -270,12 +277,8 @@ export default function ResoleHome() {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Dynamic States
-  const [user, setUser] = useState<any>(null);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'inventory' | 'favourites'>('inventory');
-  const [myListings, setMyListings] = useState<any[]>([]);
-  const [favourites, setFavourites] = useState<any[]>([]);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -284,70 +287,58 @@ export default function ResoleHome() {
     return 'Good evening';
   }, []);
 
-  const loadFavourites = useCallback(async () => {
-    try {
-      const res = await fetch('/api/users/me/favourites');
-      const data = await res.json();
-      if (res.ok && data.favourites) {
-        const rows = data.favourites.map(favouriteToListing);
-        setFavourites(rows);
-        setSavedIds(new Set(rows.map((r: any) => r.id)));
-      }
-    } catch (e) {
-      console.error('Failed to load favourites:', e);
-    }
-  }, []);
-
   // The home page only shows the signed-in user's own inventory and the
   // listings they favourited — the full catalogue lives on /market.
-  useEffect(() => {
-    async function loadUserData() {
-      setLoading(true);
-      try {
-        const resUser = await fetch('/api/users/me');
-        const dataUser = await resUser.json();
-        if (resUser.ok && dataUser.user) {
-          setUser(dataUser.user);
-        }
+  //
+  // These are the same three query keys the /profile page uses, so moving
+  // between home and profile is a cache hit in both directions rather than
+  // six repeated requests.
+  const { data: user } = useMyProfile();
+  const { data: myListingsData, isPending: loading } = useMyListings();
+  const { data: favouritesData } = useMyFavourites();
 
-        const resMine = await fetch('/api/users/me/listings');
-        const dataMine = await resMine.json();
-        if (resMine.ok && dataMine.shoeListings) {
-          setMyListings(dataMine.shoeListings);
-        }
+  const myListings = myListingsData ?? [];
 
-        await loadFavourites();
-      } catch (e) {
-        console.error('Failed to load user data:', e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadUserData();
-  }, [loadFavourites]);
+  // `any[]` preserves what this was before the cache conversion, when
+  // `favourites` was untyped state. favouriteToListing only builds 8 of the
+  // ~26 fields ListingCard expects, so typing it properly fails to compile —
+  // a real pre-existing gap in the favourites mapping, not one to fix here.
+  const favourites = useMemo<any[]>(
+    () => (favouritesData?.favourites ?? []).map(favouriteToListing),
+    [favouritesData]
+  );
+
+  // Derived from the cache, but with an overlay for hearts the user just
+  // toggled — the optimistic update has to survive until the refetch lands.
+  const [pendingSaves, setPendingSaves] = useState<Map<string, boolean>>(new Map());
+
+  const savedIds = useMemo(() => {
+    const ids = new Set<string>(favourites.map((r: any) => r.id));
+    pendingSaves.forEach((saved, id) => (saved ? ids.add(id) : ids.delete(id)));
+    return ids;
+  }, [favourites, pendingSaves]);
 
   const handleSaveListing = async (listingId: string) => {
     const isSaved = savedIds.has(listingId);
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (isSaved) next.delete(listingId);
-      else next.add(listingId);
-      return next;
-    });
+    setPendingSaves((prev) => new Map(prev).set(listingId, !isSaved));
 
     try {
       await fetch(`/api/listings/${listingId}/save`, {
         method: isSaved ? 'DELETE' : 'POST',
       });
-      // Keep the favourites tab in sync with the heart toggle.
-      await loadFavourites();
+      // Refetch the shared entry so the favourites tab here and the preview
+      // card on /profile both reflect the toggle.
+      await queryClient.invalidateQueries({ queryKey: profileKeys.myFavourites() });
+      setPendingSaves((prev) => {
+        const next = new Map(prev);
+        next.delete(listingId);
+        return next;
+      });
     } catch (e) {
       console.error('Failed to toggle saved listing:', e);
-      // Revert on error
-      setSavedIds((prev) => {
-        const next = new Set(prev);
-        if (isSaved) next.add(listingId);
-        else next.delete(listingId);
+      setPendingSaves((prev) => {
+        const next = new Map(prev);
+        next.delete(listingId);
         return next;
       });
     }

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { Transaction, TxTab } from '@/features/transaction/types/transaction.types';
-import { TransactionService } from '@/features/transaction/services/transaction.service';
+import { useTransactions } from '@/features/user/queries/user.queries';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -53,42 +53,30 @@ function TxCard({ tx }: { tx: Transaction }) {
 
 export default function TransactionsScreen() {
   const [tab, setTab] = useState<TxTab>('sales');
-  const [data, setData] = useState<Record<TxTab, Transaction[]>>({
-    sales: [],
-    swaps: [],
-    donations: [],
-  });
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await TransactionService.getUserTransactions();
+  const { data: transactions } = useTransactions();
 
-        const groupedData = data.reduce(
-          (acc, item) => {
-            const formattedItem = {
-              ...item,
-              color: STATUS_STYLES[item.status].bg,
-            };
+  // Grouping is derived from the cached list rather than stored alongside it,
+  // so the three tabs can never disagree with the data they came from.
+  const data = useMemo(
+    () =>
+      (transactions ?? []).reduce(
+        (acc, item) => {
+          const formattedItem = {
+            ...item,
+            color: STATUS_STYLES[item.status].bg,
+          };
 
-            if (item.type === 'sale') acc.sales.push(formattedItem);
-            else if (item.type === 'swap') acc.swaps.push(formattedItem);
-            else if (item.type === 'donate') acc.donations.push(formattedItem);
+          if (item.type === 'sale') acc.sales.push(formattedItem);
+          else if (item.type === 'swap') acc.swaps.push(formattedItem);
+          else if (item.type === 'donate') acc.donations.push(formattedItem);
 
-            return acc;
-          },
-
-          { sales: [] as Transaction[], swaps: [] as Transaction[], donations: [] as Transaction[] } 
-        );
-
-        setData(groupedData);
-      } catch (error) {
-        console.error('Failed to load user transactions:', error);
-      }
-    }
-
-    loadData();
-  }, [])
+          return acc;
+        },
+        { sales: [] as Transaction[], swaps: [] as Transaction[], donations: [] as Transaction[] }
+      ),
+    [transactions]
+  );
 
   const currentData = data[tab];
 

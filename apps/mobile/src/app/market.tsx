@@ -1,6 +1,6 @@
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Header from '@/components/organisms/Header';
 import SearchBar from '@/components/organisms/SearchBar';
 import FavoritesToggle from '@/components/organisms/FavoritesToggle';
@@ -10,13 +10,12 @@ import BottomNav from '@/components/organisms/BottomNav';
 import SortSheet, { SortOption } from '@/components/organisms/SortSheet';
 import FilterSheet, { MarketFilters, EMPTY_FILTERS } from '@/components/organisms/FilterSheet';
 import { Listing } from '@/components/molecules/ListingCard';
-import { ListingService } from '@/features/listing/services/listing.service';
+import { useSaleListings, useSwapListings } from '@/features/listing/queries/listing.queries';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 export default function MarketScreen() {
   const router = useRouter();
 
-  const [saleListings, setSaleListings] = useState<Listing[]>([]);
-  const [swapListings, setSwapListings] = useState<Listing[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -25,30 +24,21 @@ export default function MarketScreen() {
   const [filters, setFilters] = useState<MarketFilters>(EMPTY_FILTERS);
   const [filterVisible, setFilterVisible] = useState(false);
 
-  useEffect(() => {
-    const filters = { brand: selectedBrand ?? undefined, search: searchQuery };
+  // The search box updates on every keystroke; only the settled value reaches
+  // the queries, so typing no longer fires a request per character.
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
-    const fetchSaleListings = async () => {
-      try {
-        const listings = await ListingService.getSaleListings(filters);
-        setSaleListings(listings);
-      } catch {
-        setSaleListings([]);
-      }
-    }
+  const listingFilters = useMemo(
+    () => ({ brand: selectedBrand ?? undefined, search: debouncedSearch }),
+    [selectedBrand, debouncedSearch]
+  );
 
-    const fetchSwapListings = async () => {
-      try {
-        const listings = await ListingService.getSwapListings(filters);
-        setSwapListings(listings);
-      } catch {
-        setSwapListings([]);
-      }
-    }
+  const { data: saleData } = useSaleListings(listingFilters);
+  const { data: swapData } = useSwapListings(listingFilters);
 
-    fetchSaleListings();
-    fetchSwapListings();
-  }, [searchQuery, selectedBrand])
+  // Both queries fell back to an empty list on failure before; unchanged.
+  const saleListings: Listing[] = saleData ?? [];
+  const swapListings: Listing[] = swapData ?? [];
 
   const sizeOptions = useMemo(
     () => Array.from(new Set(saleListings.map((l) => l.size).filter((s): s is string => !!s))).sort(

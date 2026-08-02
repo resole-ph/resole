@@ -1,22 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { ProfileClient } from '../services/profile.client';
+import { useMyStats } from '../queries/profile.queries';
 
 export default function RecycleCoinsCard() {
-  const [coins, setCoins] = useState<number | null>(null);
+  // Shares the ['profile','me','stats'] cache entry with UserInfoHeader. On
+  // /profile both mount together and this resolves from the same single
+  // request; on /profile/rewards it usually resolves from cache outright.
+  const { data: stats, isPending, isError } = useMyStats();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const stats = await ProfileClient.getMyStats();
-        setCoins(Number(stats.coinBalance ?? 0));
-      } catch {
-        setCoins(0);
-      }
-    })();
-  }, []);
+  // Same fallback as before: a failed load shows zero rather than an error,
+  // but "still loading" stays as the em dash so the two aren't confused.
+  const coins = isPending ? null : isError ? 0 : Number(stats?.coinBalance ?? 0);
 
   return (
     <div className="bg-secondary text-on-secondary p-8 rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col justify-between">

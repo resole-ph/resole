@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ListingCard from "@/components/ListingCard";
 import DownloadAppModal from "@/components/DownloadAppModal";
+import { useListings } from "@/features/shoe/queries/listing.queries";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
 
 const COLORS = {
@@ -18,11 +20,6 @@ const COLORS = {
 const BRANDS = ["All", "Nike", "Adidas", "Jordan", "New Balance", "Yeezy", "Asics"];
 
 export default function MarketPage() {
-  const [saleListings, setSaleListings] = useState<SerializedShoeListing[]>([]);
-  const [swapListings, setSwapListings] = useState<SerializedShoeListing[]>([]);
-  const [loadingSale, setLoadingSale] = useState(true);
-  const [loadingSwap, setLoadingSwap] = useState(true);
-
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBrand, setSelectedBrand] = useState<string>("All");
@@ -37,38 +34,29 @@ export default function MarketPage() {
     setIsAppModalOpen(true);
   };
 
-  // Fetch Listings with Filter Sync
-  useEffect(() => {
-    async function loadListings() {
-      setLoadingSale(true);
-      setLoadingSwap(true);
+  // The input updates on every keystroke for responsiveness, but only the
+  // settled value reaches the query — otherwise typing "jordan" fired twelve
+  // uncached requests across the two boards.
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
-      const brandParam = selectedBrand !== "All" ? `&brand=${encodeURIComponent(selectedBrand)}` : "";
-      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
+  // Cached per (section, brand, search), so clearing a filter or retyping a
+  // previous search resolves from cache, and coming back from a listing page
+  // renders the grid with no request at all.
+  const { data: saleListings = [], isPending: loadingSale } = useListings({
+    section: "sale-board",
+    brand: selectedBrand,
+    search: debouncedSearch,
+  });
 
-      try {
-        const [saleRes, swapRes] = await Promise.all([
-          fetch(`/api/listings?section=sale-board${brandParam}${searchParam}`),
-          fetch(`/api/listings?section=swap-board${brandParam}${searchParam}`),
-        ]);
+  const { data: swapListings = [], isPending: loadingSwap } = useListings({
+    section: "swap-board",
+    brand: selectedBrand,
+    search: debouncedSearch,
+  });
 
-        const saleData = await saleRes.json();
-        const swapData = await swapRes.json();
-
-        if (saleRes.ok && saleData.shoeListings) setSaleListings(saleData.shoeListings);
-        if (swapRes.ok && swapData.shoeListings) setSwapListings(swapData.shoeListings);
-      } catch (e) {
-        console.error("Failed to load listings:", e);
-      } finally {
-        setLoadingSale(false);
-        setLoadingSwap(false);
-      }
-    }
-
-    loadListings();
-  }, [searchQuery, selectedBrand]);
-
-  // Client-side Fallback Filtering
+  // Client-side filtering on top of the server's. It looks redundant, but with
+  // the search debounced it is what narrows the grid during the 300ms before
+  // the request goes out — without it the list would visibly lag your typing.
   const filterListings = (list: SerializedShoeListing[]) => {
     return list.filter((item) => {
       const matchesBrand = selectedBrand === "All" || item.brand.toLowerCase() === selectedBrand.toLowerCase();
@@ -91,36 +79,11 @@ export default function MarketPage() {
         * { box-sizing: border-box; }
       `}</style>
 
-      {/* HEADER BAR */}
-      <header style={{ background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}`, sticky: "top", top: 0, zIndex: 10 }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 22, fontWeight: 900, color: COLORS.primary, letterSpacing: "-0.5px" }}>RESOLE</span>
-            <span style={{ background: "#EFF6FF", color: COLORS.primary, fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 99 }}>MARKET</span>
-          </div>
-
-          <button
-            onClick={() => triggerAppModal("Your Inbox", "Messaging buyers and sellers is available exclusively on the Resole Mobile App.")}
-            style={{
-              background: "#F3F4F6",
-              border: "none",
-              borderRadius: 9999,
-              padding: "8px 14px",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              color: COLORS.textMain,
-              cursor: "pointer",
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 18, color: COLORS.textMuted }}>mail</span>
-            Inbox
-          </button>
-        </div>
-      </header>
-
+      {/*
+        No header bar here — the global <Navbar /> in app/layout.tsx already
+        renders one for every route, and a second brand/inbox row directly
+        under it read as a duplicate navbar.
+      */}
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 24px 80px" }}>
         
         {/* SEARCH BAR */}
@@ -223,7 +186,7 @@ export default function MarketPage() {
               <p style={{ fontSize: 14, color: COLORS.textMuted, margin: 0 }}>No sale listings found matching your search.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: "24px", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 20 }}>
               {filteredSaleListings.map((item) => (
                 <ListingCard key={item.id} item={item} onRequireApp={() => triggerAppModal()} />
               ))}
@@ -246,7 +209,7 @@ export default function MarketPage() {
               <p style={{ fontSize: 14, color: COLORS.textMuted, margin: 0 }}>No swap listings found matching your search.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: "24px", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 20 }}>
               {filteredSwapListings.map((item) => (
                 <ListingCard key={item.id} item={item} onRequireApp={() => triggerAppModal("Propose Swap", "Swapping shoes is processed securely in the Resole Mobile App.")} />
               ))}
