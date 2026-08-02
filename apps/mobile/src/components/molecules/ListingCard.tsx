@@ -245,9 +245,13 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
               <Text className="text-blue-600 font-bold text-base">
                 ₱{listing.price.toLocaleString()}
               </Text>
+              {/*
+                Retail price of a NEW pair, from the scraped catalog — not a former
+                asking price, so it is labelled rather than struck through.
+              */}
               {listing.originalPrice && (
-                <Text className="text-gray-400 text-xs line-through ml-2">
-                  ₱{listing.originalPrice.toLocaleString()}
+                <Text className="text-gray-400 text-xs ml-2">
+                  Retail ₱{listing.originalPrice.toLocaleString()}
                 </Text>
               )}
             </View>
@@ -273,12 +277,15 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 {listing.sold ? (
                   <Text className="text-gray-400 text-xs">Sold {listing.sold}</Text>
                 ) : (
-                  <>
-                    <Ionicons name="star" size={10} color="#F59E0B" />
-                    <Text className="text-gray-500 text-xs ml-0.5">
-                      {listing.seller.rating?.toFixed(1) || 0}
-                    </Text>
-                  </>
+                  /* Omitted for sellers with no ratings — a bare 0 reads as a bad score. */
+                  listing.seller.rating != null && (
+                    <>
+                      <Ionicons name="star" size={10} color="#F59E0B" />
+                      <Text className="text-gray-500 text-xs ml-0.5">
+                        {listing.seller.rating.toFixed(1)}
+                      </Text>
+                    </>
+                  )
                 )}
               </View>
             </TouchableOpacity>
