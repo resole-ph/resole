@@ -13,7 +13,6 @@ import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { UserService } from '@/features/user/services/user.service';
-import { TransactionService } from '@/features/transaction/services/transaction.service';
 import { useSellStore } from '@/store/sell';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
@@ -56,8 +55,9 @@ const ActionButton = ({ label, icon, color, onPress, disabled }: ActionButtonPro
 );
 
 export default function ListingDetailScreen() {
-  const { id: rawId, action } = useLocalSearchParams<{ id: string; action?: string }>();
+  const { id: rawId, action, view } = useLocalSearchParams<{ id: string; action?: string; view?: string }>();
   const id = Number(rawId);
+  const isView = parseInt(view || '0', 10);
   const insets = useSafeAreaInsets();
 
   const [showOfferModal, setShowOfferModal]       = useState(false);
@@ -80,7 +80,7 @@ export default function ListingDetailScreen() {
     const loadData = async () => {
       setIsLoadingListing(true);
       try {
-        const fetchedListing = await ListingService.getListingById(id, true);
+        const fetchedListing = await ListingService.getListingById(id, !!isView);
         setListing(fetchedListing);
 
         if (fetchedListing && fetchedListing.model) {

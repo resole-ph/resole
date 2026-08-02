@@ -82,7 +82,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
   const handlePress = () => {
     router.push({
       pathname: '/listing/[id]',
-      params: { id: listing.id },
+      params: { id: listing.id, view: +!isOwnListing },
     });
   };
 
