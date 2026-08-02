@@ -35,17 +35,17 @@ SET size = CASE id
     updated_at = now()
 WHERE id IN (20, 21);
 
--- 2. Listing 1 holds size 78, which is not a valid size in any system. It got
---    in through a broken validation check (a doubled Number.isNaN that always
---    returned false), now fixed. Delete it as agreed during deployment.
-DELETE FROM shoe_listing WHERE id = 1 AND size = 78;
-
--- 3. Verify: every remaining size must sit inside the US Men's chart range.
+-- 2. Verify the converted rows. Listing 1 (size 78) is excluded: it cannot be
+--    deleted here because 8 transaction rows reference it with no cascade
+--    rule, and its true size is unrecoverable — there is no shoe_analysis
+--    record for it. It is handled separately by cleanup-listing-1.sql.
 DO $$
 DECLARE
   bad_count int;
 BEGIN
-  SELECT count(*) INTO bad_count FROM shoe_listing WHERE size < 3 OR size > 16;
+  SELECT count(*) INTO bad_count
+  FROM shoe_listing
+  WHERE (size < 3 OR size > 16) AND id <> 1;
   IF bad_count > 0 THEN
     RAISE EXCEPTION 'Migration left % row(s) outside the US Men''s range 3-16', bad_count;
   END IF;
@@ -53,9 +53,9 @@ END $$;
 
 COMMIT;
 
--- After this has run and verified clean, tighten the column constraint so
--- nothing out of range can be written again. Kept separate because it fails
--- while the size-78 row still exists.
+-- Once listing 1 is resolved (see cleanup-listing-1.sql), tighten the column
+-- constraint so nothing out of range can be written again. Kept separate
+-- because it fails while the size-78 row still exists.
 --
 --   ALTER TABLE shoe_listing DROP CONSTRAINT size_check;
 --   ALTER TABLE shoe_listing ADD CONSTRAINT size_check CHECK (size >= 3 AND size <= 16);
