@@ -14,8 +14,10 @@
 -- and is_accepted = null, created 2026-07-08, i.e. day-one test data. They and
 -- their sale/swap children are removed here in FK order.
 --
--- save (2 rows) and listing_view (11 rows) cascade automatically and are not
--- listed explicitly.
+-- Of the five FKs pointing at shoe_listing, three are ON DELETE CASCADE
+-- (save, cart_item, swap_item.swap_item_id) and are not listed explicitly.
+-- Two are NO ACTION and must be cleared by hand: transaction.listing_id and
+-- listing_view.listing_id.
 --
 -- Run it ONCE, against a database that has been backed up. Run
 -- migrate-sizes-to-us-mens.sql first.
@@ -59,7 +61,10 @@ WHERE transaction_id IN (SELECT id FROM transaction WHERE listing_id = 1);
 
 DELETE FROM transaction WHERE listing_id = 1;
 
--- Finally the listing itself; save and listing_view cascade from here.
+-- listing_view is NO ACTION, so its rows block the delete and must go first.
+DELETE FROM listing_view WHERE listing_id = 1;
+
+-- Finally the listing itself; save, cart_item and swap_item cascade from here.
 DELETE FROM shoe_listing WHERE id = 1;
 
 -- Verify nothing is left behind and every surviving size is in range.
