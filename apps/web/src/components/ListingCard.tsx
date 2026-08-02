@@ -225,7 +225,7 @@ export default function ListingCard({
                 fontWeight: 700,
               }}
             >
-              {sizeLabel}
+              Size {sizeLabel}
             </div>
           )}
         </div>
@@ -267,18 +267,11 @@ export default function ListingCard({
       {/* CARD BODY */}
       <div style={{ padding: "16px", display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "space-between" }}>
         <div>
-          {/* Brand & Condition */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 11.5, color: COLORS.textFaint, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {/* Brand */}
+          <div style={{ marginBottom: 6 }}>
+            <span style={{ fontSize: 11.5, color: COLORS.textFaint, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
               {item.brand}
-              {sizeLabel ? ` · ${sizeLabel}` : ""}
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: conditionColor }} />
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: conditionColor }}>
-                {item.condition}
-              </span>
-            </div>
           </div>
 
           {/* Model Name - Fixed 2 Line Min-Height so all cards align evenly */}
@@ -287,7 +280,7 @@ export default function ListingCard({
               fontSize: 15,
               fontWeight: 700,
               color: COLORS.textMain,
-              margin: "0 0 12px",
+              margin: "0 0 4px",
               lineHeight: "1.35",
               display: "-webkit-box",
               WebkitLineClamp: 2,
@@ -298,6 +291,17 @@ export default function ListingCard({
             title={title}
           >
             {title}
+          </div>
+
+          {/*
+            Condition sits under the name rather than beside the brand: it gets a
+            full line, so no truncation, and it reads as a fact about the shoe
+            just named. It carries its own colour and no marker — the dot was
+            purely decorative — and "condition" is spelled out so the grade
+            cannot be misread as part of the model.
+          */}
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: conditionColor, marginBottom: 12 }}>
+            {item.condition} Condition
           </div>
         </div>
 

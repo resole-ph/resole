@@ -105,12 +105,14 @@ export function formatSize(usMens: number, system: SizeSystem): string {
 }
 
 /**
- * Compact label for listing cards, e.g. "US 10". Web has no per-user size
- * preference yet, so cards always render the stored anchor.
+ * Label for listing cards, e.g. "10 (US Men)". Web has no per-user size
+ * preference yet, so cards always render the stored anchor — but it is spelled
+ * out the same way mobile does it, because a bare "US" is ambiguous between the
+ * Men's and Women's scales.
  */
 export function formatSizeShort(size: string | number | null | undefined): string | null {
   if (size === null || size === undefined || size === '') return null;
   const n = Number(size);
   if (Number.isNaN(n)) return null;
-  return `US ${formatNumber(n)}`;
+  return formatSize(n, ANCHOR_SYSTEM);
 }
