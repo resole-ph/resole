@@ -1,9 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { ProfileClient } from '../services/profile.client';
-import type { FavouriteItem } from '../types/profile.types';
+import { useMyFavourites } from '../queries/profile.queries';
 
 const PREVIEW_COUNT = 4;
 
@@ -21,20 +19,12 @@ function Thumb({ imageUrl, alt }: { imageUrl?: string | null; alt?: string }) {
 }
 
 export default function FavouritesPreviewCard() {
-  const [favourites, setFavourites] = useState<FavouriteItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
+  // Shared with FavouritesGrid on /profile/favourites, so "View all" is a
+  // cache hit rather than a second trip to /api/users/me/favourites.
+  const { data } = useMyFavourites();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await ProfileClient.getMyFavourites();
-        setFavourites(data.favourites ?? []);
-        setTotalCount(data.totalCount ?? 0);
-      } catch {
-        setFavourites([]);
-      }
-    })();
-  }, []);
+  const favourites = data?.favourites ?? [];
+  const totalCount = data?.totalCount ?? 0;
 
   const preview = favourites.slice(0, PREVIEW_COUNT);
 

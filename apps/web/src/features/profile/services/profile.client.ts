@@ -4,8 +4,12 @@ import type {
   MyProfile,
   ProfileListing,
   PublicProfile,
+  RedeemOptionRow,
+  SellerAnalytics,
+  TransactionRow,
   UserReview,
   UserStats,
+  WalletTransactionRow,
 } from '../types/profile.types';
 
 /**
@@ -81,6 +85,28 @@ export const ProfileClient = {
   getMyFavourites() {
     return request<{ totalCount: number; favourites: FavouriteItem[] }>(
       '/api/users/me/favourites'
+    );
+  },
+
+  getSellerAnalytics() {
+    return request<SellerAnalytics>('/api/users/me/seller-analytics');
+  },
+
+  getMyTransactions() {
+    return request<{ transactions: TransactionRow[] }>('/api/users/me/transactions').then(
+      (data) => data.transactions ?? []
+    );
+  },
+
+  getWalletTransactions() {
+    return request<{ transactions: WalletTransactionRow[] }>('/api/wallet/transactions').then(
+      (data) => data.transactions ?? []
+    );
+  },
+
+  getRedeemOptions() {
+    return request<{ redeemOptions: RedeemOptionRow[] }>('/api/rewards/redeem-options').then(
+      (data) => data.redeemOptions ?? []
     );
   },
 

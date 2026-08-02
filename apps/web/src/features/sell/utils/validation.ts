@@ -1,3 +1,4 @@
+import { MIN_US_MENS, MAX_US_MENS } from '@/features/shoe/utils/size-conversion';
 import type { ListingFormData } from '../types/sell.types';
 
 export interface ListingFormErrors {
@@ -8,8 +9,10 @@ export interface ListingFormErrors {
   price?: string;
 }
 
-const MIN_SIZE = 1;
-const MAX_SIZE = 20;
+// Sizes are stored as US Men's; bound the input to what the conversion chart
+// covers so nothing unconvertible reaches the database.
+const MIN_SIZE = MIN_US_MENS;
+const MAX_SIZE = MAX_US_MENS;
 const MIN_PRICE = 1;
 
 export function validateListingForm(form: ListingFormData): ListingFormErrors {
@@ -23,7 +26,7 @@ export function validateListingForm(form: ListingFormData): ListingFormErrors {
   if (!form.size.trim()) {
     errors.size = 'Size is required.';
   } else if (!Number.isFinite(size) || size < MIN_SIZE || size > MAX_SIZE) {
-    errors.size = `Enter a valid size between ${MIN_SIZE} and ${MAX_SIZE}.`;
+    errors.size = `Enter a valid US Men's size between ${MIN_SIZE} and ${MAX_SIZE}.`;
   }
 
   const price = Number(form.price);

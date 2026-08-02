@@ -11,7 +11,12 @@ export type CreateShoePrice = typeof shoePrice.$inferInsert;
 export type UpdateShoePrice = Partial<InferShoePrice>;
 
 type InferShoeListing = typeof shoeListing.$inferSelect;
-export type ShoeListing = Omit<InferShoeListing, 'shoeId' | 'userId'> & { shoe: Shoe, seller: User };
+export type ShoeListing = Omit<InferShoeListing, 'shoeId' | 'userId'> & {
+  /** `originalPrice` is the aggregated retail price of a NEW pair, joined from shoe_price. Null when the catalog has no match. */
+  shoe: Shoe & { originalPrice: string | null },
+  /** `rating` is the seller's average star score, joined from the rating table. Null when they have no ratings yet. */
+  seller: User & { rating: string | null }
+};
 export type CreateShoeListing = typeof shoeListing.$inferInsert;
 export type UpdateShoeListing = Partial<InferShoeListing>;
 

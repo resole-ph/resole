@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { authService } from '@/features/auth/services/auth.service';
-import { UserService } from '@/features/user/services/user.service';
+import { useUserSettings } from '@/features/user/queries/user.queries';
 import { useOnboardingStore } from '@/store/onboarding';
 import { usePreferencesStore } from '@/store/preferences';
 import { SIZE_SYSTEMS, SIZE_SYSTEM_LABELS, type SizeSystem } from '@/features/shoe/utils/size-conversion';
@@ -180,25 +180,23 @@ export default function SettingsScreen() {
     promos: false,
     recycleReminders: true,
   });
-  const [accountFields, setAccountFields] = useState<any[]>([]);
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   const setSizeSystem = usePreferencesStore((s) => s.setSizeSystem);
   const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
 
-  useEffect(() => {
-    const getAccountFields = async () => {
-      const data = await UserService.getUserInfoForSettings();
+  const { data: accountData } = useUserSettings();
 
-      const displayFields = accountFields.map((field) => ({
+  // Built from the module-level ACCOUNT_FIELDS template rather than from
+  // previous state. The old effect mapped over `accountFields`, which was `[]`
+  // on first run and never repopulated — so this list always rendered empty.
+  const accountFields = useMemo(
+    () =>
+      ACCOUNT_FIELDS.map((field) => ({
         ...field,
-        value: data ? data[field.id] : '', 
-      }));
-
-      setAccountFields(displayFields);
-    };
-
-    getAccountFields();
-  }, []);
+        value: accountData ? accountData[field.id] ?? '' : '',
+      })),
+    [accountData]
+  );
 
   const toggle = (key: NotifKey) => (v: boolean) =>
     setNotifs((prev) => ({ ...prev, [key]: v }));

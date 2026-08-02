@@ -3,14 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
+import { useMyProfile } from '../queries/profile.queries';
+import type { MyProfile } from '../types/profile.types';
 
 type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
 
-const ACCOUNT_FIELDS = [
-  { id: 'name', label: 'Full name', value: 'Marc Andre Santos', icon: 'person' },
-  { id: 'email', label: 'Email', value: 'marc@example.com', icon: 'mail' },
-  { id: 'phone', label: 'Phone', value: '+63 917 123 4567', icon: 'call' },
-  { id: 'location', label: 'Location', value: 'Quezon City, PH', icon: 'location_on' },
+/**
+ * Labels and icons only — the values come from the signed-in user. This list
+ * used to carry hardcoded details ("Marc Andre Santos", "marc@example.com"),
+ * so every account saw the same fictional person on its own settings page.
+ */
+const ACCOUNT_FIELDS: { id: keyof MyProfile; label: string; icon: string }[] = [
+  { id: 'name', label: 'Full name', icon: 'person' },
+  { id: 'email', label: 'Email', icon: 'mail' },
+  { id: 'contactNo', label: 'Phone', icon: 'call' },
+  { id: 'location', label: 'Location', icon: 'location_on' },
 ];
 
 const NOTIF_ROWS: { key: NotifKey; label: string; sub: string }[] = [
@@ -129,6 +136,8 @@ function ActionRow({
 export default function SettingsSections() {
   const router = useRouter();
   const { signOut } = useAuth();
+  // Shared with the profile header, so this page usually needs no request.
+  const { data: profile } = useMyProfile();
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
     messages: true,
     offers: false,
@@ -157,7 +166,12 @@ export default function SettingsSections() {
       <SectionTitle title="Account" />
       <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
         {ACCOUNT_FIELDS.map((f) => (
-          <AccountRow key={f.id} label={f.label} value={f.value} icon={f.icon} />
+          <AccountRow
+            key={f.id}
+            label={f.label}
+            value={profile ? String(profile[f.id] ?? '—') : '—'}
+            icon={f.icon}
+          />
         ))}
         <AccountRow label="Password" value="••••••••" icon="lock" />
       </div>

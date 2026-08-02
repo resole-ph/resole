@@ -171,12 +171,12 @@ function OfferCard({
                 {listing?.model ?? 'Your listing'}
               </span>
             </div>
-            <p className="text-on-surface-variant text-[12px] mb-3">Size {listing?.size ?? '—'} · Item swap</p>
+            <p className="text-on-surface-variant text-[12px] mb-3">Size US {listing?.size ?? '—'} · Item swap</p>
           </div>
         ) : (
           <div className="mb-3">
             <p className="text-on-surface font-semibold text-[13px] truncate">{listing?.model ?? 'Listing'}</p>
-            {listing?.size && <p className="text-on-surface-variant text-[12px]">Size {listing.size}</p>}
+            {listing?.size && <p className="text-on-surface-variant text-[12px]">Size US {listing.size}</p>}
             <p className="text-primary font-bold text-[17px] mt-1">
               ₱{Number(offer.details?.price ?? 0).toLocaleString()}
             </p>

@@ -1,30 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import EditProfileModal from './EditProfileModal';
-import { ProfileClient } from '../services/profile.client';
-import type { MyProfile, UserStats } from '../types/profile.types';
+import { useMyProfile, useMyStats, useUpdateMyProfile } from '../queries/profile.queries';
 
 export default function UserInfoHeader() {
-  const [profile, setProfile] = useState<MyProfile | null>(null);
-  const [stats, setStats] = useState<UserStats | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [user, userStats] = await Promise.all([
-          ProfileClient.getMyProfile(),
-          ProfileClient.getMyStats().catch(() => null),
-        ]);
-        setProfile(user);
-        setStats(userStats);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load your profile');
-      }
-    })();
-  }, []);
+  // Both come from the shared cache. RecycleCoinsCard asks for the same stats
+  // on this page — one request now serves both, and revisiting /profile within
+  // the stale window serves from cache with no request at all.
+  const { data: profile, error: profileError } = useMyProfile();
+  const { data: stats } = useMyStats();
+  const updateProfile = useUpdateMyProfile();
+
+  // Stats are supplementary — the old code swallowed their failure with a
+  // `.catch(() => null)` and still rendered the header. Only a failed profile
+  // load is worth surfacing.
+  const error =
+    saveError ?? (profileError ? profileError.message || 'Unable to load your profile' : null);
 
   const name = profile?.name ?? '';
   const location = profile?.location ?? '';
@@ -37,17 +32,18 @@ export default function UserInfoHeader() {
   ];
 
   const handleSave = async (values: { name: string; location: string; avatar: string | null }) => {
+    setSaveError(null);
     try {
-      const updated = await ProfileClient.updateMyProfile({
+      // The mutation merges the response into the cached profile, so every
+      // component reading useMyProfile() updates without a refetch.
+      await updateProfile.mutateAsync({
         name: values.name,
         location: values.location,
         image: values.avatar,
       });
-      // PATCH returns the raw user row, so keep the derived fields we already have.
-      setProfile((prev) => (prev ? { ...prev, ...updated, location: values.location } : prev));
       setIsEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to save your profile');
+      setSaveError(err instanceof Error ? err.message : 'Unable to save your profile');
     }
   };
 

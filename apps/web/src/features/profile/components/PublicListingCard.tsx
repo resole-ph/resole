@@ -8,10 +8,10 @@ import type { ProfileListing } from '../types/profile.types';
  * purpose — every card here belongs to the profile you are already looking at.
  */
 
-const BADGE_STYLES: Record<string, { className: string; icon: string }> = {
+const BADGE_STYLES: Record<string, { className: string; icon: string; label?: string }> = {
   Swap: { className: 'bg-primary text-white', icon: 'swap_horiz' },
   Sale: { className: 'bg-secondary text-white', icon: 'sell' },
-  Both: { className: 'bg-[#8B5CF6] text-white', icon: 'swap_horiz' },
+  Both: { className: 'bg-[#8B5CF6] text-white', icon: 'swap_horiz', label: 'Swap & Sell' },
 };
 
 const CONDITION_COLORS: Record<string, string> = {
@@ -61,7 +61,7 @@ export default function PublicListingCard({ listing }: { listing: ProfileListing
             className={`absolute top-2 right-2 flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${badge.className}`}
           >
             <span className="material-symbols-outlined text-[12px]">{badge.icon}</span>
-            {listing.listingMode}
+            {badge.label ?? listing.listingMode}
           </span>
         )}
       </div>

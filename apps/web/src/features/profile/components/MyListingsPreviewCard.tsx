@@ -1,9 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { ProfileClient } from '../services/profile.client';
-import type { ListingSummary, ProfileListing } from '../types/profile.types';
+import { useMyListingSummary, useMyListings } from '../queries/profile.queries';
 
 const PREVIEW_COUNT = 3;
 
@@ -21,19 +19,15 @@ function Thumb({ imageUrl, alt }: { imageUrl?: string | null; alt?: string }) {
 }
 
 export default function MyListingsPreviewCard() {
-  const [listings, setListings] = useState<ProfileListing[]>([]);
-  const [summary, setSummary] = useState<ListingSummary | null>(null);
+  // ['profile','me','listings'] is the same entry MyListingsView uses on
+  // /profile/listings, so "View all" now renders from cache instead of
+  // refetching the list this card just loaded.
+  const { data } = useMyListings();
+  const { data: summary } = useMyListingSummary();
 
-  useEffect(() => {
-    (async () => {
-      const [items, listingSummary] = await Promise.all([
-        ProfileClient.getMyListings().catch(() => []),
-        ProfileClient.getMyListingSummary().catch(() => null),
-      ]);
-      setListings(items);
-      setSummary(listingSummary);
-    })();
-  }, []);
+  // Both queries previously swallowed errors into empty/null, and the render
+  // below already treats an empty list as "no listings yet". Keeping that.
+  const listings = data ?? [];
 
   const preview = listings.slice(0, PREVIEW_COUNT);
   const overflow = Math.max(listings.length - PREVIEW_COUNT, 0);

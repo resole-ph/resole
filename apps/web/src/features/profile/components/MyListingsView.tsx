@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
+import { profileKeys, useMyListings } from '../queries/profile.queries';
 
 type Tab = 'active' | 'removed';
 
@@ -127,11 +129,9 @@ function EmptyState({ label }: { label: string }) {
 export default function MyListingsView() {
   const router = useRouter();
 
+  const queryClient = useQueryClient();
+
   const [tab, setTab] = useState<Tab>('active');
-  const [active, setActive] = useState<any[]>([]);
-  const [removed, setRemoved] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Charity donation states
   const [donateListingId, setDonateListingId] = useState<string | null>(null);
@@ -139,37 +139,35 @@ export default function MyListingsView() {
   const [charitiesLoading, setCharitiesLoading] = useState(false);
   const [donating, setDonating] = useState(false);
 
-  const fetchUserListings = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/users/me/listings');
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to fetch user listings');
+  // Same cache entry MyListingsPreviewCard fills on /profile, so arriving here
+  // via "View all" renders instantly instead of refetching a list we just had.
+  const { data, isPending, error, refetch } = useMyListings();
 
-      const listings = (data.shoeListings || []).map((item: any) => ({
-        ...item,
-        daysLeft: getDaysLeft(item.createdAt),
-      }));
-
-      const activeItems = listings.filter(
-        (item: any) => item.isAvailable !== false && item.daysLeft > 0
-      );
-      const removedItems = listings.filter((item: any) => item.isAvailable === false);
-
-      setActive(activeItems);
-      setRemoved(removedItems);
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+  /**
+   * Applies a change to the cached listing array. Every action below used to
+   * hand-maintain two separate `active`/`removed` arrays in local state, which
+   * meant the preview card on /profile kept showing the pre-action list until
+   * a hard reload. Writing to the cache instead updates every reader at once.
+   */
+  const patchCache = (fn: (items: any[]) => any[]) => {
+    queryClient.setQueryData<any[]>(profileKeys.myListings(), (prev) => fn(prev ?? []));
+    // The summary counts (active/unavailable) are now stale by definition.
+    queryClient.invalidateQueries({ queryKey: profileKeys.myListingSummary() });
   };
 
-  useEffect(() => {
-    fetchUserListings();
-  }, []);
+  // Derived rather than stored, so the two lists can never drift out of sync
+  // with each other the way two independent useState arrays could.
+  const { active, removed } = useMemo(() => {
+    const listings = (data ?? []).map((item: any) => ({
+      ...item,
+      daysLeft: getDaysLeft(item.createdAt),
+    }));
+
+    return {
+      active: listings.filter((item: any) => item.isAvailable !== false && item.daysLeft > 0),
+      removed: listings.filter((item: any) => item.isAvailable === false),
+    };
+  }, [data]);
 
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Remove ${name}? This will take it off the market. You can re-list or donate it later.`)) {
@@ -182,12 +180,10 @@ export default function MyListingsView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to delete listing');
 
-      // Move from active list to removed list
-      const item = active.find((l) => l.id === id);
-      setActive((prev) => prev.filter((l) => l.id !== id));
-      if (item) {
-        setRemoved((prev) => [...prev, { ...item, isAvailable: false }]);
-      }
+      // Flipping the flag is enough — the active/removed split is derived.
+      patchCache((items) =>
+        items.map((l) => (l.id === id ? { ...l, isAvailable: false } : l))
+      );
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Could not remove listing');
     }
@@ -203,13 +199,9 @@ export default function MyListingsView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to re-list listing');
 
-      // Move from removed list to active list
-      const item = removed.find((l) => l.id === id);
-      setRemoved((prev) => prev.filter((l) => l.id !== id));
-      if (item) {
-        const daysLeft = getDaysLeft(item.createdAt);
-        setActive((prev) => [...prev, { ...item, isAvailable: true, daysLeft }]);
-      }
+      patchCache((items) =>
+        items.map((l) => (l.id === id ? { ...l, isAvailable: true } : l))
+      );
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Could not re-list listing');
     }
@@ -245,7 +237,8 @@ export default function MyListingsView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to donate listing');
 
-      setRemoved((prev) => prev.filter((l) => l.id !== donateListingId));
+      // Donating takes the listing off the account entirely.
+      patchCache((items) => items.filter((l) => l.id !== donateListingId));
       setDonateListingId(null);
       alert('Thank you! Your shoe has been donated.');
     } catch (err) {
@@ -261,7 +254,7 @@ export default function MyListingsView() {
 
   const counts: Record<Tab, number> = { active: active.length, removed: removed.length };
 
-  if (loading) {
+  if (isPending) {
     return (
       <section className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-10 flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -274,9 +267,11 @@ export default function MyListingsView() {
     return (
       <section className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-10 text-center">
         <span className="material-symbols-outlined text-error text-[40px] mb-2">error</span>
-        <p className="text-error font-semibold text-[15px]">{error}</p>
+        <p className="text-error font-semibold text-[15px]">
+          {error.message || 'Something went wrong'}
+        </p>
         <button
-          onClick={fetchUserListings}
+          onClick={() => refetch()}
           className="mt-4 px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-semibold"
         >
           Try Again

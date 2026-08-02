@@ -71,6 +71,7 @@ export default function ListingDetailScreen() {
   const [isLoadingOffer, setIsLoadingOffer]       = useState(false);
   const [activePhoto, setActivePhoto]             = useState(0);
   const [currentUserId, setCurrentUserId]         = useState<string | null>(null);
+  const [isSaved, setIsSaved]                     = useState(false);
 
   const resetSell = useSellStore((s) => s.reset);
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
@@ -95,6 +96,9 @@ export default function ListingDetailScreen() {
     UserService.getUserInfo()
       .then((user) => setCurrentUserId(user.id))
       .catch((error) => console.error('Failed to load current user:', error));
+    ListingService.getFavouriteListingIds()
+      .then((ids) => setIsSaved(ids.includes(id)))
+      .catch((error) => console.error('Failed to load saved listings:', error));
   }, [id]);
 
   useEffect(() => {
@@ -163,6 +167,22 @@ export default function ListingDetailScreen() {
     (l) => l.id !== listing.id && (l.brand === listing.brand || l.listingMode === listing.listingMode)
   ).slice(0, 6) || [];
 
+  async function handleToggleSave() {
+    const wasSaved = isSaved;
+    setIsSaved(!wasSaved);
+
+    try {
+      if (wasSaved) {
+        await ListingService.unfavouriteListing(id);
+      } else {
+        await ListingService.favouriteListing(id);
+      }
+    } catch (error) {
+      console.error('Failed to update saved listing:', error);
+      setIsSaved(wasSaved);
+    }
+  }
+
   function handleEditListing() {
     if (!isOwnListing) return;
     resetSell();
@@ -225,6 +245,17 @@ export default function ListingDetailScreen() {
         <Ionicons name="arrow-back" size={20} color="#111827" />
       </TouchableOpacity>
 
+      {!isOwnListing && (
+        <TouchableOpacity
+          className="absolute z-10 w-10 h-10 rounded-full bg-white items-center justify-center"
+          style={{ top: insets.top + 12, right: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 4 }}
+          onPress={handleToggleSave}
+          activeOpacity={0.8}
+        >
+          <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={20} color={isSaved ? '#EF4444' : '#111827'} />
+        </TouchableOpacity>
+      )}
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={{ width: '100%', height: 300 }}>
           <ScrollView
@@ -284,8 +315,9 @@ export default function ListingDetailScreen() {
 
           <View className="flex-row items-center mb-6">
             <Text className="text-blue-600 text-3xl font-bold">₱{listing.price.toLocaleString()}</Text>
+            {/* Retail price of a NEW pair — labelled rather than struck through. */}
             {listing.originalPrice && (
-              <Text className="text-gray-400 text-base line-through ml-3">₱{listing.originalPrice.toLocaleString()}</Text>
+              <Text className="text-gray-400 text-base ml-3">Retail ₱{listing.originalPrice.toLocaleString()}</Text>
             )}
           </View>
 
@@ -313,8 +345,14 @@ export default function ListingDetailScreen() {
                 )}
               </View>
               <View className="flex-row items-center mt-0.5">
-                <Ionicons name="star" size={12} color="#F59E0B" />
-                <Text className="text-gray-500 text-xs ml-1">{listing.seller.rating?.toFixed(1) || 0} · {listing.seller.totalSales ?? 0} sales</Text>
+                {/* Star and score drop out for unrated sellers; the sales count still shows. */}
+                {listing.seller.rating != null && (
+                  <>
+                    <Ionicons name="star" size={12} color="#F59E0B" />
+                    <Text className="text-gray-500 text-xs ml-1">{listing.seller.rating.toFixed(1)} · </Text>
+                  </>
+                )}
+                <Text className="text-gray-500 text-xs">{listing.seller.totalSales ?? 0} sales</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />

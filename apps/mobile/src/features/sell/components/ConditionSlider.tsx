@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { View, Text, PanResponder, LayoutChangeEvent } from 'react-native';
+import { View, Text, PanResponder, LayoutChangeEvent, Platform } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 
 const THUMB_SIZE = 24;
@@ -88,14 +88,24 @@ function messageFor(tone: DeviationTone, aiValue: number, conditionLabel: string
   }
 }
 
+// The thumb is positioned by its centre, so the centre has to stay half a thumb
+// in from each end or the thumb hangs outside the track at the extremes. Every
+// value<->position conversion works against this inset span, not the full width.
+const HALF_THUMB = THUMB_SIZE / 2;
+
+function travel(w: number) {
+  return Math.max(0, w - THUMB_SIZE);
+}
+
 function valueToX(v: number, min: number, max: number, w: number) {
-  if (max === min) return 0;
-  return ((v - min) / (max - min)) * w;
+  if (max === min) return HALF_THUMB;
+  return HALF_THUMB + ((v - min) / (max - min)) * travel(w);
 }
 
 function xToValue(x: number, min: number, max: number, w: number) {
-  if (w === 0) return min;
-  const raw = (x / w) * (max - min) + min;
+  const span = travel(w);
+  if (span === 0) return min;
+  const raw = ((x - HALF_THUMB) / span) * (max - min) + min;
   const clamped = Math.max(min, Math.min(max, raw));
   return Math.round(clamped * 2) / 2;
 }
@@ -149,7 +159,10 @@ export default function ConditionSlider({ value, min, max, aiValue, conditionLab
       onPanResponderMove: (_, gestureState) => {
         const w = trackWidth.current;
         if (!w) return;
-        const newX = Math.max(0, Math.min(w, gestureStartXRef.current + gestureState.dx));
+        const newX = Math.max(
+          HALF_THUMB,
+          Math.min(w - HALF_THUMB, gestureStartXRef.current + gestureState.dx)
+        );
         thumbX.value = newX;
         const newValue = xToValue(newX, minRef.current, maxRef.current, w);
         if (newValue !== committedValueRef.current) {
@@ -163,7 +176,7 @@ export default function ConditionSlider({ value, min, max, aiValue, conditionLab
   ).current;
 
   const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbX.value - THUMB_SIZE / 2 }],
+    transform: [{ translateX: thumbX.value - HALF_THUMB }],
   }));
 
   const deviation = deviationFor(displayValue, aiValue, min, max);
@@ -209,11 +222,18 @@ export default function ConditionSlider({ value, min, max, aiValue, conditionLab
               height: THUMB_SIZE,
               borderWidth: 3,
               borderColor: toneColor,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.2,
-              shadowRadius: 3,
-              elevation: 4,
+              // iOS keeps its original shadow props untouched — it renders
+              // correctly there. Android gets boxShadow instead, because under
+              // the New Architecture it now honours the iOS props *as well as*
+              // elevation and composited the two into one wrong shadow.
+              ...(Platform.OS === 'ios'
+                ? {
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 3,
+                  }
+                : { boxShadow: '0px 2px 3px rgba(0,0,0,0.20)' }),
             },
           ]}
         />
