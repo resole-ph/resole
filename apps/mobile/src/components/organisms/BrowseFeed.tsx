@@ -23,7 +23,6 @@ interface BrowseFeedProps {
   search?: string;
   /** When true, only listings the current user has saved are shown. */
   favoritesOnly?: boolean;
-  showFlashSale?: boolean;
   showFilters?: boolean;
   totalCount?: number;
   onFilter?: () => void;
@@ -32,6 +31,8 @@ interface BrowseFeedProps {
   onSaveListing?: (listing: Listing) => void;
   /** Extra control rendered next to "View all" in the section header. */
   headerRight?: React.ReactNode;
+  /** Extra control rendered in the filter/sort bar, e.g. a favorites toggle. */
+  filterBarRight?: React.ReactNode;
 }
 
 export default function BrowseFeed({
@@ -41,7 +42,6 @@ export default function BrowseFeed({
   brand,
   search,
   favoritesOnly = false,
-  showFlashSale = false,
   showFilters = false,
   totalCount,
   onFilter,
@@ -49,8 +49,8 @@ export default function BrowseFeed({
   onViewAll,
   onSaveListing,
   headerRight,
+  filterBarRight,
 }: BrowseFeedProps) {
-  const [countdown, setCountdown] = useState({ h: 3, m: 45, s: 22 });
   const [fetchedListings, setFetchedListings] = useState<Listing[]>([])
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -59,21 +59,6 @@ export default function BrowseFeed({
   const visibleListings = favoritesOnly
     ? listings.filter((listing) => savedIds.has(listing.id))
     : listings;
-
-  useEffect(() => {
-    if (!showFlashSale) return;
-    const t = setInterval(() => {
-      setCountdown(prev => {
-        let { h, m, s } = prev;
-        s -= 1;
-        if (s < 0) { s = 59; m -= 1; }
-        if (m < 0) { m = 59; h -= 1; }
-        if (h < 0) return { h: 0, m: 0, s: 0 };
-        return { h, m, s };
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [showFlashSale]);
 
   useEffect(() => {
     // Controlled mode: the parent already fetched `listings`, so skip the self-fetch.
@@ -132,45 +117,16 @@ export default function BrowseFeed({
     onSaveListing?.(listing);
   };
 
-  const pad = (n: number) => String(n).padStart(2, '0');
-
   return (
     <View className="mb-6">
       {/* Section header */}
-      {showFlashSale ? (
-        <View className="flex-row items-center px-5 mb-3">
-          <View className="flex-row items-center flex-1">
-            <Ionicons name="flash" size={15} color="#2563EB" />
-            <Text style={{ color: '#2563EB', fontWeight: '800', fontSize: 14.5, marginLeft: 4 }}>
-              {title}
-            </Text>
-            <View className="flex-row items-center ml-3">
-              {[pad(countdown.h), pad(countdown.m), pad(countdown.s)].map((unit, i) => (
-                <View key={i} className="flex-row items-center">
-                  <View style={{ backgroundColor: '#2563EB', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 }}>
-                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{unit}</Text>
-                  </View>
-                  {i < 2 && (
-                    <Text style={{ color: '#2563EB', fontWeight: '800', fontSize: 11, marginHorizontal: 3 }}>:</Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          </View>
-          <TouchableOpacity onPress={onViewAll} activeOpacity={0.7} className="flex-row items-center">
-            <Text style={{ color: '#9CA3AF', fontSize: 12 }}>See all</Text>
-            <Ionicons name="chevron-forward" size={13} color="#9CA3AF" />
-          </TouchableOpacity>
+      <View className="flex-row items-center justify-between px-5 mb-3">
+        <View>
+          <Text className="text-gray-900 font-bold text-base">{title}</Text>
+          {subtitle ? <Text className="text-gray-400 text-xs mt-0.5">{subtitle}</Text> : null}
         </View>
-      ) : (
-        <View className="flex-row items-center justify-between px-5 mb-3">
-          <View>
-            <Text className="text-gray-900 font-bold text-base">{title}</Text>
-            {subtitle ? <Text className="text-gray-400 text-xs mt-0.5">{subtitle}</Text> : null}
-          </View>
-          {headerRight}
-        </View>
-      )}
+        {headerRight}
+      </View>
 
       {/* Filter / sort bar */}
       {showFilters && (
@@ -198,6 +154,7 @@ export default function BrowseFeed({
             <Ionicons name="swap-vertical-outline" size={13} color="#6B7280" />
             <Text style={{ color: '#6B7280', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Sort</Text>
           </TouchableOpacity>
+          {filterBarRight}
         </View>
       )}
 

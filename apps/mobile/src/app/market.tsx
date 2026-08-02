@@ -95,18 +95,25 @@ export default function MarketScreen() {
       <Header branded showInbox onInboxPress={() => router.push('/inbox' as any)} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SearchBar onSearch={setSearchQuery} />
-        <FavoritesToggle active={favoritesOnly} onToggle={() => setFavoritesOnly((prev) => !prev)} />
         <CategoriesRow onBrandPress={setSelectedBrand} />
         <BrowseFeed
           title=""
           subtitle="Grab your pair at the best price"
           listings={visibleSaleListings}
           favoritesOnly={favoritesOnly}
-          showFlashSale
           showFilters
           totalCount={visibleSaleListings.length}
           onSort={() => setSortVisible(true)}
           onFilter={() => setFilterVisible(true)}
+          filterBarRight={
+            <View className="ml-2">
+              <FavoritesToggle
+                active={favoritesOnly}
+                onToggle={() => setFavoritesOnly((prev) => !prev)}
+                compact
+              />
+            </View>
+          }
         />
         <BrowseFeed
           title="Swap Board"
