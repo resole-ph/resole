@@ -129,9 +129,7 @@ export async function getProfileViewsByProfileUserId(id: string) {
 export async function getProfileListingSavesBySellerId(id: string) {
   try {
     const rows = await getSaveBySellerId(id);
-
-    console.log(rows)
-
+    
     if (!rows) return null;
     
     const thisWeekCount = rows.reduce<number>((acc, item) => {
