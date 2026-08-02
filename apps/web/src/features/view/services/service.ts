@@ -1,8 +1,8 @@
 import { db } from '@/config/db';
-import { eq, getTableColumns, isNull } from 'drizzle-orm';
-import { listingView, profileView, save, shoeListing } from '@/db/schema';
+import { eq, getTableColumns } from 'drizzle-orm';
+import { listingView, profileView, shoeListing } from '@/db/schema';
 import { ListingView, CreateListingView, ProfileView, CreateProfileView } from '../types/types';
-import { getSaveByUserId } from '@/features/user-action/services/service';
+import { getSaveBySellerId } from '@/features/user-action/services/service';
 
 function isWithinSevenDays(date: Date) {
   const now = new Date();
@@ -128,7 +128,9 @@ export async function getProfileViewsByProfileUserId(id: string) {
 
 export async function getProfileListingSavesBySellerId(id: string) {
   try {
-    const rows = await getSaveByUserId(id);
+    const rows = await getSaveBySellerId(id);
+
+    console.log(rows)
 
     if (!rows) return null;
     

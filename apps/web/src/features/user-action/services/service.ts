@@ -312,6 +312,26 @@ export async function getSaveByUserId(id: string) {
   }
 }
 
+export async function getSaveBySellerId(id: string) {
+  try {
+    const rows = await db
+      .select({
+        listing: getTableColumns(shoeListing),
+        user: getTableColumns(user),
+        ...getTableColumns(save)
+      })
+      .from(save)
+      .innerJoin(shoeListing, eq(save.listingId, shoeListing.id))
+      .innerJoin(user, eq(save.userId, user.id))
+      .where(eq(shoeListing.userId, id));
+    
+    return rows ?? null;
+  } catch (error) {
+    console.error("Error fetching saves.", error);
+    return null;
+  }
+}
+
 export async function updateRating(data: UpdateRating, id: number) {
   try {
     await db 
