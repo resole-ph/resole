@@ -10,6 +10,8 @@ import CharitiesSection from '@/components/organisms/CharitiesSection';
 import { useOnboardingStore } from '@/store/onboarding';
 import { useMyListings, useUserInfo } from '@/features/user/queries/user.queries';
 import { Listing } from '@/components/molecules/ListingCard';
+import { usePreferencesStore } from '@/store/preferences';
+import { sizeSystemFromUserPreferences } from '@/features/shoe/utils/size-conversion';
 
 export default function HomeScreen() {
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
@@ -36,6 +38,17 @@ export default function HomeScreen() {
   // -> home costs no requests at all inside the stale window.
   const { data: userData } = useUserInfo(hydrated);
   const { data: listingsData } = useMyListings(hydrated);
+
+  useEffect(() => {
+    if (!userData) return;
+    const accountSizeSystem = sizeSystemFromUserPreferences(
+      userData.unit,
+      userData.classification,
+    );
+    if (accountSizeSystem) {
+      usePreferencesStore.getState().setSizeSystem(accountSizeSystem);
+    }
+  }, [userData]);
 
   const user = userData ?? { name: 'Resoler' };
   const myListings: Listing[] = Array.isArray(listingsData) ? listingsData : [];

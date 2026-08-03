@@ -15,6 +15,8 @@ export type User = {
   description: string | null;
   coins: number;
   intent: Intent;
+  unit: 'us' | 'uk' | 'eu' | 'au' | 'mx' | 'mm' | 'cm' | 'in' | null;
+  classification: 'men' | 'women' | 'children' | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -34,4 +36,6 @@ export type UpdateProfileInput = {
   address?: string;
   image?: string;
   description?: string;
+  unit?: 'us' | 'uk' | 'eu' | 'cm';
+  classification?: 'men' | 'women';
 };

@@ -434,6 +434,14 @@ export async function updateUserProfile(
       setObj.intent = data.intent;
     }
 
+    if (data.unit !== undefined) {
+      setObj.unit = data.unit;
+    }
+
+    if (data.classification !== undefined) {
+      setObj.classificaiton = data.classification;
+    }
+
     if (Object.keys(setObj).length === 1) {
       return null;
     }

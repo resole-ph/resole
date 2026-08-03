@@ -1,5 +1,9 @@
 import { apiFetch } from '@/lib/api-client';
 import { UserStat, UserInfoCardProps, ListingSummary, FavouritesSummary, UserMetric, UserReview } from '../types/user.types';
+import {
+  type SizeSystem,
+  userPreferencesFromSizeSystem,
+} from '@/features/shoe/utils/size-conversion';
 
 const STAT_LABELS: Record<string, string> = {
   pairsSaved: 'Pairs saved',
@@ -58,6 +62,15 @@ export const UserService = {
       unit: user.unit ?? 'us',
       classification: user.classification ?? 'men'
     };
+  },
+
+  async updateSizeSystem(sizeSystem: SizeSystem): Promise<any> {
+    const { user } = await apiFetch<{ user: any }>(`/api/users/me`, {
+      method: 'PATCH',
+      body: userPreferencesFromSizeSystem(sizeSystem),
+    });
+
+    return user;
   },
 
   async getUserStats(): Promise<any> {

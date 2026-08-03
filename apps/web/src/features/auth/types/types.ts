@@ -22,6 +22,8 @@ export type UpdateUserProfileInput = {
   city?: string;
   contactNo?: string;
   intent?: intentType;
+  unit?: 'us' | 'uk' | 'eu' | 'cm';
+  classification?: 'men' | 'women';
 };
 
 export interface CreateCredentialsInput {

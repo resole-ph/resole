@@ -10,6 +10,32 @@ export const SIZE_SYSTEM_LABELS: Record<SizeSystem, string> = {
 
 export const SIZE_SYSTEMS: SizeSystem[] = ['us_m', 'us_w', 'eur', 'uk', 'jp_cm'];
 
+export type UserSizePreferences = {
+  unit: 'us' | 'uk' | 'eu' | 'cm';
+  classification?: 'men' | 'women';
+};
+
+/** Maps the account-level preference onto the size systems supported by mobile. */
+export function sizeSystemFromUserPreferences(
+  unit?: string | null,
+  classification?: string | null,
+): SizeSystem | null {
+  if (unit === 'us') return classification === 'women' ? 'us_w' : 'us_m';
+  if (unit === 'eu') return 'eur';
+  if (unit === 'uk') return 'uk';
+  if (unit === 'cm') return 'jp_cm';
+  return null;
+}
+
+/** Maps a mobile size system onto the existing user profile fields. */
+export function userPreferencesFromSizeSystem(system: SizeSystem): UserSizePreferences {
+  if (system === 'us_m') return { unit: 'us', classification: 'men' };
+  if (system === 'us_w') return { unit: 'us', classification: 'women' };
+  if (system === 'eur') return { unit: 'eu' };
+  if (system === 'uk') return { unit: 'uk' };
+  return { unit: 'cm' };
+}
+
 /** The system every stored size is expressed in. Nothing persists a size in any other system. */
 export const ANCHOR_SYSTEM: SizeSystem = 'us_m';
 
