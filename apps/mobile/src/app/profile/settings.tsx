@@ -239,7 +239,7 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await authService.signOut();
-          router.replace('/onboarding/auth' as any);
+          router.replace('/onboarding/splash' as any);
         },
       },
     ]);

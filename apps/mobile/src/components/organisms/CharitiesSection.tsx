@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Charity } from '@/features/charity/types/charity.types';
 import DonateSheet from './DonateSheet';
 
