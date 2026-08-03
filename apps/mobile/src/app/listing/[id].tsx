@@ -93,6 +93,7 @@ export default function ListingDetailScreen() {
     };
 
     loadData();
+    
     UserService.getUserInfo()
       .then((user) => setCurrentUserId(user.id))
       .catch((error) => console.error('Failed to load current user:', error));
@@ -153,6 +154,7 @@ export default function ListingDetailScreen() {
   const canSwap        = listing.isAvailable && (listing.listingMode === 'Swap' || listing.listingMode === 'Both');
   const conditionColor = CONDITION_COLORS[listing.condition];
   const isOwnListing   = !!currentUserId && listing.seller.id === currentUserId;
+  const isMakeOfferButtonActive = Boolean(offerPrice && !isLoadingOffer && !offerSent);
 
   const photoUrls = [
     listing.imageUrlTop,
@@ -190,11 +192,10 @@ export default function ListingDetailScreen() {
   }
 
   function handleSwap() {
+    if (isOwnListing) return;
     setIsLoadingOffer(true);
     
     try {
-      if (isOwnListing) return;
-  
       router.push({
         pathname: '/listing/swap-offer',
         params: {
@@ -210,15 +211,15 @@ export default function ListingDetailScreen() {
   }
 
   async function handleSendOffer() {
+    if (!id || isOwnListing) return;
+
+    const price = Number(offerPrice);
+    if (price <= 0 || price > 100000) return;
+
     setIsLoadingOffer(true);
     
     try {
-      if (!id || isOwnListing) return;
-  
-      const price = Number(offerPrice);
-      if (price <= 0 || price > 100000) return;
-  
-      await OfferService.createSale(id, price || 0, offerNote || `Hello! I am interested, and will offer to pay the full price of ₱${offerPrice}`);
+      await OfferService.createSale(id, price, offerNote || `Hello! I am interested in buying your ${listing?.model ?? 'shoe listing'}, and will offer to pay the full price of ₱${parseInt(offerPrice, 10).toLocaleString()}`);
       
       setOfferSent(true);
       setTimeout(() => {
@@ -227,7 +228,7 @@ export default function ListingDetailScreen() {
         setOfferPrice('');
         setOfferNote('');
         router.push('/inbox' as any);
-      }, 1200);
+      }, 2000);
     } finally {
       setIsLoadingOffer(false);
     }
@@ -475,14 +476,33 @@ export default function ListingDetailScreen() {
             />
 
             <TouchableOpacity
-              onPress={offerPrice ? handleSendOffer : undefined}
-              disabled={isLoadingOffer}
-              style={{ backgroundColor: offerPrice ? '#D97706' : '#E5E7EB', borderRadius: 18, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, ...(offerPrice ? BTN_SHADOW('#D97706') : {}) }}
-              activeOpacity={offerPrice ? 0.85 : 1}
+              onPress={isMakeOfferButtonActive ? handleSendOffer : undefined}
+              disabled={!isMakeOfferButtonActive}
+              style={{
+                backgroundColor: isMakeOfferButtonActive ? '#D97706' : '#E5E7EB',
+                borderRadius: 18,
+                paddingVertical: 16,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 8,
+                ...(isMakeOfferButtonActive ? BTN_SHADOW('#D97706') : {})
+              }}
+              activeOpacity={isMakeOfferButtonActive ? 0.85 : 1}
             >
-              <Ionicons name={offerSent ? 'checkmark-circle' : 'pricetag-outline'} size={20} color={offerPrice ? '#fff' : '#9CA3AF'} />
-              <Text style={{ color: offerPrice ? '#fff' : '#9CA3AF', fontSize: 16, fontWeight: '700' }}>
-                {offerSent ? 'Offer Sent!' : 'Send Offer'}
+              <Ionicons 
+                name={offerSent ? 'checkmark-circle' : 'pricetag-outline'} 
+                size={20} 
+                color={isMakeOfferButtonActive ? '#fff' : '#9CA3AF'} 
+              />
+              <Text 
+                style={{ 
+                  color: isMakeOfferButtonActive ? '#fff' : '#9CA3AF', 
+                  fontSize: 16, 
+                  fontWeight: '700' 
+                }}
+              >
+                {isLoadingOffer ? 'Loading...' : offerSent ? 'Offer Sent!' : 'Send Offer'}
               </Text>
             </TouchableOpacity>
           </View>
