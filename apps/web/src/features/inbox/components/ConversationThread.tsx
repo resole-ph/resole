@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { formatMessageTime } from '../services/inbox.client';
+import LocalTime from './LocalTime';
+import { formatMessageTime } from '../utils/format-time';
 import type {
   InboxItem,
   OfferExtras,
@@ -88,7 +89,9 @@ function UpdateBubble({ update }: { update: SystemUpdate }) {
           <p className="text-on-surface-variant text-[12px] leading-relaxed mt-0.5">{update.body}</p>
         </div>
       </div>
-      <span className="text-outline text-[11px] mt-1 ml-1">{update.time}</span>
+      <span className="text-outline text-[11px] mt-1 ml-1">
+        <LocalTime value={update.createdAt} variant="message" />
+      </span>
     </div>
   );
 }

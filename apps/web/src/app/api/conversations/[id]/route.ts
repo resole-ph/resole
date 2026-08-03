@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getConversationById, getConversationMessages } from '@/features/inbox/services/service';
-import { getTransactionById, getTransactionDetails } from '@/features/transaction/services/service';
-import { checkIfTransactionIsRated } from '@/features/user-action/services/service'; 
+import { getTransactionsWithDetailsByIds } from '@/features/transaction/services/service';
+import { getRatedTransactionIds } from '@/features/user-action/services/service';
+import { getShoeListingsByIds } from '@/features/shoe/services/service';
+import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
 
 function parseConversationId(rawId: string) {
   const conversationId = Number.parseInt(rawId, 10);
@@ -18,19 +20,26 @@ export async function GET(
   request: Request, 
   context: { params: Promise<{ id: string }> }
 ) {
-  const currentUser = await getAuthenticatedUser(request);
-
-  if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const { id } = await context.params;
   const conversationId = parseConversationId(id);
   if (!conversationId) {
     return NextResponse.json({ error: 'Invalid conversation id' }, { status: 400 });
   }
 
-  const conversation = await getConversationById(conversationId);
+  // Every await here is a round trip to a remote database, so anything that does
+  // not depend on an earlier result is issued at the same time. The messages are
+  // fetched before the caller is known to be a participant — they are discarded
+  // unread if the access check below fails.
+  const [currentUser, conversation, messages] = await Promise.all([
+    getAuthenticatedUser(request),
+    getConversationById(conversationId),
+    getConversationMessages(conversationId),
+  ]);
+
+  if (!currentUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   if (!conversation) {
     return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
   }
@@ -41,7 +50,6 @@ export async function GET(
     return NextResponse.json({ error: 'Denied access' }, { status: 401 });
   }
 
-  const messages = await getConversationMessages(conversation.id);
   if (!messages) {
     return NextResponse.json({ error: 'Messages not found' }, { status: 404 });
   }
@@ -50,27 +58,55 @@ export async function GET(
     new Set(messages.map((m) => m.transactionId).filter((tid): tid is number => tid != null))
   );
 
-  const offers = (
-    await Promise.all(
-      transactionIds.map(async (transactionId) => {
-        const transaction = await getTransactionById(transactionId);
-        if (!transaction) return null;
-        
-        const details = await getTransactionDetails(transaction);
-        if (!details) return null;
+  const [transactions, ratedTransactionIds] = await Promise.all([
+    getTransactionsWithDetailsByIds(transactionIds),
+    getRatedTransactionIds(transactionIds),
+  ]);
 
-        const isRated = await checkIfTransactionIsRated(transactionId);
+  const offers = transactions.map((transaction) => ({
+    ...transaction,
+    isRated: ratedTransactionIds.has(transaction.id),
+  }));
 
-        return {
-          ...details,
-          isRated,
-        };
-      })
+  // Offer cards render the listing being offered on, and for a swap the item put
+  // up in exchange. Both are resolved here: left to the client they become one
+  // request per listing, each of which cannot even start until this response
+  // lands. A thread usually points at only a couple of distinct listings, so this
+  // is a single extra query rather than a second round of network calls.
+  const listingIds = Array.from(
+    new Set(
+      offers.flatMap((offer) => [
+        offer.listingId,
+        ...(offer.details && 'items' in offer.details
+          ? offer.details.items.map((item) => item.itemId)
+          : []),
+      ])
     )
-  ).filter((offer): offer is NonNullable<typeof offer> => offer != null);
+  ).filter((listingId): listingId is number => listingId != null);
+
+  const listings = await getShoeListingsByIds(listingIds);
+  const listingById = new Map(
+    listings.map((listing) => [listing.id, serializeShoeListing(listing)])
+  );
+
+  const offerExtras = Object.fromEntries(
+    offers.map((offer) => {
+      const swapItemId =
+        offer.details && 'items' in offer.details ? offer.details.items[0]?.itemId : null;
+
+      return [
+        offer.id,
+        {
+          listing: listingById.get(offer.listingId) ?? null,
+          swapItem: swapItemId != null ? listingById.get(swapItemId) ?? null : null,
+        },
+      ];
+    })
+  );
 
   return NextResponse.json({
     messages: messages,
-    offers: offers
+    offers: offers,
+    offerExtras: offerExtras
   });
 }

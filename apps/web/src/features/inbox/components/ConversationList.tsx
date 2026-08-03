@@ -1,5 +1,6 @@
 'use client';
 
+import LocalTime from './LocalTime';
 import type { InboxItem, ListTab } from '../types/inbox.types';
 
 const TAB_LABELS: { id: ListTab; label: string }[] = [
@@ -69,7 +70,7 @@ function ConversationRow({
             {convo.sender}
           </span>
           <span className={`text-[11px] shrink-0 ${isUnread ? 'text-primary font-semibold' : 'text-outline'}`}>
-            {convo.time}
+            <LocalTime value={convo.rawTime} />
           </span>
         </div>
         <p className={`text-[12px] leading-relaxed line-clamp-2 ${isUnread ? 'text-on-surface' : 'text-on-surface-variant'}`}>
