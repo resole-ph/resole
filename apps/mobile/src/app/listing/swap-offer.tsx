@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
+  View, Text, ScrollView, TouchableOpacity, Keyboard,
   TextInput, Image, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -37,6 +37,7 @@ export default function SwapOfferScreen() {
   const [notes, setNotes]           = useState('');
   const [sent, setSent]             = useState(false);
   const [isValid, setIsValid]       = useState<boolean>(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
 
   useEffect(() => {
@@ -55,10 +56,20 @@ export default function SwapOfferScreen() {
     fetchUserListings();
   }, [listingId]);
 
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   async function handleSubmit() {
     if (!isValid || !selectedId) return;
 
-    await OfferService.createSwap(Number(listingId), [selectedId], notes);
+    await OfferService.createSwap(Number(listingId), [selectedId], notes || `Hello! Please check out my swap offer for your ${selectedListing?.model || 'shoe'}!`);
 
     setSent(true);
     setTimeout(() => {
@@ -69,9 +80,10 @@ export default function SwapOfferScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-gray-50"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAvoidingView 
+      style={{ flex: 1, padding: 0 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : (keyboardVisible ? 'height' : undefined)} 
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       {/* Header */}
       <View
@@ -259,18 +271,15 @@ export default function SwapOfferScreen() {
 
       {/* Submit */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 pt-4"
+        className="bg-white border-t border-gray-100 px-5 pt-4"
         style={{ paddingBottom: Math.max(insets.bottom, 16), shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 10 }}
       >
         {selectedListing && (
           <View className="flex-row items-center bg-violet-50 rounded-2xl px-4 py-3 mb-3 border border-violet-200">
             <Ionicons name="swap-horizontal" size={16} color="#7C3AED" />
             <Text className="text-violet-700 text-sm font-medium ml-2 flex-1" numberOfLines={1}>
-              Offering: {selectedListing.model}
+              Offering for: {selectedListing.model}
             </Text>
-            {cashTopUp ? (
-              <Text className="text-violet-600 text-xs font-semibold">+₱{parseInt(cashTopUp).toLocaleString()}</Text>
-            ) : null}
           </View>
         )}
         <TouchableOpacity

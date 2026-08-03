@@ -13,7 +13,7 @@ function parseTransactionId(rawId: string) {
   return transactionId;
 }
 
-export async function GET(
+export async function POST(
   request: Request, 
   context: { params: Promise<{ id: string }> }
 ) {
