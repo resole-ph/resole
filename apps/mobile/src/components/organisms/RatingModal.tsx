@@ -28,7 +28,7 @@ export default function RatingModal({ visible, targetName, submitting, onSubmit,
 
   const handleSubmit = () => {
     if (rating === 0 || submitting) return;
-    onSubmit(rating, comment.trim());
+    onSubmit(rating, comment.trim() ?? '');
   };
 
   return (

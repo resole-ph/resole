@@ -25,17 +25,12 @@ export async function createReferal(data: CreateReferal) {
 }
 
 export async function createRating(data: CreateRating) {
-  try {
-    const result = await db
-      .insert(rating)
-      .values(data)
-      .returning({ id: rating.id });
+  const result = await db
+    .insert(rating)
+    .values(data)
+    .returning({ id: rating.id });
 
-    return getRatingById(result[0].id);
-  } catch (error) {
-    console.error("Error creating rating.", error);
-    return null;
-  }
+  return getRatingById(result[0].id);
 }
 
 export async function createSave(data: CreateSave) {
