@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,8 @@ import { CharityService } from '@/features/charity/services/charity.service';
 import { Charity } from '@/features/charity/types/charity.types';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
+import FilterSheet, { EMPTY_FILTERS, type MarketFilters } from '@/components/organisms/FilterSheet';
+import SortSheet, { type SortOption } from '@/components/organisms/SortSheet';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -198,6 +200,12 @@ export default function ListingsScreen() {
 
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('active');
+  const [filters, setFilters] = useState<MarketFilters>(EMPTY_FILTERS);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [sortVisible, setSortVisible] = useState(false);
+  const [sizeOptions, setSizeOptions] = useState<string[]>([]);
+  const [colorOptions, setColorOptions] = useState<string[]>([]);
 
   const [donateTargetId, setDonateTargetId] = useState<string | null>(null);
   const [charities, setCharities] = useState<Charity[]>([]);
@@ -206,11 +214,31 @@ export default function ListingsScreen() {
 
   // Shared with the home screen's "Your Listings" row, so arriving here from
   // "View all" renders from cache instead of refetching the same list.
-  const { data } = useMyListings();
+  const listingQuery = useMemo(
+    () => ({ ...filters, sort: sortOption }),
+    [filters, sortOption],
+  );
+  const { data } = useMyListings(true, listingQuery);
+
+  // The first (unfiltered) response supplies the available facets. Keep those
+  // options while narrower server-side results arrive so selected filters can
+  // be combined or cleared without the sheet losing valid choices.
+  useEffect(() => {
+    if (!data) return;
+
+    setSizeOptions((previous) => Array.from(new Set([
+      ...previous,
+      ...data.map((item) => item.size).filter((size): size is string => !!size),
+    ])).sort((a, b) => Number(a) - Number(b)));
+    setColorOptions((previous) => Array.from(new Set([
+      ...previous,
+      ...data.map((item) => item.colorway).filter((color): color is string => !!color),
+    ])).sort());
+  }, [data]);
 
   /** Applies a change to the cached list; every screen reading it updates. */
   const patchCache = (fn: (items: Listing[]) => Listing[]) =>
-    queryClient.setQueryData<Listing[]>(userKeys.myListings(), (prev) => fn(prev ?? []));
+    queryClient.setQueriesData<Listing[]>({ queryKey: userKeys.myListings() }, (prev) => fn(prev ?? []));
 
   // Derived rather than stored in two parallel arrays, so the tabs cannot
   // drift apart. getDaysLeft is synchronous date maths, despite the awaits
@@ -365,6 +393,31 @@ export default function ListingsScreen() {
         ))}
       </View>
 
+      <View className="flex-row items-center px-5 mb-3">
+        <Text style={{ color: '#9CA3AF', fontSize: 12.5, flex: 1 }}>
+          <Text style={{ color: '#374151', fontWeight: '600' }}>{counts[tab]}</Text>
+          {' listings found'}
+        </Text>
+        <TouchableOpacity
+          className="flex-row items-center rounded-xl px-3 py-1.5 bg-white mr-2"
+          style={CARD_SHADOW}
+          onPress={() => setFilterVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="options-outline" size={13} color="#2563EB" />
+          <Text style={{ color: '#2563EB', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Filter</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="flex-row items-center rounded-xl px-3 py-1.5 bg-white"
+          style={CARD_SHADOW}
+          onPress={() => setSortVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="swap-vertical-outline" size={13} color="#6B7280" />
+          <Text style={{ color: '#6B7280', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Sort</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         {tab === 'active' && active.length === 0 && (
           <EmptyState label="No active listings" />
@@ -394,6 +447,21 @@ export default function ListingsScreen() {
             />
           ))}
       </ScrollView>
+
+      <SortSheet
+        visible={sortVisible}
+        value={sortOption}
+        onSelect={setSortOption}
+        onClose={() => setSortVisible(false)}
+      />
+      <FilterSheet
+        visible={filterVisible}
+        value={filters}
+        sizeOptions={sizeOptions}
+        colorOptions={colorOptions}
+        onApply={setFilters}
+        onClose={() => setFilterVisible(false)}
+      />
 
       <Modal
         visible={donateTargetId !== null}

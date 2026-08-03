@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Listing } from '@/components/molecules/ListingCard';
+import type { Listing } from '@/components/molecules/ListingCard';
+import type { MarketFilters } from '@/features/listing/types/listing.types';
 
-export interface MarketFilters {
-  sizes: string[];
-  colors: string[];
-  conditions: Listing['condition'][];
-  minRating: number | null;
-  priceMin: string;
-  priceMax: string;
-}
+export type { MarketFilters } from '@/features/listing/types/listing.types';
 
 export const EMPTY_FILTERS: MarketFilters = {
   sizes: [],
