@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PhotoAngle, SellPhoto } from '../types/sell.types';
 import { rotateImageFile } from '../utils/rotateImageFile';
 
@@ -32,14 +32,27 @@ interface PhotoDropzoneProps {
 export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: PhotoDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isRotating, setIsRotating] = useState(false);
+  const [rotateError, setRotateError] = useState<string | null>(null);
+
+  // Auto-clear rotation error after 3 seconds
+  useEffect(() => {
+    if (!rotateError) return;
+    const timeout = setTimeout(() => setRotateError(null), 3000);
+    return () => clearTimeout(timeout);
+  }, [rotateError]);
 
   async function handleRotate(e: React.MouseEvent, direction: 'cw' | 'ccw') {
     e.stopPropagation();
     if (!photo?.file || isRotating) return;
     setIsRotating(true);
+    setRotateError(null);
     try {
       const rotated = await rotateImageFile(photo.file, direction);
       onSelect(angle, rotated);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to rotate photo';
+      setRotateError(message);
+      console.error('Photo rotation failed:', error);
     } finally {
       setIsRotating(false);
     }
@@ -95,23 +108,30 @@ export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: Phot
             <span className="material-symbols-outlined text-[16px]">close</span>
           </button>
           {photo.file && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
-              <button
-                onClick={(e) => handleRotate(e, 'ccw')}
-                disabled={isRotating}
-                aria-label={`Rotate ${ANGLE_LABELS[angle]} photo counter-clockwise`}
-                className="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/70 disabled:opacity-50 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[16px]">rotate_left</span>
-              </button>
-              <button
-                onClick={(e) => handleRotate(e, 'cw')}
-                disabled={isRotating}
-                aria-label={`Rotate ${ANGLE_LABELS[angle]} photo clockwise`}
-                className="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/70 disabled:opacity-50 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[16px]">rotate_right</span>
-              </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => handleRotate(e, 'ccw')}
+                  disabled={isRotating}
+                  aria-label={`Rotate ${ANGLE_LABELS[angle]} photo counter-clockwise`}
+                  className="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/70 disabled:opacity-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">rotate_left</span>
+                </button>
+                <button
+                  onClick={(e) => handleRotate(e, 'cw')}
+                  disabled={isRotating}
+                  aria-label={`Rotate ${ANGLE_LABELS[angle]} photo clockwise`}
+                  className="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/70 disabled:opacity-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">rotate_right</span>
+                </button>
+              </div>
+              {rotateError && (
+                <span className="text-[11px] text-error bg-black/70 rounded px-2 py-1">
+                  {rotateError}
+                </span>
+              )}
             </div>
           )}
         </>
