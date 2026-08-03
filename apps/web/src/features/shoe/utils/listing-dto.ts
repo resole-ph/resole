@@ -35,7 +35,6 @@ export function serializeShoeListing(row: ShoeListing) {
     swapFor: undefined as string | undefined,
     createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : new Date().toISOString(),
     updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : new Date().toISOString(),
-    deletedAt: row.deletedAt ? new Date(row.deletedAt).toISOString() : undefined,
     seller: {
       id: row.seller.id,
       name: row.seller.name,
