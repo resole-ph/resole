@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import ConversationList from './ConversationList';
 import ConversationThread from './ConversationThread';
+import EditOfferModal from './EditOfferModal';
 import { InboxClient } from '../services/inbox.client';
 import type {
+  EditOfferPayload,
   InboxItem,
   ListTab,
   OfferExtras,
   ThreadMessage,
   ThreadOffer,
 } from '../types/inbox.types';
+import type { SerializedShoeListing } from '@/features/shoe/utils/listing-dto';
 
 /**
  * `initialConversations` / `initialUserId` come from the server render. When they
@@ -40,6 +43,11 @@ export default function InboxView({
   const [isSending, setIsSending] = useState(false);
   const [isRespondingToOffer, setIsRespondingToOffer] = useState(false);
   const [threadError, setThreadError] = useState<string | null>(null);
+
+  const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
+  const [isSavingOfferEdit, setIsSavingOfferEdit] = useState(false);
+  const [myListings, setMyListings] = useState<SerializedShoeListing[] | null>(null);
+  const [isLoadingMyListings, setIsLoadingMyListings] = useState(false);
 
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
   const totalUnread = conversations.reduce((n, c) => n + c.unread, 0);
@@ -149,6 +157,48 @@ export default function InboxView({
     }
   }
 
+  function handleOpenEditOffer(transactionId: number) {
+    setEditingOfferId(transactionId);
+
+    const offer = offersById[transactionId];
+    if (offer?.type === 'swap' && myListings === null && !isLoadingMyListings) {
+      setIsLoadingMyListings(true);
+      InboxClient.getMyListings()
+        .then(setMyListings)
+        .catch((error) => console.error('Failed to load your listings:', error))
+        .finally(() => setIsLoadingMyListings(false));
+    }
+  }
+
+  async function handleSaveOfferEdit(payload: EditOfferPayload) {
+    if (editingOfferId == null) return;
+
+    setIsSavingOfferEdit(true);
+    try {
+      const { details } = await InboxClient.editOffer(editingOfferId, payload);
+      setOffersById((prev) => ({
+        ...prev,
+        [editingOfferId]: { ...prev[editingOfferId], isAccepted: null, details },
+      }));
+
+      if ('listings' in payload) {
+        const swapItem = myListings?.find((listing) => Number(listing.id) === payload.listings[0]) ?? null;
+        setOfferExtrasById((prev) => ({
+          ...prev,
+          [editingOfferId]: { ...prev[editingOfferId], swapItem },
+        }));
+      }
+
+      setEditingOfferId(null);
+    } catch (error) {
+      console.error('Failed to edit offer:', error);
+    } finally {
+      setIsSavingOfferEdit(false);
+    }
+  }
+
+  const editingOffer = editingOfferId != null ? offersById[editingOfferId] : null;
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-5">
@@ -186,9 +236,22 @@ export default function InboxView({
             onSend={handleSend}
             onAccept={(id) => handleOfferResponse(id, true)}
             onDecline={(id) => handleOfferResponse(id, false)}
+            onEdit={handleOpenEditOffer}
           />
         </div>
       </div>
+
+      {editingOffer && (
+        <EditOfferModal
+          offer={editingOffer}
+          extras={offerExtrasById[editingOffer.id]}
+          myListings={myListings}
+          isLoadingListings={isLoadingMyListings}
+          isSaving={isSavingOfferEdit}
+          onClose={() => setEditingOfferId(null)}
+          onSave={handleSaveOfferEdit}
+        />
+      )}
     </div>
   );
 }

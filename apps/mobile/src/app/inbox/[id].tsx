@@ -15,6 +15,7 @@ import { TransactionService } from '@/features/transaction/services/transaction.
 import { Listing } from '@/components/molecules/ListingCard';
 import RatingModal from '@/components/organisms/RatingModal';
 import OfferCard from '@/components/organisms/OfferCard';
+import EditOfferModal from '@/components/organisms/EditOfferModal';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -189,6 +190,11 @@ export default function ConversationScreen() {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [skippedRatingIds, setSkippedRatingIds] = useState<Set<number>>(new Set());
 
+  const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
+  const [isSavingOfferEdit, setIsSavingOfferEdit] = useState(false);
+  const [myListings, setMyListings] = useState<Listing[] | null>(null);
+  const [isLoadingMyListings, setIsLoadingMyListings] = useState(false);
+
   const loadConversation = useCallback(async () => {
     setIsLoadingConversation(true);
     try {
@@ -325,6 +331,46 @@ export default function ConversationScreen() {
     }
   };
 
+  const handleOpenEditOffer = (transactionId: number) => {
+    setEditingOfferId(transactionId);
+
+    const offerItem = offersById[transactionId];
+    if (offerItem?.type === 'swap' && myListings === null && !isLoadingMyListings) {
+      setIsLoadingMyListings(true);
+      ListingService.getUserListings()
+        .then(setMyListings)
+        .catch((error) => console.error('Failed to load your listings:', error))
+        .finally(() => setIsLoadingMyListings(false));
+    }
+  };
+
+  const handleSaveOfferEdit = async (payload: { price: number } | { listings: number[] }) => {
+    if (editingOfferId == null) return;
+
+    try {
+      setIsSavingOfferEdit(true);
+      const result = await OfferService.editOffer(editingOfferId, payload);
+      setOffersById((prev) => ({
+        ...prev,
+        [editingOfferId]: { ...prev[editingOfferId], isAccepted: null, details: result.details },
+      }));
+
+      if ('listings' in payload) {
+        const swapItem = myListings?.find((item) => Number(item.id) === payload.listings[0]) ?? null;
+        setOfferExtrasById((prev) => ({
+          ...prev,
+          [editingOfferId]: { ...prev[editingOfferId], swapItem },
+        }));
+      }
+
+      setEditingOfferId(null);
+    } catch (error) {
+      console.error('Failed to edit offer:', error);
+    } finally {
+      setIsSavingOfferEdit(false);
+    }
+  };
+
   const handleSubmitRating = async (rating: number, comment: string) => {
     if (!ratingTarget) return;
     try {
@@ -424,8 +470,10 @@ export default function ConversationScreen() {
                     price={offerItem.details?.price}
                     status={getOfferStatus(offerItem)}
                     canRespond={!!currentUserId && !!extras?.listing && extras.listing.seller.id === currentUserId}
+                    canEdit={isMe && !offerItem.isCompleted}
                     onAccept={() => handleAccept(offerItem.id)}
                     onDecline={() => handleDecline(offerItem.id)}
+                    onEdit={() => handleOpenEditOffer(offerItem.id)}
                     time={new Date(msg.createdAt).toLocaleDateString()}
                     isMe={isMe}
                     isAccepting={!!pendingOffer && pendingOffer.id === offerItem.id && pendingOffer.action === 'accept'}
@@ -449,6 +497,18 @@ export default function ConversationScreen() {
         submitting={isSubmittingRating}
         onSubmit={handleSubmitRating}
         onSkip={handleSkipRating}
+      />
+
+      <EditOfferModal
+        visible={editingOfferId != null}
+        offer={editingOfferId != null ? offersById[editingOfferId] ?? null : null}
+        listing={editingOfferId != null ? offerExtrasById[editingOfferId]?.listing ?? null : null}
+        swapItem={editingOfferId != null ? offerExtrasById[editingOfferId]?.swapItem ?? null : null}
+        myListings={myListings}
+        isLoadingListings={isLoadingMyListings}
+        submitting={isSavingOfferEdit}
+        onClose={() => setEditingOfferId(null)}
+        onSave={handleSaveOfferEdit}
       />
     </View>
   );

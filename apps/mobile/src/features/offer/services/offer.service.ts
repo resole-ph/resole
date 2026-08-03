@@ -64,4 +64,11 @@ export const OfferService = {
       method: 'POST',
     });
   },
+
+  async editOffer(transactionId: number, payload: { price: number } | { listings: number[] }) {
+    return apiFetch<{ message: string; details: any }>(`api/offers/${transactionId}`, {
+      method: 'PATCH',
+      body: payload,
+    });
+  },
 }
