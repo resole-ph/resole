@@ -1,13 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { authService } from '@/features/auth/services/auth.service';
-import { useUserSettings } from '@/features/user/queries/user.queries';
+import { useUpdateSizeSystem, useUserSettings } from '@/features/user/queries/user.queries';
 import { useOnboardingStore } from '@/store/onboarding';
 import { usePreferencesStore } from '@/store/preferences';
-import { SIZE_SYSTEMS, SIZE_SYSTEM_LABELS, type SizeSystem } from '@/features/shoe/utils/size-conversion';
+import {
+  SIZE_SYSTEMS,
+  SIZE_SYSTEM_LABELS,
+  sizeSystemFromUserPreferences,
+  type SizeSystem,
+} from '@/features/shoe/utils/size-conversion';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -25,7 +30,7 @@ const ACCOUNT_FIELDS = [
   { id: 'phone',    label: 'Phone',         value: '', icon: 'call-outline' as const },
   { id: 'location', label: 'Location',      value: '', icon: 'location-outline' as const },
   { id: 'unit',     label: 'Unit',          value: '', icon: 'cube' as const },
-  { id: 'classificaiton', label: 'Classification',  value: '', icon: 'male-female-outline' as const },
+  { id: 'classification', label: 'Classification',  value: '', icon: 'male-female-outline' as const },
 ];
 
 function SectionTitle({ title }: { title: string }) {
@@ -183,8 +188,33 @@ export default function SettingsScreen() {
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   const setSizeSystem = usePreferencesStore((s) => s.setSizeSystem);
   const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
+  const { mutateAsync: updateSizeSystem } = useUpdateSizeSystem();
 
   const { data: accountData } = useUserSettings();
+
+  useEffect(() => {
+    if (!accountData) return;
+    const accountSizeSystem = sizeSystemFromUserPreferences(
+      accountData.unit,
+      accountData.classification,
+    );
+    if (accountSizeSystem) setSizeSystem(accountSizeSystem);
+  }, [accountData, setSizeSystem]);
+
+  async function handleSizeSystemChange(nextSystem: SizeSystem) {
+    const previousSystem = sizeSystem;
+    setSizeSystem(nextSystem);
+
+    try {
+      await updateSizeSystem(nextSystem);
+    } catch (error) {
+      setSizeSystem(previousSystem);
+      Alert.alert(
+        'Could not update shoe size system',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    }
+  }
 
   // Built from the module-level ACCOUNT_FIELDS template rather than from
   // previous state. The old effect mapped over `accountFields`, which was `[]`
@@ -335,7 +365,7 @@ export default function SettingsScreen() {
       <SizeSystemModal
         visible={showSizeSystemModal}
         current={sizeSystem}
-        onSelect={setSizeSystem}
+        onSelect={handleSizeSystemChange}
         onClose={() => setShowSizeSystemModal(false)}
       />
     </View>

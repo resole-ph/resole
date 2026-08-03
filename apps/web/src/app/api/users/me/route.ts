@@ -64,6 +64,17 @@ export async function PATCH(request: Request) {
     updates.intent = body.intent as 'buy' | 'sell' | 'donate';
   }
 
+  if (typeof body?.unit === 'string' && ['us', 'uk', 'eu', 'cm'].includes(body.unit)) {
+    updates.unit = body.unit as 'us' | 'uk' | 'eu' | 'cm';
+  }
+
+  if (
+    typeof body?.classification === 'string'
+    && ['men', 'women'].includes(body.classification)
+  ) {
+    updates.classification = body.classification as 'men' | 'women';
+  }
+
   const cityValue = typeof body?.city === 'string'
     ? body.city.trim()
     : typeof body?.location === 'string'

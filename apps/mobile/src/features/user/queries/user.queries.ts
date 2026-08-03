@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserService } from '../services/user.service';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { TransactionService } from '@/features/transaction/services/transaction.service';
+import type { SizeSystem } from '@/features/shoe/utils/size-conversion';
 
 /**
  * Query keys for everything the profile tab reads.
@@ -50,6 +51,25 @@ export function useUserSettings() {
   return useQuery({
     queryKey: userKeys.settings(),
     queryFn: () => UserService.getUserInfoForSettings(),
+  });
+}
+
+export function useUpdateSizeSystem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sizeSystem: SizeSystem) => UserService.updateSizeSystem(sizeSystem),
+    onSuccess: (user) => {
+      queryClient.setQueryData(userKeys.me(), user);
+      queryClient.setQueryData(userKeys.settings(), {
+        name: user.name,
+        email: user.email,
+        phone: user.contactNo,
+        location: user.location,
+        unit: user.unit,
+        classification: user.classification,
+      });
+    },
   });
 }
 
