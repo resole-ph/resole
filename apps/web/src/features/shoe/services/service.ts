@@ -382,6 +382,53 @@ export async function getShoeBrands() {
   }
 }
 
+export type SearchSuggestions = {
+  shoes: { brand: string; model: string }[];
+  people: { id: string; name: string }[];
+};
+
+/**
+ * Powers the market page's search-suggestions dropdown. Both halves are
+ * scoped to active listings only, so a suggestion always leads somewhere —
+ * a shoe with no listings left, or a seller with nothing on the market.
+ */
+export async function getSearchSuggestions(query: string): Promise<SearchSuggestions> {
+  const term = `%${query}%`;
+
+  try {
+    const [shoes, people] = await Promise.all([
+      db
+        .selectDistinct({ brand: shoe.brand, model: shoe.model })
+        .from(shoe)
+        .innerJoin(shoeListing, eq(shoeListing.shoeId, shoe.id))
+        .where(
+          and(
+            eq(shoeListing.isAvailable, true),
+            or(ilike(shoe.brand, term), ilike(shoe.model, term))
+          )
+        )
+        .limit(5),
+
+      db
+        .selectDistinct({ id: user.id, name: user.name })
+        .from(user)
+        .innerJoin(shoeListing, eq(shoeListing.userId, user.id))
+        .where(
+          and(
+            eq(shoeListing.isAvailable, true),
+            ilike(user.name, term)
+          )
+        )
+        .limit(5),
+    ]);
+
+    return { shoes, people };
+  } catch (error) {
+    console.error("Error fetching search suggestions.", error);
+    return { shoes: [], people: [] };
+  }
+}
+
 export async function getShoeBySearch(query: string) {
   try {
     const embedding = await generateEmbedding(query);

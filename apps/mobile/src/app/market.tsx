@@ -84,7 +84,10 @@ export default function MarketScreen() {
     <View className="flex-1 bg-gray-50">
       <Header branded showInbox onInboxPress={() => router.push('/inbox' as any)} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <SearchBar onSearch={setSearchQuery} />
+        <SearchBar
+          onSearch={setSearchQuery}
+          onSelectSeller={(personId) => router.push(`/profile/${personId}` as any)}
+        />
         <CategoriesRow onBrandPress={setSelectedBrand} />
         <BrowseFeed
           title=""
