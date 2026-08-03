@@ -70,7 +70,7 @@ export async function PATCH(request: Request) {
 
   if (
     typeof body?.classification === 'string'
-    && ['men', 'women'].includes(body.classification)
+    && ['men', 'women', 'children'].includes(body.classification)
   ) {
     updates.classification = body.classification as 'men' | 'women';
   }
