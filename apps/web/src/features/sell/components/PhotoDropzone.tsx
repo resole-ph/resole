@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { PhotoAngle, SellPhoto } from '../types/sell.types';
+import { rotateImageFile } from '../utils/rotateImageFile';
 
 const ANGLE_LABELS: Record<PhotoAngle, string> = {
   top: 'Top View',
@@ -30,6 +31,19 @@ interface PhotoDropzoneProps {
 
 export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: PhotoDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isRotating, setIsRotating] = useState(false);
+
+  async function handleRotate(e: React.MouseEvent, direction: 'cw' | 'ccw') {
+    e.stopPropagation();
+    if (!photo?.file || isRotating) return;
+    setIsRotating(true);
+    try {
+      const rotated = await rotateImageFile(photo.file, direction);
+      onSelect(angle, rotated);
+    } finally {
+      setIsRotating(false);
+    }
+  }
 
   function handleFiles(files: FileList | null) {
     const file = files?.[0];
@@ -80,6 +94,26 @@ export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: Phot
           >
             <span className="material-symbols-outlined text-[16px]">close</span>
           </button>
+          {photo.file && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+              <button
+                onClick={(e) => handleRotate(e, 'ccw')}
+                disabled={isRotating}
+                aria-label={`Rotate ${ANGLE_LABELS[angle]} photo counter-clockwise`}
+                className="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/70 disabled:opacity-50 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">rotate_left</span>
+              </button>
+              <button
+                onClick={(e) => handleRotate(e, 'cw')}
+                disabled={isRotating}
+                aria-label={`Rotate ${ANGLE_LABELS[angle]} photo clockwise`}
+                className="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/70 disabled:opacity-50 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">rotate_right</span>
+              </button>
+            </div>
+          )}
         </>
       ) : (
         <>
