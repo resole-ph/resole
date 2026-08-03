@@ -38,6 +38,16 @@ async function compressForUpload(uri: string): Promise<string> {
   return result.uri;
 }
 
+async function bakeRotation(uri: string, rotation: 0 | 90 | 180 | 270): Promise<string> {
+  if (rotation === 0) return uri;
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ rotate: rotation }],
+    { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+  );
+  return result.uri;
+}
+
 export default function PhotoUploadContainer() {
   const router = useRouter();
   const { photos, setPhoto, allPhotosUploaded, setStep, isAnalyzed, photosDirty, setAnalysisSkipped } = useSellFlow();
@@ -46,6 +56,7 @@ export default function PhotoUploadContainer() {
   const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle; rotation: 0 | 90 | 180 | 270 } | null>(null);
   const [queuedAction, setQueuedAction] = useState<{ type: 'camera' | 'library'; angle: PhotoAngle } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   function handlePhotoPress(angle: PhotoAngle) {
     setPendingAngle(angle);
@@ -130,10 +141,18 @@ export default function PhotoUploadContainer() {
     launchOrQueue('library', pendingAngle);
   }
 
-  function handleConfirmPhoto() {
-    if (!previewPhoto) return;
-    setPhoto(previewPhoto.angle, { angle: previewPhoto.angle, uri: previewPhoto.uri, uploaded: false });
-    setPreviewPhoto(null);
+  async function handleConfirmPhoto() {
+    if (!previewPhoto || confirming) return;
+    setConfirming(true);
+    try {
+      const uri = await bakeRotation(previewPhoto.uri, previewPhoto.rotation);
+      setPhoto(previewPhoto.angle, { angle: previewPhoto.angle, uri, uploaded: false });
+      setPreviewPhoto(null);
+    } catch (e) {
+      Alert.alert('Error', 'Could not process photo. Please try again.');
+    } finally {
+      setConfirming(false);
+    }
   }
 
   function handleRetakePhoto() {
@@ -371,12 +390,14 @@ export default function PhotoUploadContainer() {
 
                 <TouchableOpacity
                   onPress={handleConfirmPhoto}
+                  disabled={confirming}
                   style={{
                     flex: 1,
                     paddingVertical: 16,
                     borderRadius: 50,
                     backgroundColor: '#0054d3',
                     alignItems: 'center',
+                    opacity: confirming ? 0.6 : 1,
                     shadowColor: '#0054d3',
                     shadowOffset: { width: 0, height: 8 },
                     shadowOpacity: 0.4,
@@ -384,7 +405,9 @@ export default function PhotoUploadContainer() {
                     elevation: 6,
                   }}
                 >
-                  <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>Use Photo</Text>
+                  <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>
+                    {confirming ? 'Saving...' : 'Use Photo'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </>
