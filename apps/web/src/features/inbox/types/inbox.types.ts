@@ -20,8 +20,7 @@ export type InboxItem = {
   otherUserId?: string;
   subtitle: string;
   preview: string;
-  time: string;
-  /** Raw ISO timestamp behind `time`, kept for sorting. */
+  /** Raw ISO timestamp — sorted on, and localized at render by `<LocalTime>`. */
   rawTime: string | null;
   unread: number;
   /** Unread notification ids folded into this row, cleared when it is opened. */
@@ -36,8 +35,29 @@ export type SystemUpdate = {
   title: string;
   body: string;
   icon: string;
-  time: string;
+  createdAt: string;
   isRead: boolean;
+};
+
+/** A conversation row as `/api/conversations` returns it. */
+export type ConversationSummary = {
+  id: number;
+  updatedAt: string;
+  user: { id: string; name: string } | null;
+  transaction: { type: string } | null;
+  latestMessage: { content: string; createdAt: string } | null;
+};
+
+/** A notification as `/api/notifications` returns it. */
+export type NotificationSummary = {
+  id: number;
+  category: string;
+  title: string;
+  body: string;
+  entityType: string | null;
+  entityId: string | null;
+  isRead: boolean;
+  createdAt: string;
 };
 
 export type ThreadMessage = {
@@ -70,4 +90,6 @@ export type OfferExtras = {
 export type ConversationThreadData = {
   messages: ThreadMessage[];
   offers: ThreadOffer[];
+  /** Listings behind each offer, keyed by offer id — resolved server-side. */
+  offerExtras: Record<number, OfferExtras>;
 };

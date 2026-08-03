@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, isNull, count, ilike, avg, max } from 'drizzle-orm';
+import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, inArray, isNull, count, ilike, avg, max } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating } from '@/db/schema';
 import {
   Shoe,
@@ -480,6 +480,37 @@ export async function getShoeListingById(id: number) {
   } catch (error) {
     console.error("Error fetching shoe listing.", error);
     return null;
+  }
+}
+
+/**
+ * `getShoeListingById` for a set of ids. Callers that need several listings at
+ * once — an inbox thread renders one card per offer — would otherwise pay a
+ * round trip each.
+ */
+export async function getShoeListingsByIds(ids: number[]) {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  try {
+    const rows = await db
+      .select({
+        seller: { ...getTableColumns(user), rating: sellerRating.average },
+        shoe: { ...getTableColumns(shoe), originalPrice: shoeRetailPrice.retail },
+        ...getTableColumns(shoeListing)
+      })
+      .from(shoeListing)
+      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .innerJoin(user, eq(shoeListing.userId, user.id))
+      .leftJoin(sellerRating, eq(sellerRating.rateeId, user.id))
+      .leftJoin(shoeRetailPrice, eq(shoeRetailPrice.shoeId, shoe.id))
+      .where(inArray(shoeListing.id, ids));
+
+    return rows as ShoeListing[];
+  } catch (error) {
+    console.error("Error fetching shoe listings.", error);
+    return [];
   }
 }
 

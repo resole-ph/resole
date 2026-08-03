@@ -8,6 +8,7 @@ import {
   normalizeEmail,
   verifyPassword,
 } from '@/lib/auth';
+import { clearAuthCache, invalidateAuthCache } from '@/lib/request-auth';
 import type { 
   User, 
   Session, 
@@ -381,6 +382,7 @@ export async function verifyCredentials(email: string, password: string): Promis
 export async function deleteSessionByToken(token: string): Promise<boolean> {
   try {
     await db.delete(session).where(eq(session.token, token));
+    invalidateAuthCache(token);
     return true;
   } catch (error) {
     console.error('Error deleting session:', error);
@@ -461,6 +463,7 @@ export async function deleteUser(userId: string): Promise<boolean> {
 
     // Also delete active sessions
     await db.delete(session).where(eq(session.userId, userId));
+    clearAuthCache();
 
     return true;
   } catch (error) {
@@ -595,6 +598,7 @@ export async function consumePasswordResetToken(token: string, newPassword: stri
 
       await tx.delete(session).where(eq(session.userId, userRecord.id));
     });
+    clearAuthCache();
 
     return true;
   } catch (error) {

@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { aliasedTable, and, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
+import { aliasedTable, and, desc, eq, getTableColumns, inArray, isNull } from 'drizzle-orm';
 import { referal, rating, save, user, shoe, shoeListing, transaction } from '@/db/schema';
 import { 
   Referal,
@@ -477,6 +477,29 @@ export async function getReviewsForUser(userId: string) {
   } catch (error) {
     console.error("Error fetching reviews for user.", error);
     return null;
+  }
+}
+
+/** Which of these transactions already carry a rating — one query for the whole set. */
+export async function getRatedTransactionIds(transactionIds: number[]): Promise<Set<number>> {
+  if (transactionIds.length === 0) {
+    return new Set();
+  }
+
+  try {
+    const rows = await db
+      .select({ transactionId: rating.transactionId })
+      .from(rating)
+      .where(inArray(rating.transactionId, transactionIds));
+
+    return new Set(
+      rows
+        .map((row) => row.transactionId)
+        .filter((transactionId): transactionId is number => transactionId != null)
+    );
+  } catch (error) {
+    console.error("Error fetching rated transactions.", error);
+    return new Set();
   }
 }
 

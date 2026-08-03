@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq, and, or, sql, desc, getTableColumns, gt, gte } from 'drizzle-orm';
+import { eq, and, or, sql, desc, getTableColumns, gt, gte, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { 
   transaction,  
@@ -57,6 +57,109 @@ export async function getTransactionDetails(transaction: any) {
     details: details,
     ...transaction
   };
+}
+
+/**
+ * Batched equivalent of `getTransactionById` + `getTransactionDetails` for a set
+ * of transactions.
+ *
+ * Done one transaction at a time this costs three sequential round trips each —
+ * ~400ms per offer against a remote database. Here every table is queried once
+ * with an `IN` filter and the rows are stitched together in memory, so the whole
+ * set costs a single round trip regardless of how many offers a thread holds.
+ */
+export async function getTransactionsWithDetailsByIds(transactionIds: number[]) {
+  if (transactionIds.length === 0) {
+    return [];
+  }
+
+  try {
+    const [transactions, sales, swaps, swapItems, donations] = await Promise.all([
+      db
+        .select({
+          listing: getTableColumns(shoeListing),
+          recipient: getTableColumns(user),
+          ...getTableColumns(transaction)
+        })
+        .from(transaction)
+        .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+        .leftJoin(user, eq(transaction.recipientId, user.id))
+        .where(inArray(transaction.id, transactionIds)),
+
+      db
+        .select({
+          redemption: getTableColumns(redemption),
+          ...getTableColumns(sale)
+        })
+        .from(sale)
+        .leftJoin(redemption, eq(sale.id, redemption.saleId))
+        .where(inArray(sale.transactionId, transactionIds)),
+
+      db
+        .select(getTableColumns(swap))
+        .from(swap)
+        .where(inArray(swap.transactionId, transactionIds)),
+
+      db
+        .select({
+          transactionId: swap.transactionId,
+          item: getTableColumns(shoeListing),
+          ...getTableColumns(swapItem)
+        })
+        .from(swapItem)
+        .innerJoin(swap, eq(swapItem.swapId, swap.id))
+        .innerJoin(shoeListing, eq(swapItem.itemId, shoeListing.id))
+        .where(inArray(swap.transactionId, transactionIds))
+        .orderBy(desc(swapItem.createdAt)),
+
+      db
+        .select({
+          charity: getTableColumns(charity),
+          ...getTableColumns(donation)
+        })
+        .from(donation)
+        .innerJoin(charity, eq(donation.charityId, charity.id))
+        .where(inArray(donation.transactionId, transactionIds)),
+    ]);
+
+    const saleByTransactionId = new Map(sales.map((row) => [row.transactionId, row]));
+    const swapByTransactionId = new Map(swaps.map((row) => [row.transactionId, row]));
+    const donationByTransactionId = new Map(donations.map((row) => [row.transactionId, row]));
+
+    const swapItemsByTransactionId = new Map<number, typeof swapItems>();
+    for (const row of swapItems) {
+      const bucket = swapItemsByTransactionId.get(row.transactionId) ?? [];
+      bucket.push(row);
+      swapItemsByTransactionId.set(row.transactionId, bucket);
+    }
+
+    return transactions.map((row) => {
+      let details;
+
+      switch (row.type) {
+        case 'sale':
+          details = saleByTransactionId.get(row.id) ?? null;
+          break;
+        case 'swap': {
+          const swapRow = swapByTransactionId.get(row.id);
+          details = swapRow
+            ? { items: swapItemsByTransactionId.get(row.id) ?? [], ...swapRow }
+            : null;
+          break;
+        }
+        case 'donate':
+          details = donationByTransactionId.get(row.id) ?? null;
+          break;
+        default:
+          details = null;
+      }
+
+      return { details, ...row };
+    });
+  } catch (error) {
+    console.error("Error fetching transactions with details.", error);
+    return [];
+  }
 }
 
 export async function createTransaction(data: CreateTransaction) {

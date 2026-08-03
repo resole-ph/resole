@@ -17,7 +17,9 @@ const globalForDb = globalThis as unknown as {
   sql?: ReturnType<typeof postgres>;
 };
 
-export const sql = globalForDb.sql ?? postgres(connectionString, { max: 5 });
+// A single request now fans out several queries at once, so a pool of 5 would be
+// saturated by one in-flight inbox request.
+export const sql = globalForDb.sql ?? postgres(connectionString, { max: 10 });
 
 if (process.env.NODE_ENV !== 'production') {
   globalForDb.sql = sql;

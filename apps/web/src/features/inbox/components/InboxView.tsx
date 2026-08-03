@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import ConversationList from './ConversationList';
 import ConversationThread from './ConversationThread';
 import { InboxClient } from '../services/inbox.client';
-import type { SerializedShoeListing } from '@/features/shoe/utils/listing-dto';
 import type {
   InboxItem,
   ListTab,
@@ -13,12 +12,25 @@ import type {
   ThreadOffer,
 } from '../types/inbox.types';
 
-export default function InboxView() {
-  const [conversations, setConversations] = useState<InboxItem[]>([]);
-  const [isLoadingList, setIsLoadingList] = useState(true);
+/**
+ * `initialConversations` / `initialUserId` come from the server render. When they
+ * are present the list is already on screen and no start-up fetch is needed; the
+ * component still works without them, which is what a signed-out visitor gets.
+ */
+export default function InboxView({
+  initialConversations,
+  initialUserId,
+}: {
+  initialConversations?: InboxItem[];
+  initialUserId?: string;
+} = {}) {
+  const hasServerData = initialConversations != null;
+
+  const [conversations, setConversations] = useState<InboxItem[]>(initialConversations ?? []);
+  const [isLoadingList, setIsLoadingList] = useState(!hasServerData);
   const [tab, setTab] = useState<ListTab>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId ?? null);
 
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [offersById, setOffersById] = useState<Record<number, ThreadOffer>>({});
@@ -33,6 +45,8 @@ export default function InboxView() {
   const totalUnread = conversations.reduce((n, c) => n + c.unread, 0);
 
   useEffect(() => {
+    if (hasServerData) return;
+
     (async () => {
       try {
         const [userId, items] = await Promise.all([
@@ -47,51 +61,27 @@ export default function InboxView() {
         setIsLoadingList(false);
       }
     })();
+  }, [hasServerData]);
+
+  const loadThread = useCallback(async (conversationId: number) => {
+    setIsLoadingThread(true);
+    setThreadError(null);
+    try {
+      // The thread arrives with the listings behind its offers already attached,
+      // so there is no second round of requests before the cards can render.
+      const thread = await InboxClient.getConversationThread(conversationId);
+      setMessages(thread.messages ?? []);
+
+      const offers = thread.offers ?? [];
+      setOffersById(Object.fromEntries(offers.map((offer) => [offer.id, offer])));
+      setOfferExtrasById(thread.offerExtras ?? {});
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+      setThreadError('Conversation could not be loaded.');
+    } finally {
+      setIsLoadingThread(false);
+    }
   }, []);
-
-  /** Offers carry only ids — pull the listings they point at so the card can render. */
-  const loadOfferExtras = useCallback(async (offers: ThreadOffer[]) => {
-    // A thread often carries several offers on the same listing; fetch each once.
-    const cache = new Map<number, Promise<SerializedShoeListing | null>>();
-    const listingById = (id: number | null | undefined) => {
-      if (!id) return Promise.resolve(null);
-      if (!cache.has(id)) cache.set(id, InboxClient.getListing(id));
-      return cache.get(id)!;
-    };
-
-    const entries = await Promise.all(
-      offers.map(async (offer) => {
-        const [listing, swapItem] = await Promise.all([
-          listingById(offer.listingId),
-          listingById(offer.details?.items?.[0]?.itemId),
-        ]);
-        return [offer.id, { listing, swapItem }] as const;
-      })
-    );
-
-    setOfferExtrasById(Object.fromEntries(entries));
-  }, []);
-
-  const loadThread = useCallback(
-    async (conversationId: number) => {
-      setIsLoadingThread(true);
-      setThreadError(null);
-      try {
-        const thread = await InboxClient.getConversationThread(conversationId);
-        setMessages(thread.messages ?? []);
-
-        const offers = thread.offers ?? [];
-        setOffersById(Object.fromEntries(offers.map((offer) => [offer.id, offer])));
-        await loadOfferExtras(offers);
-      } catch (error) {
-        console.error('Failed to load conversation:', error);
-        setThreadError('Conversation could not be loaded.');
-      } finally {
-        setIsLoadingThread(false);
-      }
-    },
-    [loadOfferExtras]
-  );
 
   async function handleSelectConversation(id: string) {
     setSelectedId(id);
@@ -129,7 +119,9 @@ export default function InboxView() {
       const { message } = await InboxClient.sendMessage(selected.numericId, text);
       setMessages((prev) => [...prev, message]);
       setConversations((prev) =>
-        prev.map((c) => (c.id === selected.id ? { ...c, preview: text, time: 'Now' } : c))
+        prev.map((c) =>
+          c.id === selected.id ? { ...c, preview: text, rawTime: new Date().toISOString() } : c
+        )
       );
     } catch (error) {
       console.error('Failed to send message:', error);
