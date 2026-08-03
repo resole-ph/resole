@@ -10,6 +10,7 @@ import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { CharityService } from '@/features/charity/services/charity.service';
 import { Charity } from '@/features/charity/types/charity.types';
+import DonateSheet from '@/components/organisms/DonateSheet';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
 
@@ -202,7 +203,10 @@ export default function ListingsScreen() {
   const [donateTargetId, setDonateTargetId] = useState<string | null>(null);
   const [charities, setCharities] = useState<Charity[]>([]);
   const [charitiesLoading, setCharitiesLoading] = useState(false);
-  const [donating, setDonating] = useState(false);
+  // Donations aren't wired up to actually transfer proceeds yet — picking a
+  // charity shows the same "coming soon" sheet as the home screen instead of
+  // hitting the donate API.
+  const [comingSoonCharity, setComingSoonCharity] = useState<Charity | null>(null);
 
   // Shared with the home screen's "Your Listings" row, so arriving here from
   // "View all" renders from cache instead of refetching the same list.
@@ -311,20 +315,9 @@ export default function ListingsScreen() {
     }
   };
 
-  const handleConfirmDonate = async (charityId: number) => {
-    if (!donateTargetId) return;
-    setDonating(true);
-    try {
-      await ListingService.donateListing(Number(donateTargetId), charityId);
-      patchCache((items) => items.filter((l) => l.id !== donateTargetId));
-      setDonateTargetId(null);
-      Alert.alert('Thank you!', 'Your shoe has been donated.');
-    } catch (error) {
-      console.error('Failed to donate listing:', error);
-      Alert.alert('Could not donate listing', 'Please try again.');
-    } finally {
-      setDonating(false);
-    }
+  const handlePickCharity = (charity: Charity) => {
+    setDonateTargetId(null);
+    setComingSoonCharity(charity);
   };
 
   const handleEdit = (id: string) => {
@@ -419,18 +412,13 @@ export default function ListingsScreen() {
                     key={charity.id}
                     className="flex-row items-center justify-between rounded-xl px-4 py-3 mb-2 bg-gray-50"
                     activeOpacity={0.7}
-                    disabled={donating}
-                    onPress={() => handleConfirmDonate(charity.id)}
+                    onPress={() => handlePickCharity(charity)}
                   >
                     <View className="flex-1 mr-2">
                       <Text className="text-gray-900 font-semibold text-sm">{charity.name}</Text>
                       <Text className="text-gray-400 text-xs mt-0.5">{charity.cause}</Text>
                     </View>
-                    {donating ? (
-                      <ActivityIndicator color="#16A34A" size="small" />
-                    ) : (
-                      <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-                    )}
+                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -438,6 +426,12 @@ export default function ListingsScreen() {
           </View>
         </View>
       </Modal>
+
+      <DonateSheet
+        visible={comingSoonCharity != null}
+        charity={comingSoonCharity}
+        onClose={() => setComingSoonCharity(null)}
+      />
     </View>
   );
 }
