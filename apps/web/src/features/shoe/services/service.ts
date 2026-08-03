@@ -1,5 +1,6 @@
 import { db } from '@/config/db';
-import { sql, gt, eq, desc, or, and, getTableColumns, cosineDistance, inArray, isNull, count, ilike, avg, max } from 'drizzle-orm';
+import { sql, gt, eq, desc, asc, or, and, getTableColumns, cosineDistance, inArray, isNull, count, ilike, avg, max, gte, lte, lt } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
 import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating } from '@/db/schema';
 import {
   Shoe,
@@ -170,6 +171,16 @@ export type ShoeListingFilters = {
   search?: string;
 };
 
+export type OwnedShoeListingFilters = {
+  sizes?: string[];
+  colors?: string[];
+  conditions?: Array<'Like New' | 'Excellent' | 'Good' | 'Fair' | 'Poor'>;
+  minRating?: number;
+  priceMin?: number;
+  priceMax?: number;
+  sort?: 'newest' | 'oldest' | 'price_low' | 'price_high';
+};
+
 function buildShoeListingFilters(filters?: ShoeListingFilters) {
   const conditions = [];
 
@@ -189,6 +200,66 @@ function buildShoeListingFilters(filters?: ShoeListingFilters) {
   }
 
   return conditions;
+}
+
+function getConditionFilter(condition: NonNullable<OwnedShoeListingFilters['conditions']>[number]): SQL {
+  switch (condition) {
+    case 'Like New':
+      return gte(shoeListing.conditionScore, '9');
+    case 'Excellent':
+      return and(gte(shoeListing.conditionScore, '8'), lt(shoeListing.conditionScore, '9'))!;
+    case 'Good':
+      return and(gte(shoeListing.conditionScore, '6.5'), lt(shoeListing.conditionScore, '8'))!;
+    case 'Fair':
+      return and(gte(shoeListing.conditionScore, '4'), lt(shoeListing.conditionScore, '6.5'))!;
+    case 'Poor':
+      return lt(shoeListing.conditionScore, '4');
+  }
+}
+
+function buildOwnedShoeListingFilters(filters?: OwnedShoeListingFilters) {
+  const conditions: SQL[] = [];
+
+  if (filters?.sizes?.length) {
+    conditions.push(inArray(shoeListing.size, filters.sizes));
+  }
+
+  if (filters?.colors?.length) {
+    conditions.push(inArray(shoeListing.colorway, filters.colors));
+  }
+
+  if (filters?.conditions?.length) {
+    conditions.push(or(...filters.conditions.map(getConditionFilter))!);
+  }
+
+  if (filters?.minRating) {
+    conditions.push(gte(sellerRating.average, filters.minRating.toString()));
+  }
+
+  if (filters?.priceMin !== undefined) {
+    conditions.push(gte(shoeListing.value, filters.priceMin.toString()));
+  }
+
+  if (filters?.priceMax !== undefined) {
+    conditions.push(lte(shoeListing.value, filters.priceMax.toString()));
+  }
+
+  return conditions;
+}
+
+function getOwnedShoeListingOrder(sort?: OwnedShoeListingFilters['sort']) {
+  switch (sort) {
+    case 'oldest':
+      return asc(shoeListing.createdAt);
+    case 'price_low':
+      return asc(shoeListing.value);
+    case 'price_high':
+      return desc(shoeListing.value);
+    case 'newest':
+      return desc(shoeListing.createdAt);
+    default:
+      return desc(shoeListing.updatedAt);
+  }
 }
 
 export async function getAllShoeListing(filters?: ShoeListingFilters) {
@@ -300,7 +371,7 @@ export async function getShoeByModelName(name: string) {
   }
 }
 
-export async function getShoeListingsByUserId(userId: string) {
+export async function getShoeListingsByUserId(userId: string, filters?: OwnedShoeListingFilters) {
   try {
     const rows = await db
       .select({
@@ -318,10 +389,11 @@ export async function getShoeListingsByUserId(userId: string) {
       .where(
         and(
           eq(shoeListing.userId, userId), 
-          eq(shoeListing.isAvailable, true)
+          eq(shoeListing.isAvailable, true),
+          ...buildOwnedShoeListingFilters(filters)
         )
       )
-      .orderBy(desc(shoeListing.updatedAt));
+      .orderBy(getOwnedShoeListingOrder(filters?.sort));
 
     return rows ?? null;
   } catch (error) {
