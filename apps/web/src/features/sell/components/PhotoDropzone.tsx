@@ -50,9 +50,8 @@ export default function PhotoDropzone({ angle, photo, onSelect, onRemove }: Phot
       const rotated = await rotateImageFile(photo.file, direction);
       onSelect(angle, rotated);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to rotate photo';
-      setRotateError(message);
       console.error('Photo rotation failed:', error);
+      setRotateError("Couldn't rotate photo. Try again.");
     } finally {
       setIsRotating(false);
     }

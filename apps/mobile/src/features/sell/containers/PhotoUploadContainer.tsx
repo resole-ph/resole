@@ -38,13 +38,14 @@ async function compressForUpload(uri: string): Promise<string> {
   return result.uri;
 }
 
-async function bakeRotation(uri: string, rotation: 0 | 90 | 180 | 270): Promise<string> {
-  if (rotation === 0) return uri;
-  const result = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ rotate: rotation }],
-    { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
-  );
+async function finalizePhoto(uri: string, rotation: 0 | 90 | 180 | 270): Promise<string> {
+  const actions: ImageManipulator.Action[] = [];
+  if (rotation !== 0) actions.push({ rotate: rotation });
+  actions.push({ resize: { width: UPLOAD_MAX_WIDTH } });
+  const result = await ImageManipulator.manipulateAsync(uri, actions, {
+    compress: 0.6,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
   return result.uri;
 }
 
@@ -53,7 +54,7 @@ export default function PhotoUploadContainer() {
   const { photos, setPhoto, allPhotosUploaded, setStep, isAnalyzed, photosDirty, setAnalysisSkipped } = useSellFlow();
   const isEditingUnchanged = isAnalyzed && !photosDirty;
   const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
-  const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle; rotation: 0 | 90 | 180 | 270 } | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; originalUri: string; angle: PhotoAngle; rotation: 0 | 90 | 180 | 270 } | null>(null);
   const [queuedAction, setQueuedAction] = useState<{ type: 'camera' | 'library'; angle: PhotoAngle } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -81,8 +82,9 @@ export default function PhotoUploadContainer() {
         }
         const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
         if (!result.canceled && result.assets[0]) {
-          const uri = await compressForUpload(result.assets[0].uri);
-          setPreviewPhoto({ uri, angle, rotation: 0 });
+          const originalUri = result.assets[0].uri;
+          const uri = await compressForUpload(originalUri);
+          setPreviewPhoto({ uri, originalUri, angle, rotation: 0 });
         }
       } else {
         const { granted, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -101,8 +103,9 @@ export default function PhotoUploadContainer() {
         }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
         if (!result.canceled && result.assets[0]) {
-          const uri = await compressForUpload(result.assets[0].uri);
-          setPreviewPhoto({ uri, angle, rotation: 0 });
+          const originalUri = result.assets[0].uri;
+          const uri = await compressForUpload(originalUri);
+          setPreviewPhoto({ uri, originalUri, angle, rotation: 0 });
         }
       }
     } catch (e) {
@@ -145,7 +148,7 @@ export default function PhotoUploadContainer() {
     if (!previewPhoto || confirming) return;
     setConfirming(true);
     try {
-      const uri = await bakeRotation(previewPhoto.uri, previewPhoto.rotation);
+      const uri = await finalizePhoto(previewPhoto.originalUri, previewPhoto.rotation);
       setPhoto(previewPhoto.angle, { angle: previewPhoto.angle, uri, uploaded: false });
       setPreviewPhoto(null);
     } catch (e) {

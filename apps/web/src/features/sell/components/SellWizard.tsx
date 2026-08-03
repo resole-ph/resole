@@ -118,7 +118,13 @@ export default function SellWizard() {
   function handleSelectPhoto(angle: PhotoAngle, file: File) {
     const previewUrl = URL.createObjectURL(file);
     objectUrls.current.push(previewUrl);
-    setPhotos((prev) => ({ ...prev, [angle]: { angle, file, previewUrl } }));
+    setPhotos((prev) => {
+      const previous = prev[angle];
+      if (previous?.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previous.previewUrl);
+      }
+      return { ...prev, [angle]: { angle, file, previewUrl } };
+    });
     setPhotosDirty(true);
   }
 
