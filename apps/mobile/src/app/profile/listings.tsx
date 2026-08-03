@@ -284,9 +284,6 @@ export default function ListingsScreen() {
     ]);
   };
 
-  // Only listings already archived can be permanently deleted — the backend
-  // records this as a real deletion (deletedAt) and blocks re-listing
-  // afterward, unlike archiving which just flips isAvailable off.
   const handlePermanentDelete = (id: string) => {
     Alert.alert(
       'Delete permanently?',
@@ -302,7 +299,8 @@ export default function ListingsScreen() {
               patchCache((items) => items.filter((l) => l.id !== id));
             } catch (error) {
               console.error('Failed to delete listing:', error);
-              Alert.alert('Could not delete listing', 'Please try again.');
+              const message = error instanceof Error ? error.message : 'Please try again.';
+              Alert.alert('Could not delete listing', message);
             }
           }
         },

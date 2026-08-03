@@ -30,7 +30,6 @@ export interface Listing {
   swapFor?: string;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt?: Date;
   daysLeft?: number;
   isAvailable: boolean;
   seller: {

@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { and, eq, getTableColumns, isNull } from 'drizzle-orm';
+import { and, eq, getTableColumns } from 'drizzle-orm';
 import { cartItem, shoeListing, shoe } from '@/db/schema';
 
 export async function getCartItems(userId: string, isBuyNow: boolean) {
@@ -31,8 +31,7 @@ export async function addCartItem(userId: string, listingId: number, quantity: n
     .where(
       and(
         eq(shoeListing.id, listingId),
-        eq(shoeListing.isAvailable, true),
-        isNull(shoeListing.deletedAt)
+        eq(shoeListing.isAvailable, true)
       )
     )
     .limit(1);
