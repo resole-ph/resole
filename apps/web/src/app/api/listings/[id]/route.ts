@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import {
-  deleteUserShoeListing,
   getShoeListingById,
-  updateShoeListing
+  updateShoeListing,
+  permanentlyDeleteShoeListing,
+  ListingNotArchivedError,
+  ListingHasTransactionHistoryError
 } from '@/features/shoe/services/service';
 import type { UpdateShoeListing } from '@/features/shoe/types/types';
 import { createListingView } from '@/features/view/services/service';
@@ -183,10 +185,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'No editable listing fields provided' }, { status: 400 });
     }
 
-    if (updateData.isAvailable === true && shoeListing.deletedAt) {
-      return NextResponse.json({ error: 'Cannot re-list a deleted shoe listing' }, { status: 400 });
-    }
-
     const updatedShoeListing = await updateShoeListing(updateData, shoeListingId);
     if (!updatedShoeListing) {
       return NextResponse.json({ error: 'Failed to update shoe listing' }, { status: 400 });
@@ -223,10 +221,20 @@ export async function DELETE(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const deletedShoeListing = await deleteUserShoeListing(currentUser.user.id, shoeListingId);
-  if (!deletedShoeListing) {
+  try {
+    const deletedShoeListing = await permanentlyDeleteShoeListing(currentUser.user.id, shoeListingId);
+    if (!deletedShoeListing) {
+      return NextResponse.json({ error: 'Failed to delete shoe listing' }, { status: 400 });
+    }
+
+    return NextResponse.json({ message: deletedShoeListing });
+  } catch (error: unknown) {
+    if (error instanceof ListingNotArchivedError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    if (error instanceof ListingHasTransactionHistoryError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     return NextResponse.json({ error: 'Failed to delete shoe listing' }, { status: 400 });
   }
-
-  return NextResponse.json({ message: deletedShoeListing });
 }

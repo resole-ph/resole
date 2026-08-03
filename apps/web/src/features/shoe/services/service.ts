@@ -1,7 +1,7 @@
 import { db } from '@/config/db';
 import { sql, gt, eq, desc, asc, or, and, getTableColumns, cosineDistance, inArray, isNull, count, ilike, avg, max, gte, lte, lt } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
-import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating } from '@/db/schema';
+import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating, transaction } from '@/db/schema';
 import {
   Shoe,
   CreateShoe,
@@ -407,9 +407,8 @@ export async function getShoeListingSummaryByUserId(userId: string) {
     const rows = await db
       .select({
         total: count(shoeListing.id),
-        active: sql<number>`count(*) filter (where ${shoeListing.isAvailable} = true and ${shoeListing.deletedAt} is null)`,
-        unavailable: sql<number>`count(*) filter (where ${shoeListing.isAvailable} = false and ${shoeListing.deletedAt} is null)`,
-        deleted: sql<number>`count(*) filter (where ${shoeListing.deletedAt} is not null)`,
+        active: sql<number>`count(*) filter (where ${shoeListing.isAvailable} = true)`,
+        unavailable: sql<number>`count(*) filter (where ${shoeListing.isAvailable} = false)`,
       })
       .from(shoeListing)
       .where(eq(shoeListing.userId, userId));
@@ -420,7 +419,6 @@ export async function getShoeListingSummaryByUserId(userId: string) {
       total: Number(summary?.total ?? 0),
       active: Number(summary?.active ?? 0),
       unavailable: Number(summary?.unavailable ?? 0),
-      deleted: Number(summary?.deleted ?? 0),
     };
   } catch (error) {
     console.error("Error fetching user shoe listing summary.", error);
@@ -602,8 +600,7 @@ export async function getShoeListingByModelName(model: string) {
       .where(
         and(
           eq(shoeListing.isAvailable, true),
-          eq(shoe.model, model),
-          isNull(shoeListing.deletedAt)
+          eq(shoe.model, model)
         )
       );
     
@@ -672,22 +669,44 @@ export async function deleteShoe(id: number) {
   }
 }
 
-export async function deleteShoeListing(id: number) {
+export class ListingNotArchivedError extends Error {}
+export class ListingHasTransactionHistoryError extends Error {}
+
+export async function permanentlyDeleteShoeListing(userId: string, id: number) {
+  const [existing] = await db
+    .select({ isAvailable: shoeListing.isAvailable })
+    .from(shoeListing)
+    .where(and(eq(shoeListing.id, id), eq(shoeListing.userId, userId)));
+
+  if (!existing) {
+    return null;
+  }
+
+  if (existing.isAvailable) {
+    throw new ListingNotArchivedError('Archive the listing before deleting it permanently.');
+  }
+
+  const [existingTransaction] = await db
+    .select({ id: transaction.id })
+    .from(transaction)
+    .where(eq(transaction.listingId, id));
+
+  if (existingTransaction) {
+    throw new ListingHasTransactionHistoryError('This listing has transaction history and cannot be permanently deleted.');
+  }
+
   try {
-    await db 
+    await db
       .delete(shoeListing)
-      .where(eq(shoeListing.id, id))
+      .where(and(eq(shoeListing.id, id), eq(shoeListing.userId, userId)));
 
     return "Shoe listing successfully deleted.";
   } catch (error) {
-    console.error("Error deleting shoe listing.", error);
-    return null
+    console.error("Error permanently deleting shoe listing.", error);
+    return null;
   }
 }
 
-// Removing a listing takes it off the market (isAvailable: false) but keeps it
-// recoverable — the user can re-list it or donate it from the "Removed" tab.
-// deletedAt is reserved for a permanent purge, which isn't exposed to users yet.
 export async function deleteUserShoeListing(userId: string, id: number) {
   try {
     const result = await db
