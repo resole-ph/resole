@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
-import { OfferService } from '@/features/offer/services/offer.service';
+import { OfferService, type ExistingListingOffer } from '@/features/offer/services/offer.service';
 import { UserService } from '@/features/user/services/user.service';
 import { useSellStore } from '@/store/sell';
 import { usePreferencesStore } from '@/store/preferences';
@@ -71,6 +71,7 @@ export default function ListingDetailScreen() {
   const [isLoadingOffer, setIsLoadingOffer]       = useState(false);
   const [activePhoto, setActivePhoto]             = useState(0);
   const [currentUserId, setCurrentUserId]         = useState<string | null>(null);
+  const [existingOffer, setExistingOffer]         = useState<ExistingListingOffer | null>(null);
   const [isSaved, setIsSaved]                     = useState(false);
 
   const resetSell = useSellStore((s) => s.reset);
@@ -80,13 +81,30 @@ export default function ListingDetailScreen() {
     const loadData = async () => {
       setIsLoadingListing(true);
       try {
-        const fetchedListing = await ListingService.getListingById(id, !!isView);
-        setListing(fetchedListing);
+        const [fetchedListing, currentUser] = await Promise.all([
+          ListingService.getListingById(id, !!isView),
+          UserService.getUserInfo().catch((error) => {
+            console.error('Failed to load current user:', error);
+            return null;
+          }),
+        ]);
 
-        if (fetchedListing && fetchedListing.model) {
-          const similarData = await ListingService.getSimilarListings(fetchedListing.model);
-          setSimilarListings(similarData);
-        }
+        const [similarData, existingOfferData] = await Promise.all([
+          fetchedListing?.model
+            ? ListingService.getSimilarListings(fetchedListing.model)
+            : Promise.resolve(null),
+          currentUser && fetchedListing?.seller.id !== currentUser.id
+            ? OfferService.getExistingForListing(id).catch((error) => {
+                console.error('Failed to check existing offer:', error);
+                return null;
+              })
+            : Promise.resolve(null),
+        ]);
+
+        setCurrentUserId(currentUser?.id ?? null);
+        setExistingOffer(existingOfferData);
+        setSimilarListings(similarData);
+        setListing(fetchedListing);
       } finally {
         setIsLoadingListing(false);
       }
@@ -94,9 +112,6 @@ export default function ListingDetailScreen() {
 
     loadData();
     
-    UserService.getUserInfo()
-      .then((user) => setCurrentUserId(user.id))
-      .catch((error) => console.error('Failed to load current user:', error));
     ListingService.getFavouriteListingIds()
       .then((ids) => setIsSaved(ids.includes(id)))
       .catch((error) => console.error('Failed to load saved listings:', error));
@@ -105,6 +120,11 @@ export default function ListingDetailScreen() {
   useEffect(() => {
     if (autoActionHandled || !listing || !action) return;
     if (currentUserId && listing.seller.id === currentUserId) {
+      setAutoActionHandled(true);
+      return;
+    }
+    if (existingOffer) {
+      handleExistingOffer();
       setAutoActionHandled(true);
       return;
     }
@@ -119,7 +139,7 @@ export default function ListingDetailScreen() {
       handleSwap();
     }
     setAutoActionHandled(true);
-  }, [listing, action, currentUserId, autoActionHandled]);
+  }, [listing, action, currentUserId, existingOffer, autoActionHandled]);
 
   if (isLoadingListing) {
     return (
@@ -189,6 +209,22 @@ export default function ListingDetailScreen() {
     if (!isOwnListing) return;
     resetSell();
     router.push({ pathname: '/profile/edit-listing', params: { id: listing!.id } });
+  }
+
+  function handleExistingOffer() {
+    if (!existingOffer || !listing) return;
+
+    router.push({
+      pathname: '/inbox/[id]',
+      params: {
+        id: `o${existingOffer.conversationId}`,
+        sender: listing.seller.name,
+        otherUserId: listing.seller.id,
+        avatarInitial: listing.seller.name.charAt(0).toUpperCase() || '?',
+        avatarColor: listing.seller.avatarColor ?? '',
+        isSystem: '0',
+      },
+    } as any);
   }
 
   function handleSwap() {
@@ -404,36 +440,45 @@ export default function ListingDetailScreen() {
           </View>
         ) : (
           <View className="flex-row gap-3">
-            
-            {canOffer && (
+            {existingOffer ? (
               <ActionButton
-                label="Make Offer"
-                icon="pricetag-outline"
+                label="Offer Sent"
+                icon="chatbubble-ellipses-outline"
                 color="#D97706"
-                onPress={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
-                disabled={isLoadingOffer}
+                onPress={handleExistingOffer}
               />
-            )}
+            ) : (
+              <>
+                {canOffer && (
+                  <ActionButton
+                    label="Make Offer"
+                    icon="pricetag-outline"
+                    color="#D97706"
+                    onPress={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
+                    disabled={isLoadingOffer}
+                  />
+                )}
 
-            {canSwap && (
-              <ActionButton
-                label="Offer Swap"
-                icon="swap-horizontal"
-                color="#7C3AED"
-                onPress={handleSwap}
-                disabled={isLoadingOffer}
-              />
-            )}
+                {canSwap && (
+                  <ActionButton
+                    label="Offer Swap"
+                    icon="swap-horizontal"
+                    color="#7C3AED"
+                    onPress={handleSwap}
+                    disabled={isLoadingOffer}
+                  />
+                )}
 
-            {!canOffer && !canSwap && (
-              <ActionButton
-                label="Unavailable"
-                icon="pricetag-outline"
-                color="#4E4D4B"
-                disabled={true}
-              />
+                {!canOffer && !canSwap && (
+                  <ActionButton
+                    label="Unavailable"
+                    icon="pricetag-outline"
+                    color="#4E4D4B"
+                    disabled={true}
+                  />
+                )}
+              </>
             )}
-
           </View>
         )}
 
