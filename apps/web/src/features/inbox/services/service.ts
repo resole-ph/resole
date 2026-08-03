@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
 import { and, or, asc, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
-import { conversation, message, transaction, user } from '@/db/schema';
+import { conversation, message, shoeListing, transaction, user } from '@/db/schema';
 import { Conversation, CreateConversation, Message, CreateMessage } from '../types/types';
 import { alias } from 'drizzle-orm/pg-core';
 
@@ -89,6 +89,45 @@ export async function getConversationBetweenUsers(userAId: string, userBId: stri
     return result[0] ?? null;
   } catch (error) {
     console.error("Error fetching conversation between users.", error);
+    return null;
+  }
+}
+
+export async function getOfferConversationForListing(userId: string, listingId: number) {
+  try {
+    const result = await db
+      .select({
+        transactionId: transaction.id,
+        type: transaction.type,
+        conversationId: conversation.id,
+      })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .innerJoin(
+        conversation,
+        or(
+          and(
+            eq(conversation.listerId, shoeListing.userId),
+            eq(conversation.recipientId, userId),
+          ),
+          and(
+            eq(conversation.listerId, userId),
+            eq(conversation.recipientId, shoeListing.userId),
+          ),
+        ),
+      )
+      .where(
+        and(
+          eq(transaction.listingId, listingId),
+          eq(transaction.recipientId, userId),
+        ),
+      )
+      .orderBy(desc(transaction.createdAt))
+      .limit(1);
+
+    return result[0] ?? null;
+  } catch (error) {
+    console.error('Error fetching offer conversation for listing.', error);
     return null;
   }
 }

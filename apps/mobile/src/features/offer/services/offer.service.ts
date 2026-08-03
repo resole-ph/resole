@@ -1,6 +1,21 @@
 import { apiFetch } from '@/lib/api-client';
 
+export type ExistingListingOffer = {
+  transactionId: number;
+  type: 'sale' | 'swap' | 'donate';
+  conversationId: number;
+};
+
 export const OfferService = {
+  async getExistingForListing(id: number): Promise<ExistingListingOffer | null> {
+    const { offer } = await apiFetch<{ offer: ExistingListingOffer | null }>(
+      `api/listings/${id}/offer`,
+      { method: 'GET' },
+    );
+
+    return offer;
+  },
+
   async createSwap(id: number, listings: number[], message: string) {
     const transaction = await apiFetch<any>(`api/listings/${id}/swap-offers`, {
       method: 'POST',
