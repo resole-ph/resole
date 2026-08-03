@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { and, or, asc, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
+import { and, or, ne, asc, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
 import { conversation, message, shoeListing, transaction, user } from '@/db/schema';
 import { Conversation, CreateConversation, Message, CreateMessage } from '../types/types';
 import { alias } from 'drizzle-orm/pg-core';
@@ -120,6 +120,7 @@ export async function getOfferConversationForListing(userId: string, listingId: 
         and(
           eq(transaction.listingId, listingId),
           eq(transaction.recipientId, userId),
+          ne(transaction.isAccepted, false)
         ),
       )
       .orderBy(desc(transaction.createdAt))
