@@ -6,7 +6,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import SellStepHeader from '../components/SellStepHeader';
 import StepFooter from '../components/StepFooter';
 import PhotoGrid from '../components/PhotoGrid';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useSellFlow } from '../hooks/useSellFlow';
 import { sellService } from '../services/sell.service';
 import type { PhotoAngle, SellPhoto } from '../types/sell.types';
@@ -43,7 +43,7 @@ export default function PhotoUploadContainer() {
   const { photos, setPhoto, allPhotosUploaded, setStep, isAnalyzed, photosDirty, setAnalysisSkipped } = useSellFlow();
   const isEditingUnchanged = isAnalyzed && !photosDirty;
   const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
-  const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle } | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; angle: PhotoAngle; rotation: 0 | 90 | 180 | 270 } | null>(null);
   const [queuedAction, setQueuedAction] = useState<{ type: 'camera' | 'library'; angle: PhotoAngle } | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -71,7 +71,7 @@ export default function PhotoUploadContainer() {
         const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
         if (!result.canceled && result.assets[0]) {
           const uri = await compressForUpload(result.assets[0].uri);
-          setPreviewPhoto({ uri, angle });
+          setPreviewPhoto({ uri, angle, rotation: 0 });
         }
       } else {
         const { granted, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -91,7 +91,7 @@ export default function PhotoUploadContainer() {
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
         if (!result.canceled && result.assets[0]) {
           const uri = await compressForUpload(result.assets[0].uri);
-          setPreviewPhoto({ uri, angle });
+          setPreviewPhoto({ uri, angle, rotation: 0 });
         }
       }
     } catch (e) {
@@ -138,6 +138,15 @@ export default function PhotoUploadContainer() {
 
   function handleRetakePhoto() {
     setPreviewPhoto(null);
+  }
+
+  function handleRotate(direction: 'cw' | 'ccw') {
+    setPreviewPhoto((prev) => {
+      if (!prev) return prev;
+      const delta = direction === 'cw' ? 90 : -90;
+      const rotation = (((prev.rotation + delta) % 360) + 360) % 360 as 0 | 90 | 180 | 270;
+      return { ...prev, rotation };
+    });
   }
 
   async function handleAnalyze() {
@@ -317,14 +326,33 @@ export default function PhotoUploadContainer() {
                   height: previewSize,
                   borderRadius: 16,
                   overflow: 'hidden',
-                  marginBottom: 32,
+                  marginBottom: 16,
                 }}
               >
                 <Image
                   source={{ uri: previewPhoto.uri }}
-                  style={{ width: previewSize, height: previewSize }}
-                  resizeMode="cover"
+                  style={{
+                    width: previewSize,
+                    height: previewSize,
+                    transform: [{ rotate: `${previewPhoto.rotation}deg` }],
+                  }}
+                  resizeMode="contain"
                 />
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
+                <TouchableOpacity
+                  onPress={() => handleRotate('ccw')}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <MaterialIcons name="rotate-left" size={22} color="#ffffff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleRotate('cw')}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <MaterialIcons name="rotate-right" size={22} color="#ffffff" />
+                </TouchableOpacity>
               </View>
 
               <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
