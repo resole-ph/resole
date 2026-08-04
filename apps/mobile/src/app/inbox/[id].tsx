@@ -345,7 +345,7 @@ export default function ConversationScreen() {
     if (!ratingTarget) return;
     try {
       setIsSubmittingRating(true);
-      await TransactionService.submitRating(ratingTarget.transactionId, rating, comment, ratingTarget.raterRole);
+      await TransactionService.submitRating(ratingTarget.transactionId, rating, ratingTarget.rateeId, comment, ratingTarget.raterRole);
       setOffersById((prev) => ({
         ...prev,
         [ratingTarget.transactionId]: { ...prev[ratingTarget.transactionId], isRated: true },

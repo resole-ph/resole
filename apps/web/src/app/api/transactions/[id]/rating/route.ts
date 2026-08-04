@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getTransactionById } from '@/features/transaction/services/service';
 import { createRating } from '@/features/user-action/services/service';
+import { NEXT_BODY_SUFFIX } from 'next/dist/lib/constants';
 
 function parseTransactionId(rawId: string) {
   const transactionId = Number.parseInt(rawId, 10);
@@ -48,6 +49,10 @@ export async function POST(
       return NextResponse.json({ error: 'No rating provided' }, { status: 400 });
     }
 
+    if (!body.rateeId) {
+      return NextResponse.json({ error: 'No ratee provided' }, { status: 400 });
+    }
+
     if (typeof body.rating !== 'number' || ![1, 2, 3, 4, 5].includes(body.rating)) {
       return NextResponse.json({ error: 'Invalid rating' }, { status: 400 });
     }
@@ -55,7 +60,7 @@ export async function POST(
     const rating = await createRating({
       rating: body.rating,
       raterId: currentUser.user.id,
-      rateeId: transaction.listing.userId,
+      rateeId: body.rating,
       transactionId: transactionId,
       comment: body.comment ?? null,
       raterRole: body.raterRole ?? null
