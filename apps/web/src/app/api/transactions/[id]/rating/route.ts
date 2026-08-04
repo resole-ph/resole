@@ -2,16 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getTransactionById } from '@/features/transaction/services/service';
 import { createRating } from '@/features/user-action/services/service';
-
-function parseTransactionId(rawId: string) {
-  const transactionId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(transactionId) || transactionId <= 0) {
-    return null;
-  }
-
-  return transactionId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function POST(
   request: Request, 
@@ -24,7 +15,7 @@ export async function POST(
   }
 
   const { id } = await context.params;
-  const transactionId = parseTransactionId(id);
+  const transactionId = parsePositiveInt(id);
   if (!transactionId) {
     return NextResponse.json({ error: 'Invalid transaction id' }, { status: 400 });
   }

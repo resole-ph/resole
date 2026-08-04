@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,7 +46,7 @@ function NavTab({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="flex-1 items-center justify-center py-2.5"
       onPress={onPress}
       activeOpacity={0.7}
@@ -62,7 +63,7 @@ function NavTab({
       >
         {tab.label}
       </Text>
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -101,7 +102,7 @@ export default function BottomNav({ activeTab: customActiveTab, onTabPress, onFa
 
         {/* Centre FAB */}
         <View className="flex-1 items-center justify-center" style={{ marginTop: -26 }}>
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={onFabPress}
             style={{
               width: 56, height: 56, borderRadius: 28,
@@ -116,7 +117,7 @@ export default function BottomNav({ activeTab: customActiveTab, onTabPress, onFa
             activeOpacity={0.85}
           >
             <Ionicons name="add" size={28} color="#fff" />
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         </View>
 
         <NavTab tab={TABS[2]} isActive={activeTab === 'rewards'} onPress={() => handleTabPress(TABS[2])} />

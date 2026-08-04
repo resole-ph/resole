@@ -1,4 +1,5 @@
-import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Image, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
@@ -49,7 +50,7 @@ function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: number) => 
       </View>
 
       {/* Heart button */}
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         className="absolute top-5 right-5 w-7 h-7 rounded-full bg-white items-center justify-center"
         activeOpacity={0.7}
         onPress={() => onToggle(item.id)}
@@ -66,7 +67,7 @@ function FavCard({ item, onToggle }: { item: FavItem; onToggle: (id: number) => 
           size={14}
           color={item.saved ? '#EF4444' : '#9CA3AF'}
         />
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
 
       <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>
         {item.brand}

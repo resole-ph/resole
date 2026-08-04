@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { Transaction, TxTab } from '@/features/transaction/types/transaction.types';
@@ -87,7 +88,7 @@ export default function TransactionsScreen() {
       {/* Tab switcher */}
       <View className="flex-row mx-5 bg-gray-100 rounded-2xl p-1 mb-4">
         {(['sales', 'swaps', 'donations'] as TxTab[]).map((t) => (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             key={t}
             className={`flex-1 py-2 rounded-xl items-center ${tab === t ? 'bg-white' : ''}`}
             activeOpacity={0.7}
@@ -101,7 +102,7 @@ export default function TransactionsScreen() {
             >
               {t}
             </Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         ))}
       </View>
 

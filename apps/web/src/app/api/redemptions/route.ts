@@ -5,16 +5,7 @@ import {
   redeemSaleCoins,
   redeemVoucher,
 } from '@/features/transaction/services/service';
-
-function parsePositiveInteger(value: unknown): number | null {
-  const parsedValue = typeof value === 'number'
-    ? value
-    : typeof value === 'string'
-      ? Number.parseInt(value, 10)
-      : Number.NaN;
-
-  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 function getStatusForRedemptionError(message: string) {
   switch (message) {
@@ -47,9 +38,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const saleId = parsePositiveInteger(body.saleId);
-  const voucherId = parsePositiveInteger(body.voucherId ?? body.rewardId ?? body.redeemOptionId);
-  const coinsRedeemed = parsePositiveInteger(body.coinsRedeemed ?? body.coinCost ?? body.cost);
+  const saleId = parsePositiveInt(body.saleId);
+  const voucherId = parsePositiveInt(body.voucherId ?? body.rewardId ?? body.redeemOptionId);
+  const coinsRedeemed = parsePositiveInt(body.coinsRedeemed ?? body.coinCost ?? body.cost);
 
   if (saleId && voucherId) {
     return NextResponse.json({ error: 'Provide either saleId or voucherId, not both' }, { status: 400 });

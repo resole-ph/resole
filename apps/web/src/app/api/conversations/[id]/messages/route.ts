@@ -2,16 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { createMessage, getConversationById } from '@/features/inbox/services/service';
 import { createNotification } from '@/features/notifications/services/service';
-
-function parseConversationId(rawId: string) {
-  const conversationId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(conversationId) || conversationId <= 0) {
-    return null;
-  }
-
-  return conversationId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function POST(
   request: Request, 
@@ -24,7 +15,7 @@ export async function POST(
   }
 
   const { id } = await context.params;
-  const conversationId = parseConversationId(id);
+  const conversationId = parsePositiveInt(id);
   if (!conversationId) {
     return NextResponse.json({ error: 'Invalid conversation id' }, { status: 400 });
   }

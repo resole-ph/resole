@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, Modal } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import type { AiAnalysisResult } from '../types/sell.types';
 import { usePreferencesStore } from '@/store/preferences';
@@ -108,7 +109,7 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
             <Text className="font-body-md text-body-md text-on-surface">
               {formatSize(Number(result.size), sizeSystem)}
             </Text>
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               onPress={() => setShowSizeMenu(true)}
               activeOpacity={0.7}
               className="flex-row items-center gap-0.5 rounded-full px-2 py-1 bg-secondary-container"
@@ -117,7 +118,7 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
                 {SIZE_SYSTEM_LABELS[sizeSystem]}
               </Text>
               <Ionicons name="chevron-down" size={12} color="#0054d3" />
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           </View>
         </View>
 
@@ -140,7 +141,7 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
 
       {/* Size system picker */}
       <Modal visible={showSizeMenu} transparent animationType="slide" onRequestClose={() => setShowSizeMenu(false)}>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={() => setShowSizeMenu(false)}
@@ -151,7 +152,7 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
             Shoe size system
           </Text>
           {SIZE_SYSTEMS.map((system) => (
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               key={system}
               className="flex-row items-center px-5 py-3.5"
               activeOpacity={0.7}
@@ -167,7 +168,7 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
                 {SIZE_SYSTEM_LABELS[system]}
               </Text>
               {system === sizeSystem && <Ionicons name="checkmark" size={18} color="#2563EB" />}
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           ))}
         </View>
       </Modal>

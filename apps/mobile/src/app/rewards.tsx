@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,7 +80,7 @@ function RedeemCard({ option, balance }: { option: RedeemOption; balance: number
             {option.cost} pts
           </Text>
         </View>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{
             borderRadius: 10,
             paddingHorizontal: 14,
@@ -103,7 +104,7 @@ function RedeemCard({ option, balance }: { option: RedeemOption; balance: number
           >
             Redeem
           </Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     </View>
   );

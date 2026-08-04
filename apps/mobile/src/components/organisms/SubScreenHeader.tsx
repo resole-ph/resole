@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -17,7 +18,7 @@ export default function SubScreenHeader({ title, rightElement }: SubScreenHeader
       className="flex-row items-center bg-gray-50 px-5 pb-4"
       style={{ paddingTop: insets.top + 8 }}
     >
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         className="w-10 h-10 rounded-full bg-white items-center justify-center mr-3"
         activeOpacity={0.7}
         onPress={() => router.back()}
@@ -30,7 +31,7 @@ export default function SubScreenHeader({ title, rightElement }: SubScreenHeader
         }}
       >
         <Ionicons name="chevron-back" size={20} color="#6B7280" />
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
       <Text className="flex-1 text-xl font-semibold text-gray-900">{title}</Text>
       {rightElement}
     </View>

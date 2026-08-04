@@ -10,16 +10,7 @@ import {
 import type { UpdateShoeListing } from '@/features/shoe/types/types';
 import { createListingView } from '@/features/view/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
-
-function parseShoeListingId(rawId: string) {
-  const shoeListingId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(shoeListingId) || shoeListingId <= 0) {
-    return null;
-  }
-
-  return shoeListingId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function GET(
   request: Request, 
@@ -32,7 +23,7 @@ export async function GET(
   }
 
   const { id } = await context.params;
-  const shoeListingId = parseShoeListingId(id);
+  const shoeListingId = parsePositiveInt(id);
   if (!shoeListingId) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
@@ -163,7 +154,7 @@ export async function PATCH(
   }
 
   const { id } = await context.params;
-  const shoeListingId = parseShoeListingId(id);
+  const shoeListingId = parsePositiveInt(id);
   if (!shoeListingId) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
@@ -207,7 +198,7 @@ export async function DELETE(
   }
 
   const { id } = await context.params;
-  const shoeListingId = parseShoeListingId(id);
+  const shoeListingId = parsePositiveInt(id);
   if (!shoeListingId) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }

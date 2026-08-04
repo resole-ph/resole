@@ -5,23 +5,14 @@ import { getTransactionsWithDetailsByIds } from '@/features/transaction/services
 import { getRatedTransactions } from '@/features/user-action/services/service';
 import { getShoeListingsByIds } from '@/features/shoe/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
-
-function parseConversationId(rawId: string) {
-  const conversationId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(conversationId) || conversationId <= 0) {
-    return null;
-  }
-
-  return conversationId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function GET(
   request: Request, 
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const conversationId = parseConversationId(id);
+  const conversationId = parsePositiveInt(id);
   if (!conversationId) {
     return NextResponse.json({ error: 'Invalid conversation id' }, { status: 400 });
   }

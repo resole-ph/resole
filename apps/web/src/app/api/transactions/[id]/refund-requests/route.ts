@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getTransactionById } from '@/features/transaction/services/service';
 import { createTicket, getActiveTransactionTicket } from '@/features/ticket/services/service';
+import { parsePositiveInt } from '@/lib/id';
 
 const REFUND_REQUEST_REASONS = [
   'item_not_received',
@@ -11,11 +12,6 @@ const REFUND_REQUEST_REASONS = [
   'changed_mind',
   'other',
 ] as const;
-
-function parsePositiveInt(rawId: string) {
-  const id = Number.parseInt(rawId, 10);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
 
 function getTextField(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;

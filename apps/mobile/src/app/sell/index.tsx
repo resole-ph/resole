@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSellFlow } from '@/features/sell/hooks/useSellFlow';
 import PhotoUploadContainer from '@/features/sell/containers/PhotoUploadContainer';
@@ -17,7 +18,7 @@ function DevNextButton() {
   if (isLastStep) return null;
 
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       onPress={devAdvance}
       activeOpacity={0.8}
       style={{
@@ -37,7 +38,7 @@ function DevNextButton() {
       }}
     >
       <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>DEV: Next →</Text>
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 

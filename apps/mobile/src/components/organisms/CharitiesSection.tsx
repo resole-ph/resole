@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Image, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Charity } from '@/features/charity/types/charity.types';
 import DonateSheet from './DonateSheet';
 
@@ -41,7 +42,7 @@ export default function CharitiesSection() {
         contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
       >
         {CHARITIES.map((charity, index) => (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             key={charity.id}
             onPress={() => setDonateCharity(charity)}
             activeOpacity={0.8}
@@ -73,7 +74,7 @@ export default function CharitiesSection() {
             <Text style={{ fontSize: 11, color: '#9CA3AF' }} numberOfLines={1}>
               {charity.cause}
             </Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         ))}
       </ScrollView>
 

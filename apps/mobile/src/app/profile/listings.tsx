@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, Image, ScrollView, Alert, Modal, ActivityIndicator } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -65,7 +66,7 @@ function ActiveCard({
 }) {
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="bg-white rounded-2xl p-4 mb-3 mx-5 flex-row items-center"
       style={CARD_SHADOW}
       activeOpacity={0.85}
@@ -91,22 +92,22 @@ function ActiveCard({
       </View>
 
       <View className="flex-row items-center gap-2">
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="w-9 h-9 rounded-xl bg-gray-50 items-center justify-center"
           activeOpacity={0.7}
           onPress={(e) => { e.stopPropagation(); onEdit(); }}
         >
           <Ionicons name="create-outline" size={18} color="#6B7280" />
-        </TouchableOpacity>
-        <TouchableOpacity
+        </GuardedTouchableOpacity>
+        <GuardedTouchableOpacity
           className="w-9 h-9 rounded-xl bg-gray-50 items-center justify-center"
           activeOpacity={0.7}
           onPress={(e) => { e.stopPropagation(); onArchive(); }}
         >
           <Ionicons name="archive-outline" size={18} color="#6B7280" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -146,7 +147,7 @@ function PendingCard({
       </View>
 
       <View className="flex-row gap-2 mb-2">
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="flex-1 flex-row items-center justify-center rounded-xl py-2.5"
           style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
           activeOpacity={0.8}
@@ -156,8 +157,8 @@ function PendingCard({
           <Text style={{ color: '#2563EB', fontSize: 12.5, fontWeight: '700', marginLeft: 5 }}>
             Re-list
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </GuardedTouchableOpacity>
+        <GuardedTouchableOpacity
           className="flex-1 flex-row items-center justify-center rounded-xl py-2.5"
           style={{ backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }}
           activeOpacity={0.8}
@@ -167,10 +168,10 @@ function PendingCard({
           <Text style={{ color: '#16A34A', fontSize: 12.5, fontWeight: '700', marginLeft: 5 }}>
             Donate
           </Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
 
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         className="flex-row items-center justify-center rounded-xl py-2.5"
         style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' }}
         activeOpacity={0.8}
@@ -180,7 +181,7 @@ function PendingCard({
         <Text style={{ color: '#EF4444', fontSize: 12.5, fontWeight: '700', marginLeft: 5 }}>
           Delete Permanently
         </Text>
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
     </View>
   );
 }
@@ -370,7 +371,7 @@ export default function ListingsScreen() {
       {/* Tab switcher */}
       <View className="flex-row mx-5 bg-gray-100 rounded-2xl p-1 mb-4">
         {(['active', 'pending'] as Tab[]).map((t) => (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             key={t}
             className={`flex-1 py-2 rounded-xl items-center ${tab === t ? 'bg-white' : ''}`}
             activeOpacity={0.7}
@@ -387,7 +388,7 @@ export default function ListingsScreen() {
                 ({counts[t]})
               </Text>
             </Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         ))}
       </View>
 
@@ -396,7 +397,7 @@ export default function ListingsScreen() {
           <Text style={{ color: '#374151', fontWeight: '600' }}>{counts[tab]}</Text>
           {' listings found'}
         </Text>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="flex-row items-center rounded-xl px-3 py-1.5 bg-white mr-2"
           style={CARD_SHADOW}
           onPress={() => setFilterVisible(true)}
@@ -404,8 +405,8 @@ export default function ListingsScreen() {
         >
           <Ionicons name="options-outline" size={13} color="#2563EB" />
           <Text style={{ color: '#2563EB', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Filter</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </GuardedTouchableOpacity>
+        <GuardedTouchableOpacity
           className="flex-row items-center rounded-xl px-3 py-1.5 bg-white"
           style={CARD_SHADOW}
           onPress={() => setSortVisible(true)}
@@ -413,7 +414,7 @@ export default function ListingsScreen() {
         >
           <Ionicons name="swap-vertical-outline" size={13} color="#6B7280" />
           <Text style={{ color: '#6B7280', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Sort</Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
@@ -471,9 +472,9 @@ export default function ListingsScreen() {
           <View className="bg-white rounded-t-3xl p-5" style={{ maxHeight: '70%' }}>
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-gray-900 font-bold text-base">Choose a charity</Text>
-              <TouchableOpacity onPress={() => setDonateTargetId(null)} activeOpacity={0.7}>
+              <GuardedTouchableOpacity onPress={() => setDonateTargetId(null)} activeOpacity={0.7}>
                 <Ionicons name="close" size={22} color="#6B7280" />
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             </View>
 
             {charitiesLoading ? (
@@ -481,7 +482,7 @@ export default function ListingsScreen() {
             ) : (
               <ScrollView showsVerticalScrollIndicator={false}>
                 {charities.map((charity) => (
-                  <TouchableOpacity
+                  <GuardedTouchableOpacity
                     key={charity.id}
                     className="flex-row items-center justify-between rounded-xl px-4 py-3 mb-2 bg-gray-50"
                     activeOpacity={0.7}
@@ -497,7 +498,7 @@ export default function ListingsScreen() {
                     ) : (
                       <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
                     )}
-                  </TouchableOpacity>
+                  </GuardedTouchableOpacity>
                 ))}
               </ScrollView>
             )}

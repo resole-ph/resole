@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import ListingCard, { Listing } from '@/components/molecules/ListingCard';
@@ -133,7 +134,7 @@ export default function BrowseFeed({
               ? <><Text style={{ color: '#374151', fontWeight: '600' }}>{totalCount}</Text>{' products found'}</>
               : null}
           </Text>
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             className="flex-row items-center rounded-xl px-3 py-1.5 bg-white mr-2"
             style={CARD_SHADOW}
             onPress={onFilter}
@@ -141,8 +142,8 @@ export default function BrowseFeed({
           >
             <Ionicons name="options-outline" size={13} color="#2563EB" />
             <Text style={{ color: '#2563EB', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Filter</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </GuardedTouchableOpacity>
+          <GuardedTouchableOpacity
             className="flex-row items-center rounded-xl px-3 py-1.5 bg-white"
             style={CARD_SHADOW}
             onPress={onSort}
@@ -150,7 +151,7 @@ export default function BrowseFeed({
           >
             <Ionicons name="swap-vertical-outline" size={13} color="#6B7280" />
             <Text style={{ color: '#6B7280', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Sort</Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
           {filterBarRight}
         </View>
       )}
@@ -182,14 +183,14 @@ export default function BrowseFeed({
             ))}
           </View>
           {onViewAll && (
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               onPress={onViewAll}
               activeOpacity={0.7}
               className="flex-row items-center justify-center mt-2 mx-5 py-3 rounded-xl bg-white border border-gray-200"
             >
               <Text className="text-blue-600 text-sm font-medium mr-1">View all</Text>
               <Ionicons name="chevron-forward" size={14} color="#2563EB" />
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           )}
         </>
       )}

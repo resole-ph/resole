@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SellStepHeader from '../components/SellStepHeader';
@@ -324,7 +325,7 @@ export default function EditListingContainer() {
                 else updateFormField('mode', otherChecked ? 'both' : type);
               }
               return (
-                <TouchableOpacity
+                <GuardedTouchableOpacity
                   key={type}
                   onPress={toggle}
                   activeOpacity={0.7}
@@ -353,7 +354,7 @@ export default function EditListingContainer() {
                     <Text className="font-body-md text-body-md text-on-surface">{label}</Text>
                     <Text className="font-label-md text-label-md text-on-surface-variant">{subtitle}</Text>
                   </View>
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
               );
             })}
           </View>
