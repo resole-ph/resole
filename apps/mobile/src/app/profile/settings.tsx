@@ -1,12 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { authService } from '@/features/auth/services/auth.service';
+import { UserService } from '@/features/user/services/user.service';
 import { useUpdateSizeSystem, useUserSettings } from '@/features/user/queries/user.queries';
 import { useOnboardingStore } from '@/store/onboarding';
 import { usePreferencesStore } from '@/store/preferences';
+import { isStrongPassword, PASSWORD_REQUIREMENT_MESSAGE } from '@/features/auth/validation';
 import {
   SIZE_SYSTEMS,
   SIZE_SYSTEM_LABELS,
@@ -33,6 +36,17 @@ const ACCOUNT_FIELDS = [
   { id: 'classification', label: 'Classification',  value: '', icon: 'male-female-outline' as const },
 ];
 
+// TODO: replace with the real enums/labels from size-conversion.ts if it
+// already exports something for these — don't want two sources of truth.
+const UNIT_OPTIONS = ['us', 'uk', 'eu', 'cm'];
+const CLASSIFICATION_OPTIONS = ["men", "women"];
+
+function fieldOptions(fieldId: string): string[] | null {
+  if (fieldId === 'unit') return UNIT_OPTIONS;
+  if (fieldId === 'classification') return CLASSIFICATION_OPTIONS;
+  return null;
+}
+
 function SectionTitle({ title }: { title: string }) {
   return (
     <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wide px-5 mt-5 mb-2">
@@ -41,11 +55,18 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
-function AccountRow({ field }: { field: (typeof ACCOUNT_FIELDS)[number] }) {
+function AccountRow({
+  field,
+  onPress,
+}: {
+  field: (typeof ACCOUNT_FIELDS)[number];
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity
       className="flex-row items-center px-4 py-3.5 border-b border-gray-50"
       activeOpacity={0.7}
+      onPress={onPress}
     >
       <View className="w-8 h-8 rounded-xl bg-blue-50 items-center justify-center mr-3">
         <Ionicons name={field.icon} size={16} color="#2563EB" />
@@ -56,6 +77,251 @@ function AccountRow({ field }: { field: (typeof ACCOUNT_FIELDS)[number] }) {
       </View>
       <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
     </TouchableOpacity>
+  );
+}
+
+// Shared bottom sheet for editing a single account field. Renders a picker
+// list for fields with options (unit, classification) and a text input for
+// everything else. Deliberately never used for the Password row — changing a
+// password should go through its own flow (current password verification,
+// its own service call), not this generic "type a value, save" sheet.
+function EditFieldModal({
+  visible,
+  field,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  field: (typeof ACCOUNT_FIELDS)[number] | null;
+  onClose: () => void;
+  onSave: (id: string, value: string) => Promise<void>;
+}) {
+  const insets = useSafeAreaInsets();
+  const [value, setValue] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (field) setValue(field.value);
+  }, [field]);
+
+  if (!field) return null;
+
+  const options = fieldOptions(field.id);
+
+  const handleSave = async (nextValue: string) => {
+    setSaving(true);
+    try {
+      await onSave(field.id, nextValue);
+      onClose();
+      Alert.alert(
+        'Success!', 
+        `Successfully saved changes to ${field.label.toLowerCase()}.`
+      );
+    } catch {
+      // Parent already surfaces an Alert on failure — keep the sheet open
+      // so the user can retry instead of losing what they typed.
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={onClose} />
+        <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: Math.max(insets.bottom, 24) }}>
+          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 20 }} />
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
+            Edit {field.label}
+          </Text>
+
+          {options ? (
+            <View style={{ marginBottom: 8 }}>
+              {options.map((option) => {
+                const selected = option === value;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    className="flex-row items-center py-3.5"
+                    activeOpacity={0.7}
+                    disabled={saving}
+                    onPress={() => handleSave(option)}
+                  >
+                    <Text className="flex-1 text-gray-900 text-sm" style={{ fontWeight: selected ? '700' : '400' }}>
+                      {option}
+                    </Text>
+                    {selected && <Ionicons name="checkmark" size={18} color="#2563EB" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : (
+            <>
+              <TextInput
+                value={value}
+                onChangeText={setValue}
+                placeholder={field.label}
+                placeholderTextColor="#9CA3AF"
+                autoFocus
+                style={{ backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, fontSize: 15, color: '#111827', borderWidth: 1.5, borderColor: '#E5E7EB', marginBottom: 20 }}
+              />
+              <TouchableOpacity
+                onPress={() => handleSave(value)}
+                disabled={saving || !value.trim()}
+                activeOpacity={0.85}
+                style={{
+                  backgroundColor: saving || !value.trim() ? '#E5E7EB' : '#2563EB',
+                  borderRadius: 18,
+                  paddingVertical: 16,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: saving || !value.trim() ? '#9CA3AF' : '#fff', fontSize: 16, fontWeight: '700' }}>
+                  {saving ? 'Saving...' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+// Password change gets its own sheet with three fields and client-side
+// validation, rather than reusing EditFieldModal — a password needs the
+// current password re-entered plus a confirmation, not a single value swap.
+function PasswordEditModal({
+  visible,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSave: (currentPassword: string, newPassword: string) => Promise<void>;
+}) {
+  const insets = useSafeAreaInsets();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resetAndClose = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setError(null);
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    if (!currentPassword) {
+      setError('Enter your current password.');
+      return;
+    }
+    if (!isStrongPassword(newPassword)) {
+      setError(PASSWORD_REQUIREMENT_MESSAGE);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New password and confirmation do not match.');
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setError('New password must be different from your current password.');
+      return;
+    }
+
+    setError(null);
+    setSaving(true);
+    try {
+      await onSave(currentPassword, newPassword);
+      resetAndClose();
+      Alert.alert(
+        'Success!', 
+        `Successfully changed password.`
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update password. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isValid = !!currentPassword && newPassword.length >= 8 && newPassword === confirmPassword;
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={resetAndClose}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={resetAndClose} />
+        <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: Math.max(insets.bottom, 24) }}>
+          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 20 }} />
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
+            Change password
+          </Text>
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}>Current password</Text>
+          <TextInput
+            value={currentPassword}
+            onChangeText={(v) => { setCurrentPassword(v); setError(null); }}
+            placeholder="Current password"
+            placeholderTextColor="#9CA3AF"
+            secureTextEntry
+            autoCapitalize="none"
+            style={{ backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, fontSize: 15, color: '#111827', borderWidth: 1.5, borderColor: '#E5E7EB', marginBottom: 16 }}
+          />
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}>New password</Text>
+          <TextInput
+            value={newPassword}
+            onChangeText={(v) => { setNewPassword(v); setError(null); }}
+            placeholder="At least 8 characters"
+            placeholderTextColor="#9CA3AF"
+            secureTextEntry
+            autoCapitalize="none"
+            style={{ backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, fontSize: 15, color: '#111827', borderWidth: 1.5, borderColor: '#E5E7EB', marginBottom: 16 }}
+          />
+
+          <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}>Confirm new password</Text>
+          <TextInput
+            value={confirmPassword}
+            onChangeText={(v) => { setConfirmPassword(v); setError(null); }}
+            placeholder="Re-enter new password"
+            placeholderTextColor="#9CA3AF"
+            secureTextEntry
+            autoCapitalize="none"
+            style={{ backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, fontSize: 15, color: '#111827', borderWidth: 1.5, borderColor: '#E5E7EB', marginBottom: error ? 8 : 20 }}
+          />
+
+          {error && (
+            <Text style={{ color: '#EF4444', fontSize: 13, marginBottom: 16 }}>{error}</Text>
+          )}
+
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={saving || !isValid}
+            activeOpacity={0.85}
+            style={{
+              backgroundColor: saving || !isValid ? '#E5E7EB' : '#2563EB',
+              borderRadius: 18,
+              paddingVertical: 16,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: saving || !isValid ? '#9CA3AF' : '#fff', fontSize: 16, fontWeight: '700' }}>
+              {saving ? 'Saving...' : 'Update password'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -190,7 +456,10 @@ export default function SettingsScreen() {
   const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
   const { mutateAsync: updateSizeSystem } = useUpdateSizeSystem();
 
-  const { data: accountData } = useUserSettings();
+  const { data: accountData, refetch: refetchAccount } = useUserSettings();
+
+  const [editingField, setEditingField] = useState<(typeof ACCOUNT_FIELDS)[number] | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
     if (!accountData) return;
@@ -214,6 +483,26 @@ export default function SettingsScreen() {
         error instanceof Error ? error.message : 'Please try again.',
       );
     }
+  }
+
+  async function handleSaveField(id: string, value: string) {
+    try {
+      await UserService.editUser({ [id]: value });
+      await refetchAccount();
+    } catch (error) {
+      Alert.alert(
+        'Could not update',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+      throw error;
+    }
+  }
+
+  async function handleChangePassword(currentPassword: string, newPassword: string) {
+    // Surfacing the error message inline in the sheet (via the thrown error)
+    // rather than an Alert here, since "wrong current password" etc. reads
+    // better right next to the field than in a popup.
+    await authService.changePassword({ currentPassword, newPassword });
   }
 
   // Built from the module-level ACCOUNT_FIELDS template rather than from
@@ -271,11 +560,12 @@ export default function SettingsScreen() {
         <SectionTitle title="Account" />
         <View className="bg-white rounded-2xl mx-5" style={CARD_SHADOW}>
           {accountFields.map((f) => (
-            <AccountRow key={f.id} field={f} />
+            <AccountRow key={f.id} field={f} onPress={() => setEditingField(f)} />
           ))}
           <TouchableOpacity
             className="flex-row items-center px-4 py-3.5"
             activeOpacity={0.7}
+            onPress={() => setShowPasswordModal(true)}
           >
             <View className="w-8 h-8 rounded-xl bg-blue-50 items-center justify-center mr-3">
               <Ionicons name="lock-closed-outline" size={16} color="#2563EB" />
@@ -367,6 +657,19 @@ export default function SettingsScreen() {
         current={sizeSystem}
         onSelect={handleSizeSystemChange}
         onClose={() => setShowSizeSystemModal(false)}
+      />
+
+      <EditFieldModal
+        visible={!!editingField}
+        field={editingField}
+        onClose={() => setEditingField(null)}
+        onSave={handleSaveField}
+      />
+
+      <PasswordEditModal
+        visible={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSave={handleChangePassword}
       />
     </View>
   );

@@ -78,10 +78,14 @@ export const TransactionService = {
     })
   },
 
-  async submitRating(transactionId: number, rating: number, comment?: string): Promise<{ rating: any }> {
+  async submitRating(transactionId: number, rating: number, comment?: string, raterRole?: 'seller' | 'recipient'): Promise<{ rating: any }> {
     return apiFetch<{ rating: any }>(`api/transactions/${transactionId}/rating`, {
       method: 'POST',
-      body: { rating, comment: comment || undefined },
+      body: { 
+        rating, 
+        comment: comment || undefined, 
+        raterRole: raterRole || undefined 
+      },
     });
   },
 
