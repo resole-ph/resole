@@ -42,6 +42,10 @@ export async function GET(
     return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
   }
 
+  if (shoeListing.archivedAt && shoeListing.seller.id !== currentUser.user.id) {
+    return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
+  }
+
   const { searchParams } = new URL(request.url);
   const isViewMode = searchParams.get('view') === 'true';
 
@@ -179,6 +183,11 @@ export async function PATCH(
 
   try {
     const body = await request.json();
+
+    if (shoeListing.archivedAt) {
+      return NextResponse.json({ error: 'Archived listings cannot be edited or relisted' }, { status: 409 });
+    }
+
     const updateData = getEditableShoeListingFields(body);
 
     if (Object.keys(updateData).length === 0) {

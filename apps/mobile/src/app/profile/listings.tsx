@@ -122,6 +122,7 @@ function PendingCard({
   onDelete: () => void;
 }) {
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
+  const isArchived = Boolean(item.archivedAt);
   return (
     <View className="bg-white rounded-2xl p-4 mb-3 mx-5" style={CARD_SHADOW}>
       <View className="flex-row items-center mb-3">
@@ -140,11 +141,18 @@ function PendingCard({
           <Text className="text-blue-600 font-bold text-sm mt-1">Price: ₱{item.price.toLocaleString()}</Text>
           <View className="flex-row items-center mt-1">
             <View className="w-1.5 h-1.5 rounded-full bg-gray-300 mr-1" />
-            <Text className="text-gray-400 text-xs">Archived</Text>
+            <Text className="text-gray-400 text-xs">{isArchived ? 'Archived' : 'Unavailable'}</Text>
           </View>
         </View>
       </View>
 
+      {isArchived ? (
+        <View className="rounded-xl px-3 py-2.5 bg-gray-50">
+          <Text className="text-gray-500 text-xs text-center">
+            Hidden from the marketplace until automatic deletion.
+          </Text>
+        </View>
+      ) : <>
       <View className="flex-row gap-2 mb-2">
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-center rounded-xl py-2.5"
@@ -181,6 +189,7 @@ function PendingCard({
           Delete Permanently
         </Text>
       </TouchableOpacity>
+      </>}
     </View>
   );
 }
@@ -251,7 +260,7 @@ export default function ListingsScreen() {
 
     return {
       active: items.filter(
-        (item) => item.isAvailable !== false && item.daysLeft !== undefined && item.daysLeft > 0
+        (item) => !item.archivedAt && item.isAvailable !== false && item.daysLeft !== undefined && item.daysLeft > 0
       ),
       pending: items.filter((item) => item.isAvailable === false),
     };

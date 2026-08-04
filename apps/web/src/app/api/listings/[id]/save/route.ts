@@ -38,6 +38,9 @@ export async function POST(request: NextRequest, context: SaveListingContext) {
   if (!listing) {
     return NextResponse.json({ error: 'Listing not found.' }, { status: 404 });
   }
+  if (!listing.isAvailable || listing.archivedAt) {
+    return NextResponse.json({ error: 'This listing is no longer available.' }, { status: 409 });
+  }
 
   const saved = await saveFavouriteListing(authSession.user.id, listingId);
   if (!saved) {
