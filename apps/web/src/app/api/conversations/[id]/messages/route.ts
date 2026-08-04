@@ -31,11 +31,17 @@ export async function POST(
     return NextResponse.json({ error: 'Denied access' }, { status: 401 });
   }
 
-  const body = await request.json();
-  body['userId'] = currentUser.user.id;
-  body['conversationId'] = conversation.id;
+  const body = await request.json() as { content?: unknown };
+  const content = typeof body.content === 'string' ? body.content.trim() : '';
+  if (!content) {
+    return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
+  }
 
-  const message = await createMessage(body);
+  const message = await createMessage({
+    userId: currentUser.user.id,
+    conversationId: conversation.id,
+    content,
+  });
   if (!message) {
     return NextResponse.json({ error: 'Failed to create message' }, { status: 400 })
   }
@@ -45,7 +51,7 @@ export async function POST(
     userId: recipientOfNotification,
     category: 'offer',
     title: 'New message',
-    body: body.content?.slice(0, 200) || 'You have a new message.',
+    body: content.slice(0, 200),
     actionUrl: `/inbox/o${conversation.id}`,
     entityType: 'conversation',
     entityId: String(conversation.id),

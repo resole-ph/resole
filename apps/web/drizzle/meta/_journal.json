@@ -176,6 +176,13 @@
       "when": 1785829971970,
       "tag": "0024_listing_retention",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1785836910164,
+      "tag": "0025_breezy_lucky_pierre",
+      "breakpoints": true
     }
   ]
 }

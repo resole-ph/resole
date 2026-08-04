@@ -6,6 +6,7 @@ import { getRatedTransactions } from '@/features/user-action/services/service';
 import { getShoeListingsByIds } from '@/features/shoe/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
 import { parsePositiveInt } from '@/lib/id';
+import { createInboxPhotoSignedUrl } from '@/features/inbox/services/inbox-photo-storage';
 
 export async function GET(
   request: Request, 
@@ -44,6 +45,15 @@ export async function GET(
   if (!messages) {
     return NextResponse.json({ error: 'Messages not found' }, { status: 404 });
   }
+
+  const messagesWithAttachments = await Promise.all(
+    messages.map(async (message) => {
+      if (!message.attachment) return message;
+
+      const url = await createInboxPhotoSignedUrl(message.attachment.path).catch(() => null);
+      return { ...message, attachment: { ...message.attachment, url } };
+    })
+  );
 
   const transactionIds = Array.from(
     new Set(messages.map((m) => m.transactionId).filter((tid): tid is number => tid != null))
@@ -106,7 +116,7 @@ export async function GET(
   );
 
   return NextResponse.json({
-    messages: messages,
+    messages: messagesWithAttachments,
     offers: offers,
     offerExtras: offerExtras
   });

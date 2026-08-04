@@ -157,6 +157,7 @@ export async function getUserConversations(id: string) {
           senderId: latestMessageSq.userId,
           recipientId: latestMessageSq.replyTo,
           content: latestMessageSq.content,
+          attachment: latestMessageSq.attachment,
           isEdited: latestMessageSq.isEdited,
           createdAt: latestMessageSq.createdAt,
           deletedAt: latestMessageSq.deletedAt
