@@ -498,6 +498,18 @@ export default function ListingsScreen() {
                     disabled={donating}
                     onPress={() => handleConfirmDonate(charity.id)}
                   >
+                    {charity.image ? (
+                      <Image
+                        source={{ uri: charity.image }}
+                        className="w-12 h-12 rounded-xl mr-3 bg-white"
+                        resizeMode="contain"
+                        accessibilityLabel={`${charity.name} logo`}
+                      />
+                    ) : (
+                      <View className="w-12 h-12 rounded-xl mr-3 bg-white items-center justify-center">
+                        <Ionicons name="heart-outline" size={20} color="#9CA3AF" />
+                      </View>
+                    )}
                     <View className="flex-1 mr-2">
                       <Text className="text-gray-900 font-semibold text-sm">{charity.name}</Text>
                       <Text className="text-gray-400 text-xs mt-0.5">{charity.cause}</Text>

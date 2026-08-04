@@ -48,14 +48,12 @@ const CATEGORIES = [
 
 const BRANDS = ['Nike', 'Adidas', 'Jordan Brand', 'New Balance', 'Asics', 'Salomon', 'Puma'];
 
-const CHARITIES = [
-  { id: 'gawad-kalinga', name: 'Gawad Kalinga', cause: 'Community building', image: '/charity-gawad-kalinga.jpg' },
-  { id: 'red-cross', name: 'Philippine Red Cross', cause: 'Disaster relief', image: '/charity-red-cross.png' },
-  { id: 'wwf', name: 'WWF Philippines', cause: 'Environment & wildlife', image: '/charity-wwf.jpg' },
-  { id: 'unicef', name: 'UNICEF Philippines', cause: "Children's welfare", image: '/charity-unicef.png' },
-  { id: 'caritas', name: 'Caritas Philippines', cause: 'Poverty alleviation', image: '/charity-caritas.png' },
-  { id: 'save-children', name: 'Save the Children', cause: 'Child education', image: '/charity-save-children.png' },
-];
+type CharitySummary = {
+  id: number;
+  name: string;
+  cause: string;
+  image: string | null;
+};
 
 /** Flattens a favourite row into the same shape ListingCard expects. */
 function favouriteToListing(row: any) {
@@ -190,7 +188,9 @@ function ActiveFilterChip({ label, onRemove }: { label: string; onRemove: () => 
 }
 
 
-function CharityCard({ charity, selected, onClick }: { charity: any; selected: boolean; onClick: () => void }) {
+function CharityCard({ charity, selected, onClick }: { charity: CharitySummary; selected: boolean; onClick: () => void }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
   return (
     <button
       onClick={onClick}
@@ -208,12 +208,19 @@ function CharityCard({ charity, selected, onClick }: { charity: any; selected: b
         fontFamily: 'Inter, sans-serif',
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={charity.image}
-        alt={charity.name}
-        style={{ width: '100%', height: 90, objectFit: 'contain', borderRadius: 12, marginBottom: 10, background: '#F9FAFB' }}
-      />
+      {charity.image && !imageFailed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={charity.image}
+          alt={`${charity.name} logo`}
+          onError={() => setImageFailed(true)}
+          style={{ width: '100%', height: 90, objectFit: 'contain', borderRadius: 12, marginBottom: 10, background: '#F9FAFB' }}
+        />
+      ) : (
+        <div style={{ width: '100%', height: 90, borderRadius: 12, marginBottom: 10, background: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span className="material-symbols-outlined" style={{ color: COLORS.textFaint, fontSize: 28 }}>volunteer_activism</span>
+        </div>
+      )}
       <div style={{ fontSize: 13.5, fontWeight: 700, color: selected ? '#1D4ED8' : COLORS.textMain, marginBottom: 2 }}>
         {charity.name}
       </div>
@@ -242,7 +249,13 @@ function CharityCard({ charity, selected, onClick }: { charity: any; selected: b
   );
 }
 
-function CharitiesSection({ selectedCharity, onSelect }: { selectedCharity: string | null; onSelect: (id: string | null) => void }) {
+function CharitiesSection({ charities, loading, unavailable, selectedCharity, onSelect }: {
+  charities: CharitySummary[];
+  loading: boolean;
+  unavailable: boolean;
+  selectedCharity: number | null;
+  onSelect: (id: number | null) => void;
+}) {
   return (
     <div style={{ marginBottom: 32 }}>
       <div style={{ marginBottom: 16 }}>
@@ -251,8 +264,16 @@ function CharitiesSection({ selectedCharity, onSelect }: { selectedCharity: stri
           Pick a charity — donation proceeds go straight to them.
         </p>
       </div>
-      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
-        {CHARITIES.map((charity) => (
+      {loading ? (
+        <div style={{ color: COLORS.textFaint, fontSize: 13, padding: '20px 0' }}>Loading charity partners…</div>
+      ) : unavailable || charities.length === 0 ? (
+        <div style={{ borderRadius: 16, padding: 20, background: '#EFF6FF', textAlign: 'center' }}>
+          <div style={{ color: COLORS.primary, fontSize: 12, fontWeight: 700 }}>COMING SOON</div>
+          <div style={{ color: COLORS.textMuted, fontSize: 13, marginTop: 4 }}>Charity partners will appear here soon.</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+        {charities.map((charity) => (
           <CharityCard
             key={charity.id}
             charity={charity}
@@ -260,7 +281,8 @@ function CharitiesSection({ selectedCharity, onSelect }: { selectedCharity: stri
             onClick={() => onSelect(selectedCharity === charity.id ? null : charity.id)}
           />
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -273,11 +295,25 @@ export default function ResoleHome() {
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeBrand, setActiveBrand] = useState<string | null>(null);
-  const [selectedCharity, setSelectedCharity] = useState<string | null>(null);
+  const [selectedCharity, setSelectedCharity] = useState<number | null>(null);
+  const [charities, setCharities] = useState<CharitySummary[]>([]);
+  const [charitiesLoading, setCharitiesLoading] = useState(true);
+  const [charitiesUnavailable, setCharitiesUnavailable] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Dynamic States
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    fetch('/api/charities')
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Failed to load charities');
+        return response.json() as Promise<{ charities?: CharitySummary[] }>;
+      })
+      .then((data) => setCharities(data.charities ?? []))
+      .catch(() => setCharitiesUnavailable(true))
+      .finally(() => setCharitiesLoading(false));
+  }, []);
   const [activeTab, setActiveTab] = useState<'inventory' | 'favourites'>('inventory');
 
   const greeting = useMemo(() => {
@@ -743,7 +779,13 @@ export default function ResoleHome() {
 
         {/* Charities */}
         <div style={{ marginTop: 48 }}>
-          <CharitiesSection selectedCharity={selectedCharity} onSelect={setSelectedCharity} />
+          <CharitiesSection
+            charities={charities}
+            loading={charitiesLoading}
+            unavailable={charitiesUnavailable}
+            selectedCharity={selectedCharity}
+            onSelect={setSelectedCharity}
+          />
         </div>
       </main>
     </div>

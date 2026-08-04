@@ -1,29 +1,23 @@
-import { useState } from 'react';
-import { View, Text, Image, ScrollView } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View, Text, Image, ScrollView } from 'react-native';
 import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
+import { Ionicons } from '@expo/vector-icons';
 import { Charity } from '@/features/charity/types/charity.types';
+import { CharityService } from '@/features/charity/services/charity.service';
 import DonateSheet from './DonateSheet';
-
-const CHARITIES: Charity[] = [
-  { id: 1, name: 'Gawad Kalinga', cause: 'Community building' },
-  { id: 2, name: 'Philippine Red Cross', cause: 'Disaster relief' },
-  { id: 3, name: 'WWF Philippines', cause: 'Environment & wildlife' },
-  { id: 4, name: 'UNICEF Philippines', cause: "Children's welfare" },
-  { id: 5, name: 'Caritas Philippines', cause: 'Poverty alleviation' },
-  { id: 6, name: 'Save the Children', cause: 'Child education' },
-];
-
-const CHARITY_IMAGES = [
-  require('../../../assets/charity-gawad-kalinga.jpg'),
-  require('../../../assets/charity-red-cross.png'),
-  require('../../../assets/charity-wwf.jpg'),
-  require('../../../assets/charity-unicef.png'),
-  require('../../../assets/charity-caritas.png'),
-  require('../../../assets/charity-save-children.png'),
-];
 
 export default function CharitiesSection() {
   const [donateCharity, setDonateCharity] = useState<Charity | null>(null);
+  const [charities, setCharities] = useState<Charity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState(false);
+
+  useEffect(() => {
+    CharityService.getCharities()
+      .then(setCharities)
+      .catch(() => setUnavailable(true))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <View className="mb-6">
@@ -35,13 +29,21 @@ export default function CharitiesSection() {
         </Text>
       </View>
 
-      {/* Charity cards */}
+      {loading ? (
+        <ActivityIndicator color="#2563EB" style={{ paddingVertical: 28 }} />
+      ) : unavailable || charities.length === 0 ? (
+        <View className="mx-5 rounded-2xl bg-blue-50 px-4 py-5 items-center">
+          <Ionicons name="heart-outline" size={24} color="#2563EB" />
+          <Text className="text-blue-700 font-bold text-xs mt-2">COMING SOON</Text>
+          <Text className="text-gray-500 text-xs mt-1 text-center">Charity partners will appear here soon.</Text>
+        </View>
+      ) : (
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
       >
-        {CHARITIES.map((charity, index) => (
+        {charities.map((charity) => (
           <GuardedTouchableOpacity
             key={charity.id}
             onPress={() => setDonateCharity(charity)}
@@ -60,12 +62,18 @@ export default function CharitiesSection() {
               elevation: 2,
             }}
           >
-            {/* Logo */}
-            <Image
-              source={CHARITY_IMAGES[index % CHARITY_IMAGES.length]}
-              style={{ width: '100%', height: 80, borderRadius: 12, marginBottom: 10, backgroundColor: '#F9FAFB' }}
-              resizeMode="contain"
-            />
+            {charity.image ? (
+              <Image
+                source={{ uri: charity.image }}
+                style={{ width: '100%', height: 80, borderRadius: 12, marginBottom: 10, backgroundColor: '#F9FAFB' }}
+                resizeMode="contain"
+                accessibilityLabel={`${charity.name} logo`}
+              />
+            ) : (
+              <View className="w-full h-20 rounded-xl mb-2.5 bg-gray-50 items-center justify-center">
+                <Ionicons name="heart-outline" size={26} color="#9CA3AF" />
+              </View>
+            )}
 
             {/* Name + cause */}
             <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 2 }} numberOfLines={2}>
@@ -77,6 +85,7 @@ export default function CharitiesSection() {
           </GuardedTouchableOpacity>
         ))}
       </ScrollView>
+      )}
 
       <DonateSheet
         visible={donateCharity != null}

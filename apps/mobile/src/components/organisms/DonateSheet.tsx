@@ -1,4 +1,4 @@
-import { View, Text, Modal } from 'react-native';
+import { View, Text, Modal, Image } from 'react-native';
 import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { Charity } from '@/features/charity/types/charity.types';
@@ -21,14 +21,23 @@ export default function DonateSheet({ visible, charity, onClose }: DonateSheetPr
         <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36, alignItems: 'center' }}>
           <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 20 }} />
 
-          <View
-            style={{
-              width: 56, height: 56, borderRadius: 28,
-              backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-            }}
-          >
-            <Ionicons name="heart" size={26} color="#2563EB" />
-          </View>
+          {charity?.image ? (
+            <Image
+              source={{ uri: charity.image }}
+              style={{ width: 88, height: 64, borderRadius: 12, marginBottom: 16, backgroundColor: '#F9FAFB' }}
+              resizeMode="contain"
+              accessibilityLabel={`${charity.name} logo`}
+            />
+          ) : (
+            <View
+              style={{
+                width: 56, height: 56, borderRadius: 28,
+                backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+              }}
+            >
+              <Ionicons name="heart" size={26} color="#2563EB" />
+            </View>
+          )}
 
           <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB', letterSpacing: 0.5, marginBottom: 4 }}>
             COMING SOON
