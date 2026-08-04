@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getConversationById, getConversationMessages } from '@/features/inbox/services/service';
 import { getTransactionsWithDetailsByIds } from '@/features/transaction/services/service';
-import { getRatedTransactionIds } from '@/features/user-action/services/service';
+import { getRatedTransactions } from '@/features/user-action/services/service';
 import { getShoeListingsByIds } from '@/features/shoe/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
+import { get } from 'node:http';
 
 function parseConversationId(rawId: string) {
   const conversationId = Number.parseInt(rawId, 10);
@@ -58,14 +59,22 @@ export async function GET(
     new Set(messages.map((m) => m.transactionId).filter((tid): tid is number => tid != null))
   );
 
-  const [transactions, ratedTransactionIds] = await Promise.all([
+  const [transactions, ratedTransactions] = await Promise.all([
     getTransactionsWithDetailsByIds(transactionIds),
-    getRatedTransactionIds(transactionIds),
+    getRatedTransactions(transactionIds),
   ]);
+
+  const ratedTransactionSet = new Set(ratedTransactions.map((item: any) => ({
+    id: item.id,
+    raterRole: item.raterRole
+  })));
 
   const offers = transactions.map((transaction) => ({
     ...transaction,
-    isRated: ratedTransactionIds.has(transaction.id),
+    isRated: ratedTransactionSet.has({
+      id: transaction.id,
+      raterRole: currentUser.user.id === transaction.listing.userId ? 'seller' : 'recipient'
+    }),
   }));
 
   // Offer cards render the listing being offered on, and for a swap the item put

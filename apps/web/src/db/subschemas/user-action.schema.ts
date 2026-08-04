@@ -22,6 +22,11 @@ export const referalEnum = pgEnum('referal_enum', [
   'other'
 ]);
 
+export const roleEnum = pgEnum('role_enum', [
+  'seller',
+  'recipient'
+])
+
 export const referal = pgTable('referal', {
   id: serial('id').primaryKey(),
   referedById: text('refered_by_id')
@@ -48,6 +53,7 @@ export const rating = pgTable('rating', {
     .references(() => transaction.id, { onDelete: 'set null' }),
   rating: integer('rating').notNull(),
   comment: text('comment'),
+  raterRole: roleEnum('rater_role').default('recipient').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -56,8 +62,8 @@ export const rating = pgTable('rating', {
   deletedAt: timestamp('deleted_at')
 }, (table) => [
   check('rating_id_check', sql`${table.raterId} != ${table.rateeId}`),
-  check('rating_check', sql`${table.rating} BETWEEN 0 AND 5`),
-  uniqueIndex('rating_transaction_id_idx').on(table.transactionId)
+  check('rating_check', sql`${table.rating} BETWEEN 1 AND 5`),
+  uniqueIndex('rating_rater_idx').on(table.transactionId, table.raterRole)
 ]);
 
 export const save = pgTable('save', {
