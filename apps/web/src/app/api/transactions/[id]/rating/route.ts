@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getTransactionById } from '@/features/transaction/services/service';
 import { createRating } from '@/features/user-action/services/service';
-import { NEXT_BODY_SUFFIX } from 'next/dist/lib/constants';
 
 function parseTransactionId(rawId: string) {
   const transactionId = Number.parseInt(rawId, 10);
@@ -34,8 +33,20 @@ export async function POST(
   if (!transaction) {
     return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
   }
-  if (transaction.listing.userId === currentUser.user.id) {
-    return NextResponse.json({ error: 'Attempt to rate own listing denied' }, { status: 400 });
+  const isSeller = transaction.listing.userId === currentUser.user.id;
+  const isRecipient = transaction.recipientId === currentUser.user.id;
+
+  if (!isSeller && !isRecipient) {
+    return NextResponse.json({ error: 'Only transaction participants can submit a rating' }, { status: 403 });
+  }
+
+  if (!transaction.isAccepted) {
+    return NextResponse.json({ error: 'Ratings are available after an offer is accepted' }, { status: 400 });
+  }
+
+  const rateeId = isSeller ? transaction.recipientId : transaction.listing.userId;
+  if (!rateeId) {
+    return NextResponse.json({ error: 'Transaction has no recipient to rate' }, { status: 400 });
   }
 
   try {
@@ -49,10 +60,6 @@ export async function POST(
       return NextResponse.json({ error: 'No rating provided' }, { status: 400 });
     }
 
-    if (!body.rateeId) {
-      return NextResponse.json({ error: 'No ratee provided' }, { status: 400 });
-    }
-
     if (typeof body.rating !== 'number' || ![1, 2, 3, 4, 5].includes(body.rating)) {
       return NextResponse.json({ error: 'Invalid rating' }, { status: 400 });
     }
@@ -60,14 +67,16 @@ export async function POST(
     const rating = await createRating({
       rating: body.rating,
       raterId: currentUser.user.id,
-      rateeId: body.rating,
+      // The recipient and role are derived from the transaction, rather than
+      // trusting client input. This lets both sides rate each other safely.
+      rateeId,
       transactionId: transactionId,
       comment: body.comment ?? null,
-      raterRole: body.raterRole ?? null
-    })
+      raterRole: isSeller ? 'seller' : 'recipient',
+    });
 
     return NextResponse.json({ rating: rating });
-  } catch (error: unknown) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

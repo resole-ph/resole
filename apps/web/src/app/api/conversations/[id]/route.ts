@@ -64,7 +64,9 @@ export async function GET(
   ]);
 
   const ratedTransactionSet = new Set(
-    ratedTransactions.map((item: any) => `${item.id}-${item.raterRole}`)
+    // A rating row has its own primary key. Match against the offer/transaction
+    // id so this status is scoped to the current participant's rating.
+    ratedTransactions.map((item) => `${item.transactionId}-${item.raterRole}`)
   );
 
   const offers = transactions.map((transaction) => {
