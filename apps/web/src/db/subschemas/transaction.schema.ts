@@ -8,7 +8,8 @@ import {
   numeric,
   serial,
   check,
-  index
+  index,
+  jsonb
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
@@ -33,8 +34,8 @@ export const voucherEnum = pgEnum('voucher_enum', [
 export const transaction = pgTable('transaction', {
   id: serial('id').primaryKey(),
   listingId: integer('listing_id')
-    .notNull()
-    .references(() => shoeListing.id),
+    .references(() => shoeListing.id, { onDelete: 'set null' }),
+  listingSnapshot: jsonb('listing_snapshot').$type<Record<string, unknown>>(),
   recipientId: text('recipient_id')
     .references(() => user.id),
   type: transactionEnum('type').notNull(),
@@ -106,8 +107,8 @@ export const swapItem = pgTable('swap_item', {
     .notNull()
     .references(() => swap.id, { onDelete: 'cascade' }),
   itemId: integer('swap_item_id')
-    .notNull()
-    .references(() => shoeListing.id, { onDelete: 'cascade' }),
+    .references(() => shoeListing.id, { onDelete: 'set null' }),
+  listingSnapshot: jsonb('listing_snapshot').$type<Record<string, unknown>>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
   index('swap_item_swap_id_idx').on(table.swapId),

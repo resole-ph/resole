@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     sort: SORT_OPTIONS.find((option) => option === requestedSort) ?? 'newest',
   };
 
-  const shoeListings = await getShoeListingsByUserId(currentUser.user.id, filters);
+  const shoeListings = await getShoeListingsByUserId(currentUser.user.id, filters, true);
   if (!shoeListings) {
     return NextResponse.json({ error: 'Failed to fetch shoe listings' }, { status: 500 });
   }

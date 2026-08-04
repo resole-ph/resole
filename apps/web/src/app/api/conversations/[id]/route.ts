@@ -98,7 +98,7 @@ export async function GET(
       return [
         offer.id,
         {
-          listing: listingById.get(offer.listingId) ?? null,
+          listing: offer.listingId != null ? listingById.get(offer.listingId) ?? null : null,
           swapItem: swapItemId != null ? listingById.get(swapItemId) ?? null : null,
         },
       ];

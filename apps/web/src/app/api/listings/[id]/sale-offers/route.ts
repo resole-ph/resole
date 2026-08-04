@@ -24,6 +24,9 @@ export async function POST(
   if (!shoeListing) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 404 });
   }
+  if (!shoeListing.isAvailable || shoeListing.archivedAt) {
+    return NextResponse.json({ error: 'This listing is no longer available' }, { status: 409 });
+  }
 
   if (shoeListing.seller.id === currentUser.user.id) {
     return NextResponse.json({ error: 'You cannot purchase your own listing' }, { status: 400 });

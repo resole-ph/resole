@@ -33,6 +33,7 @@ export interface Listing {
   updatedAt: Date;
   daysLeft?: number;
   isAvailable: boolean;
+  archivedAt?: string | null;
   seller: {
     id?: string;
     name: string;

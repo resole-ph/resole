@@ -371,7 +371,11 @@ export async function getShoeByModelName(name: string) {
   }
 }
 
-export async function getShoeListingsByUserId(userId: string, filters?: OwnedShoeListingFilters) {
+export async function getShoeListingsByUserId(
+  userId: string,
+  filters?: OwnedShoeListingFilters,
+  includeArchived = false,
+) {
   try {
     const rows = await db
       .select({
@@ -389,7 +393,7 @@ export async function getShoeListingsByUserId(userId: string, filters?: OwnedSho
       .where(
         and(
           eq(shoeListing.userId, userId), 
-          eq(shoeListing.isAvailable, true),
+          ...(includeArchived ? [] : [eq(shoeListing.isAvailable, true), isNull(shoeListing.archivedAt)]),
           ...buildOwnedShoeListingFilters(filters)
         )
       )

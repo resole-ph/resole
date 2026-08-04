@@ -21,6 +21,7 @@ export function serializeShoeListing(row: ShoeListing) {
     imageUrlInsole: row.imageUrlInsole,
     listingMode: row.listingMode,
     isAvailable: row.isAvailable,
+    archivedAt: row.archivedAt ? new Date(row.archivedAt).toISOString() : null,
     isRefurbished: row.isRefurbished,
     // TODO: no backing column yet — shipping is a planned feature. Hardcoded false so
     // the badge stays hidden until shoe_listing gains a real free-shipping flag.
