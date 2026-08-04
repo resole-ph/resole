@@ -28,7 +28,7 @@ async function uploadImages() {
   const existingNames = new Set(existing.map((item) => item.name));
   const missing = CHARITY_IMAGES.filter((item) => !existingNames.has(item.name));
   if (missing.length) {
-    throw new Error(`Missing charity records: ${missing.map((item) => item.name).join(', ')}`);
+    console.warn(`No matching records yet: ${missing.map((item) => item.name).join(', ')}`);
   }
 
   for (const item of CHARITY_IMAGES) {
@@ -54,8 +54,12 @@ async function uploadImages() {
     }
 
     const publicUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(item.fileName)}`;
-    await db.update(charity).set({ image: publicUrl }).where(eq(charity.name, item.name));
-    console.log(`Uploaded ${item.name}.`);
+    const updated = await db
+      .update(charity)
+      .set({ image: publicUrl })
+      .where(eq(charity.name, item.name))
+      .returning({ id: charity.id });
+    console.log(`Uploaded ${item.name}${updated.length ? ' and updated its record' : ''}.`);
   }
 }
 
