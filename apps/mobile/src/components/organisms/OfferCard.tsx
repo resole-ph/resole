@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, Image, ActivityIndicator } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
 
@@ -86,7 +87,7 @@ export default function OfferCard({
         {status === 'pending' ? (
           canRespond ? (
             <View className="flex-row gap-3">
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="flex-1 flex-row items-center justify-center bg-gray-100 rounded-2xl py-3.5 gap-1.5"
                 activeOpacity={disabled ? 0.6 : 0.8}
                 onPress={onDecline}
@@ -100,8 +101,8 @@ export default function OfferCard({
                     <Text className="text-gray-600 font-bold text-sm">Decline</Text>
                   </>
                 )}
-              </TouchableOpacity>
-              <TouchableOpacity
+              </GuardedTouchableOpacity>
+              <GuardedTouchableOpacity
                 className="flex-1 flex-row items-center justify-center bg-blue-600 rounded-2xl py-3.5 gap-1.5"
                 activeOpacity={disabled ? 0.6 : 0.85}
                 onPress={onAccept}
@@ -120,7 +121,7 @@ export default function OfferCard({
                     <Text className="text-white font-bold text-sm">Accept</Text>
                   </>
                 )}
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             </View>
           ) : (
             <View className="rounded-2xl py-3.5 items-center bg-amber-50 flex-row justify-center gap-1.5">

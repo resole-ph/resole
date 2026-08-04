@@ -1,4 +1,5 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ListingService } from '@/features/listing/services/listing.service';
@@ -93,7 +94,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
   };
 
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="bg-white rounded-2xl overflow-hidden flex-1"
       style={{
         shadowColor: '#000',
@@ -163,7 +164,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
 
         {/* Save button */}
         {!isOwnListing && (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white items-center justify-center"
             style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 }}
             onPress={(e) => { e.stopPropagation(); onSave?.(listing); }}
@@ -174,7 +175,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
               size={14}
               color={isSaved ? '#EF4444' : '#6B7280'}
             />
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         )}
       </View>
 
@@ -214,7 +215,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
               {listing.swapFor ?? 'Open to offers'}
             </Text>
             {isOwnListing ? (
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="flex-row items-center justify-center rounded-xl py-2"
                 style={{ backgroundColor: '#F3F4F6' }}
                 activeOpacity={0.75}
@@ -224,9 +225,9 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
                   Edit Listing
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             ) : (
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="flex-row items-center justify-center rounded-xl py-2"
                 style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
                 activeOpacity={0.75}
@@ -239,7 +240,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
                   Propose Swap
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             )}
           </View>
         ) : (
@@ -260,7 +261,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
               )}
             </View>
 
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               className="flex-row items-center mb-3"
               activeOpacity={isOwnListing || !listing.seller.id ? 1 : 0.7}
               disabled={isOwnListing || !listing.seller.id}
@@ -292,10 +293,10 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                   )
                 )}
               </View>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
 
             {isOwnListing ? (
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
                 style={{ backgroundColor: '#F3F4F6' }}
                 activeOpacity={0.75}
@@ -305,9 +306,9 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
                   Edit Listing
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             ) : (
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="flex-row items-center justify-center rounded-xl py-2 border-t border-gray-100 pt-2"
                 style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
                 activeOpacity={0.75}
@@ -320,11 +321,11 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 <Text style={{ color: '#2563EB', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>
                   Make Offer
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             )}
           </>
         )}
       </View>
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }

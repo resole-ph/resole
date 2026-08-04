@@ -1,4 +1,5 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -57,7 +58,7 @@ export default function Step2Screen() {
           calculates a fair local market value.
         </Text>
 
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           onPress={() => router.push('/onboarding/step3')}
           className="w-full bg-primary rounded-full py-4 flex-row items-center justify-center gap-2"
           style={{
@@ -72,7 +73,7 @@ export default function Step2Screen() {
             Next
           </Text>
           <MaterialIcons name="arrow-forward" size={16} color="#ffffff" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     </View>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Category, Brand } from '@/features/shoe/types/shoe.types';
 import { ShoeService } from '@/features/shoe/services/shoe.service';
 
@@ -63,7 +64,7 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress }: Categor
         {CATEGORIES.map((cat) => {
           const isActive = activeCatId === cat.id;
           return (
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               key={cat.id}
               className={`flex-row items-center rounded-full px-4 py-2 border ${
                 isActive ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
@@ -82,7 +83,7 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress }: Categor
               <Text className={`ml-1.5 text-sm font-medium ${isActive ? 'text-white' : 'text-gray-700'}`}>
                 {cat.label}
               </Text>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           );
         })}
       </ScrollView>
@@ -99,7 +100,7 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress }: Categor
         {brands.map((brand) => {
           const isActive = activeBrandId === brand.id;
           return (
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               key={brand.id}
               className={`rounded-full px-4 py-2 border ${
                 isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200'
@@ -117,7 +118,7 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress }: Categor
               <Text className={`text-sm font-semibold ${isActive ? 'text-white' : 'text-gray-700'}`}>
                 {brand.label}
               </Text>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           );
         })}
       </ScrollView>

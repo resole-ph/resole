@@ -6,6 +6,7 @@ import {
   saveFavouriteListing,
 } from '@/features/user-action/services/service';
 import { NextRequest, NextResponse } from 'next/server';
+import { parsePositiveInt } from '@/lib/id';
 
 type SaveListingContext = {
   params: Promise<{
@@ -13,14 +14,9 @@ type SaveListingContext = {
   }>;
 };
 
-function parseListingId(id: string) {
-  const listingId = Number(id);
-  return Number.isInteger(listingId) && listingId > 0 ? listingId : null;
-}
-
 async function getListingId(context: SaveListingContext) {
   const { id } = await context.params;
-  return parseListingId(id);
+  return parsePositiveInt(id);
 }
 
 export async function POST(request: NextRequest, context: SaveListingContext) {

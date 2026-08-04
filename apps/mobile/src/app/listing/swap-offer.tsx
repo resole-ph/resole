@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Keyboard,
-  TextInput, Image, KeyboardAvoidingView, Platform,
+  View, Text, ScrollView, Keyboard,
+  TextInput, Image, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,8 @@ export default function SwapOfferScreen() {
   const [cashTopUp, setCashTopUp]   = useState('');
   const [notes, setNotes]           = useState('');
   const [sent, setSent]             = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [isValid, setIsValid]       = useState<boolean>(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
@@ -66,17 +69,38 @@ export default function SwapOfferScreen() {
     };
   }, []);
 
-  async function handleSubmit() {
-    if (!isValid || !selectedId) return;
+  async function submitSwapOffer() {
+    if (!isValid || !selectedId || isSubmitting) return;
 
-    await OfferService.createSwap(Number(listingId), [selectedId], notes || `Hello! Please check out my swap offer for your ${selectedListing?.model || 'shoe'}!`);
+    setIsConfirming(false);
+    setIsSubmitting(true);
+    try {
+      await OfferService.createSwap(Number(listingId), [selectedId], notes || `Hello! Please check out my swap offer for your ${selectedListing?.model || 'shoe'}!`);
 
-    setSent(true);
-    setTimeout(() => {
-      setSent(false);
-      router.dismissAll();
-      router.push('/inbox' as any);
-    }, 1200);
+      setSent(true);
+      setTimeout(() => {
+        setSent(false);
+        router.dismissAll();
+        router.push('/inbox' as any);
+      }, 1200);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleSubmit() {
+    if (!isValid || !selectedId || isSubmitting || isConfirming || sent) return;
+
+    setIsConfirming(true);
+    Alert.alert(
+      'Send swap offer?',
+      `Send your swap offer for ${selectedListing?.model ?? 'this listing'}?`,
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => setIsConfirming(false) },
+        { text: 'Send Offer', onPress: () => void submitSwapOffer() },
+      ],
+      { cancelable: true, onDismiss: () => setIsConfirming(false) },
+    );
   }
 
   return (
@@ -90,13 +114,13 @@ export default function SwapOfferScreen() {
         className="flex-row items-center bg-white px-5 pb-4 border-b border-gray-100"
         style={{ paddingTop: insets.top + 12 }}
       >
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center mr-3"
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={18} color="#111827" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
         <Text className="text-gray-900 font-bold text-lg">Make Swap Offer</Text>
       </View>
 
@@ -151,13 +175,13 @@ export default function SwapOfferScreen() {
               <Text className="text-gray-400 text-sm text-center mt-1">
                 You need at least one AI-evaluated listing to make a swap offer.
               </Text>
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="mt-4 bg-violet-600 rounded-full px-6 py-3"
                 onPress={() => router.push('/sell' as any)}
                 activeOpacity={0.85}
               >
                 <Text className="text-white font-bold">List a Shoe</Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             </View>
           ) : (
             <View className="gap-3">
@@ -165,7 +189,7 @@ export default function SwapOfferScreen() {
                 const selected = selectedId === Number(item.id);
                 const condColor = CONDITION_COLORS[item.condition] ?? '#9CA3AF';
                 return (
-                  <TouchableOpacity
+                  <GuardedTouchableOpacity
                     key={item.id}
                     onPress={() => setSelectedId(selected ? null : Number(item.id))}
                     activeOpacity={0.8}
@@ -226,7 +250,7 @@ export default function SwapOfferScreen() {
                     }}>
                       {selected && <Ionicons name="checkmark" size={13} color="#fff" />}
                     </View>
-                  </TouchableOpacity>
+                  </GuardedTouchableOpacity>
                 );
               })}
             </View>
@@ -282,24 +306,25 @@ export default function SwapOfferScreen() {
             </Text>
           </View>
         )}
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="rounded-2xl py-4 items-center flex-row justify-center"
           style={{
-            backgroundColor: isValid ? '#7C3AED' : '#E5E7EB',
-            shadowColor: isValid ? '#7C3AED' : 'transparent',
+            backgroundColor: isValid && !isSubmitting && !isConfirming && !sent ? '#7C3AED' : '#E5E7EB',
+            shadowColor: isValid && !isSubmitting && !isConfirming && !sent ? '#7C3AED' : 'transparent',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.35,
             shadowRadius: 8,
-            elevation: isValid ? 6 : 0,
+            elevation: isValid && !isSubmitting && !isConfirming && !sent ? 6 : 0,
           }}
-          activeOpacity={isValid ? 0.85 : 1}
+          activeOpacity={isValid && !isSubmitting && !isConfirming && !sent ? 0.85 : 1}
           onPress={handleSubmit}
+          disabled={!isValid || isSubmitting || isConfirming || sent}
         >
-          <Ionicons name={sent ? 'checkmark-circle' : 'swap-horizontal'} size={18} color={isValid ? '#fff' : '#9CA3AF'} />
-          <Text className="font-bold text-base ml-2" style={{ color: isValid ? '#fff' : '#9CA3AF' }}>
-            {sent ? 'Offer Sent!' : 'Send Swap Offer'}
+          <Ionicons name={sent ? 'checkmark-circle' : 'swap-horizontal'} size={18} color={isValid && !isSubmitting && !isConfirming ? '#fff' : '#9CA3AF'} />
+          <Text className="font-bold text-base ml-2" style={{ color: isValid && !isSubmitting && !isConfirming ? '#fff' : '#9CA3AF' }}>
+            {isSubmitting ? 'Sending...' : sent ? 'Offer Sent!' : 'Send Swap Offer'}
           </Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );

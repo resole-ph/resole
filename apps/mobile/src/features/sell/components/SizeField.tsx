@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, Text, Modal, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { usePreferencesStore } from '@/store/preferences';
 import {
@@ -58,7 +59,7 @@ export default function SizeField({ value, onChange, error }: SizeFieldProps) {
   return (
     <View className="gap-1">
       <View className="flex-row gap-2">
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           onPress={() => setShowSizeMenu(true)}
           activeOpacity={0.7}
           className="flex-1 flex-row items-center justify-between bg-surface-container-lowest border rounded-xl px-4 py-3"
@@ -68,22 +69,22 @@ export default function SizeField({ value, onChange, error }: SizeFieldProps) {
             {value || 'Select size'}
           </Text>
           <Ionicons name="chevron-down" size={16} color="#727687" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
 
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           onPress={() => setShowSystemMenu(true)}
           activeOpacity={0.7}
           className="flex-row items-center gap-1 rounded-xl px-3 bg-secondary-container"
         >
           <Text className="font-label-md text-label-md text-primary">{SIZE_SYSTEM_LABELS[sizeSystem]}</Text>
           <Ionicons name="chevron-down" size={12} color="#0054d3" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
       {error && <Text className="font-label-md text-label-md text-error">{error}</Text>}
 
       {/* Size value picker — intervals of 0.5 */}
       <Modal visible={showSizeMenu} transparent animationType="slide" onRequestClose={() => setShowSizeMenu(false)}>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={() => setShowSizeMenu(false)}
@@ -98,7 +99,7 @@ export default function SizeField({ value, onChange, error }: SizeFieldProps) {
               const label = formatSizeValue(opt);
               const isActive = value === label;
               return (
-                <TouchableOpacity
+                <GuardedTouchableOpacity
                   key={opt}
                   className="flex-row items-center px-5 py-3.5"
                   activeOpacity={0.7}
@@ -111,7 +112,7 @@ export default function SizeField({ value, onChange, error }: SizeFieldProps) {
                     {label}
                   </Text>
                   {isActive && <Ionicons name="checkmark" size={18} color="#2563EB" />}
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
               );
             })}
           </ScrollView>
@@ -120,7 +121,7 @@ export default function SizeField({ value, onChange, error }: SizeFieldProps) {
 
       {/* Size system picker */}
       <Modal visible={showSystemMenu} transparent animationType="slide" onRequestClose={() => setShowSystemMenu(false)}>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={() => setShowSystemMenu(false)}
@@ -131,7 +132,7 @@ export default function SizeField({ value, onChange, error }: SizeFieldProps) {
             Shoe size system
           </Text>
           {SIZE_SYSTEMS.map((system) => (
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               key={system}
               className="flex-row items-center px-5 py-3.5"
               activeOpacity={0.7}
@@ -141,7 +142,7 @@ export default function SizeField({ value, onChange, error }: SizeFieldProps) {
                 {SIZE_SYSTEM_LABELS[system]}
               </Text>
               {system === sizeSystem && <Ionicons name="checkmark" size={18} color="#2563EB" />}
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           ))}
         </View>
       </Modal>

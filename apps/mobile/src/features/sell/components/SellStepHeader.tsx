@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -17,14 +18,14 @@ export default function SellStepHeader({ title, stepLabel, onBack }: SellStepHea
       style={{ paddingTop: Math.max(insets.top, 16) }}
     >
       <View className="flex-row items-center justify-between">
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           onPress={onBack}
           className="w-9 h-9 items-center justify-center rounded-full"
           style={{ opacity: onBack ? 1 : 0 }}
           disabled={!onBack}
         >
           <Ionicons name="chevron-back" size={22} color="#424655" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
 
         <View className="flex-1 items-center">
           {stepLabel ? (

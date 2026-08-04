@@ -5,24 +5,14 @@ import { getTransactionsWithDetailsByIds } from '@/features/transaction/services
 import { getRatedTransactions } from '@/features/user-action/services/service';
 import { getShoeListingsByIds } from '@/features/shoe/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
-import { get } from 'node:http';
-
-function parseConversationId(rawId: string) {
-  const conversationId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(conversationId) || conversationId <= 0) {
-    return null;
-  }
-
-  return conversationId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function GET(
   request: Request, 
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const conversationId = parseConversationId(id);
+  const conversationId = parsePositiveInt(id);
   if (!conversationId) {
     return NextResponse.json({ error: 'Invalid conversation id' }, { status: 400 });
   }
@@ -64,18 +54,20 @@ export async function GET(
     getRatedTransactions(transactionIds),
   ]);
 
-  const ratedTransactionSet = new Set(ratedTransactions.map((item: any) => ({
-    id: item.id,
-    raterRole: item.raterRole
-  })));
+  const ratedTransactionSet = new Set(
+    // A rating row has its own primary key. Match against the offer/transaction
+    // id so this status is scoped to the current participant's rating.
+    ratedTransactions.map((item) => `${item.transactionId}-${item.raterRole}`)
+  );
 
-  const offers = transactions.map((transaction) => ({
-    ...transaction,
-    isRated: ratedTransactionSet.has({
-      id: transaction.id,
-      raterRole: currentUser.user.id === transaction.listing.userId ? 'seller' : 'recipient'
-    }),
-  }));
+  const offers = transactions.map((transaction) => {
+    const role = currentUser.user.id === transaction.listing.userId ? 'seller' : 'recipient';
+    
+    return {
+      ...transaction,
+      isRated: ratedTransactionSet.has(`${transaction.id}-${role}`),
+    };
+  });
 
   // Offer cards render the listing being offered on, and for a swap the item put
   // up in exchange. Both are resolved here: left to the client they become one

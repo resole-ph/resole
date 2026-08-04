@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
@@ -125,7 +126,7 @@ export default function PublicProfileScreen() {
                   <ReviewRow key={review.id} review={review} />
                 ))}
                 {!showAllReviews && reviews.length > REVIEWS_PREVIEW_COUNT && (
-                  <TouchableOpacity
+                  <GuardedTouchableOpacity
                     className="flex-row items-center justify-center mx-5 mb-2 py-2.5 rounded-xl bg-white border border-gray-200"
                     activeOpacity={0.7}
                     onPress={() => setShowAllReviews(true)}
@@ -134,7 +135,7 @@ export default function PublicProfileScreen() {
                       View more reviews ({reviews.length - REVIEWS_PREVIEW_COUNT})
                     </Text>
                     <Ionicons name="chevron-down" size={14} color="#2563EB" />
-                  </TouchableOpacity>
+                  </GuardedTouchableOpacity>
                 )}
               </>
             )}

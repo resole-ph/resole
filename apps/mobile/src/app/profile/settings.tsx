@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Switch, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -63,7 +64,7 @@ function AccountRow({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="flex-row items-center px-4 py-3.5 border-b border-gray-50"
       activeOpacity={0.7}
       onPress={onPress}
@@ -76,7 +77,7 @@ function AccountRow({
         <Text className="text-gray-900 font-medium text-sm mt-0.5">{field.value}</Text>
       </View>
       <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -131,7 +132,7 @@ function EditFieldModal({
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={onClose} />
+        <GuardedTouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={onClose} />
         <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: Math.max(insets.bottom, 24) }}>
           <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 20 }} />
           <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
@@ -143,7 +144,7 @@ function EditFieldModal({
               {options.map((option) => {
                 const selected = option === value;
                 return (
-                  <TouchableOpacity
+                  <GuardedTouchableOpacity
                     key={option}
                     className="flex-row items-center py-3.5"
                     activeOpacity={0.7}
@@ -154,7 +155,7 @@ function EditFieldModal({
                       {option}
                     </Text>
                     {selected && <Ionicons name="checkmark" size={18} color="#2563EB" />}
-                  </TouchableOpacity>
+                  </GuardedTouchableOpacity>
                 );
               })}
             </View>
@@ -168,7 +169,7 @@ function EditFieldModal({
                 autoFocus
                 style={{ backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, fontSize: 15, color: '#111827', borderWidth: 1.5, borderColor: '#E5E7EB', marginBottom: 20 }}
               />
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 onPress={() => handleSave(value)}
                 disabled={saving || !value.trim()}
                 activeOpacity={0.85}
@@ -182,7 +183,7 @@ function EditFieldModal({
                 <Text style={{ color: saving || !value.trim() ? '#9CA3AF' : '#fff', fontSize: 16, fontWeight: '700' }}>
                   {saving ? 'Saving...' : 'Save'}
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             </>
           )}
         </View>
@@ -260,7 +261,7 @@ function PasswordEditModal({
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={resetAndClose} />
+        <GuardedTouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={resetAndClose} />
         <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: Math.max(insets.bottom, 24) }}>
           <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 20 }} />
           <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
@@ -304,7 +305,7 @@ function PasswordEditModal({
             <Text style={{ color: '#EF4444', fontSize: 13, marginBottom: 16 }}>{error}</Text>
           )}
 
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={handleSubmit}
             disabled={saving || !isValid}
             activeOpacity={0.85}
@@ -318,7 +319,7 @@ function PasswordEditModal({
             <Text style={{ color: saving || !isValid ? '#9CA3AF' : '#fff', fontSize: 16, fontWeight: '700' }}>
               {saving ? 'Saving...' : 'Update password'}
             </Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -363,7 +364,7 @@ function PickerRow({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="flex-row items-center px-4 py-3.5 border-b border-gray-50"
       activeOpacity={0.7}
       onPress={onPress}
@@ -373,7 +374,7 @@ function PickerRow({
         <Text className="text-gray-400 text-xs mt-0.5">{value}</Text>
       </View>
       <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -390,14 +391,14 @@ function SizeSystemModal({
 }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={onClose} />
+      <GuardedTouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={onClose} />
       <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, paddingBottom: 32 }}>
         <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 }} />
         <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', paddingHorizontal: 20, marginBottom: 8 }}>
           Shoe size system
         </Text>
         {SIZE_SYSTEMS.map((system) => (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             key={system}
             className="flex-row items-center px-5 py-3.5"
             activeOpacity={0.7}
@@ -410,7 +411,7 @@ function SizeSystemModal({
               {SIZE_SYSTEM_LABELS[system]}
             </Text>
             {system === current && <Ionicons name="checkmark" size={18} color="#2563EB" />}
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         ))}
       </View>
     </Modal>
@@ -429,7 +430,7 @@ function ActionRow({
   onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="flex-row items-center px-4 py-3.5 border-b border-gray-50"
       activeOpacity={0.7}
       onPress={onPress}
@@ -439,7 +440,7 @@ function ActionRow({
         {label}
       </Text>
       <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -562,7 +563,7 @@ export default function SettingsScreen() {
           {accountFields.map((f) => (
             <AccountRow key={f.id} field={f} onPress={() => setEditingField(f)} />
           ))}
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             className="flex-row items-center px-4 py-3.5"
             activeOpacity={0.7}
             onPress={() => setShowPasswordModal(true)}
@@ -575,7 +576,7 @@ export default function SettingsScreen() {
               <Text className="text-gray-900 font-medium text-sm mt-0.5">••••••••</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         </View>
 
         {/* Notifications */}

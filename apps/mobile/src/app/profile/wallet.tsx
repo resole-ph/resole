@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 import { RedeemOption, CoinTx } from '@/features/transaction/types/transaction.types';
@@ -72,7 +73,7 @@ function RedeemCard({ option, balance }: { option: RedeemOption; balance: number
             {option.description}
           </Text>
         </View>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className={`rounded-xl px-3 py-1.5 items-center ${
             canAfford
               ? option.highlight
@@ -93,7 +94,7 @@ function RedeemCard({ option, balance }: { option: RedeemOption; balance: number
           >
             {option.cost} pts
           </Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     </View>
   );

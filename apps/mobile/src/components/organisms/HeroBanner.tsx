@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Image } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1600269452121-4f2416e55c28?q=80&w=900&auto=format&fit=crop';
@@ -116,22 +117,22 @@ export default function HeroBanner({
               <Text className="text-blue-200 text-sm leading-snug mb-5">{subtitle}</Text>
 
               {ctaVariant === 'pill' ? (
-                <TouchableOpacity
+                <GuardedTouchableOpacity
                   style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8 }}
                   activeOpacity={0.75}
                   onPress={onPress}
                 >
                   <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>{ctaLabel} →</Text>
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
               ) : (
-                <TouchableOpacity
+                <GuardedTouchableOpacity
                   className="flex-row items-center self-start"
                   activeOpacity={0.75}
                   onPress={onPress}
                 >
                   <Text className="text-white font-semibold text-sm mr-1">{ctaLabel}</Text>
                   <Ionicons name="arrow-forward" size={14} color="#fff" />
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
               )}
             </View>
 

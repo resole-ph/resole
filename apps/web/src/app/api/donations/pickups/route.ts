@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { scheduleDonationPickup } from '@/features/transaction/services/service';
-
-function parsePositiveInt(value: unknown) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Failed to schedule donation pickup';

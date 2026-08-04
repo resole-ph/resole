@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Keyboard,
-  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
+  View, Text, ScrollView, Keyboard,
+  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,11 +51,11 @@ function ConvoHeader({
       className="flex-row items-center bg-white border-b border-gray-100 px-4 pb-3"
       style={{ paddingTop: insets.top + 8, ...CARD_SHADOW }}
     >
-      <TouchableOpacity className="w-9 h-9 items-center justify-center mr-2" activeOpacity={0.7} onPress={onBack}>
+      <GuardedTouchableOpacity className="w-9 h-9 items-center justify-center mr-2" activeOpacity={0.7} onPress={onBack}>
         <Ionicons name="chevron-back" size={22} color="#6B7280" />
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
 
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         className="flex-1 flex-row items-center"
         activeOpacity={onPressProfile ? 0.7 : 1}
         onPress={onPressProfile}
@@ -75,7 +76,7 @@ function ConvoHeader({
           <Text className="text-gray-900 font-semibold text-sm">{sender}</Text>
           {!isSystem && <Text className="text-gray-400 text-xs mt-0.5">Active recently</Text>}
         </View>
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
     </View>
   );
 }
@@ -144,14 +145,14 @@ function InputBar({ onSend, disabled }: { onSend: (text: string) => void, disabl
             onSubmitEditing={handleSend}
           />
         </View>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className={`w-11 h-11 rounded-full items-center justify-center ${text.trim() ? 'bg-blue-600' : 'bg-gray-200'}`}
           activeOpacity={!text.trim() || disabled ? 0.6 : 0.85}
           onPress={handleSend}
           disabled={!text.trim() || disabled}
         >
           <Ionicons name="arrow-up" size={20} color={text.trim() && !disabled ? '#fff' : '#9CA3AF'} />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     </View>
   );
@@ -305,6 +306,8 @@ export default function ConversationScreen() {
   }, [currentUserId, offersById, offerExtrasById, skippedRatingIds, ratingTarget]);
 
   const handleSend = async (text: string) => {
+    if (isLoadingSend || !text.trim()) return;
+
     try {
       setIsLoadingSend(true);
       const res = await InboxService.sendMessage(numericId, text);
@@ -318,34 +321,63 @@ export default function ConversationScreen() {
   };
 
   const handleAccept = async (transactionId: number) => {
-    try {
-      setPendingOffer({ id: transactionId, action: 'accept' });
-      await OfferService.acceptOffer(transactionId);
-      setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: true } }));
-    } catch (error) {
-      console.error('Failed to accept offer:', error);
-    } finally {
-      setPendingOffer(null);
-    }
+    if (pendingOffer) return;
+
+    Alert.alert(
+      'Accept offer?',
+      'This will accept the recipient\'s offer and cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Accept',
+          onPress: async () => {
+            try {
+              setPendingOffer({ id: transactionId, action: 'accept' });
+              await OfferService.acceptOffer(transactionId);
+              setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: true } }));
+            } catch (error) {
+              console.error('Failed to accept offer:', error);
+            } finally {
+              setPendingOffer(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleDecline = async (transactionId: number) => {
-    try {
-      setPendingOffer({ id: transactionId, action: 'decline' });
-      await OfferService.declineOffer(transactionId);
-      setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: false } }));
-    } catch (error) {
-      console.error('Failed to decline offer:', error);
-    } finally {
-      setPendingOffer(null);
-    }
+    if (pendingOffer) return;
+
+    Alert.alert(
+      'Decline offer?',
+      'This will decline the recipient\'s offer and cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Decline',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setPendingOffer({ id: transactionId, action: 'decline' });
+              await OfferService.declineOffer(transactionId);
+              setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: false } }));
+            } catch (error) {
+              console.error('Failed to decline offer:', error);
+            } finally {
+              setPendingOffer(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleSubmitRating = async (rating: number, comment: string) => {
-    if (!ratingTarget) return;
+    if (!ratingTarget || isSubmittingRating) return;
     try {
       setIsSubmittingRating(true);
-      await TransactionService.submitRating(ratingTarget.transactionId, rating, comment, ratingTarget.raterRole);
+      await TransactionService.submitRating(ratingTarget.transactionId, rating, ratingTarget.rateeId, comment, ratingTarget.raterRole);
       setOffersById((prev) => ({
         ...prev,
         [ratingTarget.transactionId]: { ...prev[ratingTarget.transactionId], isRated: true },
