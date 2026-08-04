@@ -1,4 +1,4 @@
-import { View, Text, Image, ActivityIndicator } from 'react-native';
+import { View, Text, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
@@ -52,29 +52,42 @@ export default function OfferCard({
           </View>
         </View>
 
-        <View
-          className="w-full h-48 rounded-xl items-center justify-center mb-3 overflow-hidden"
-          style={{ backgroundColor: '#EFF6FF' }}
-        >
-          {listing?.imageUrl ? (
-            <Image source={{ uri: listing.imageUrl }} className="w-full h-full"  />
-          ) : (
-            <Ionicons name="footsteps-outline" size={28} color="#9CA3AF" />
+        <View className="flex-row w-full h-48 rounded-xl overflow-hidden mb-3">
+          <View 
+            className="flex-1 items-center justify-center" 
+            style={{ backgroundColor: '#EFF6FF' }}
+          >
+            {listing?.imageUrl ? (
+              <Image source={{ uri: listing.imageUrl }} className="w-full h-full" />
+            ) : (
+              <Ionicons name="footsteps-outline" size={28} color="#9CA3AF" />
+            )}
+          </View>
+
+          {swapItem && (
+            <View 
+              className="flex-1 items-center justify-center border-l-4 border-white" 
+              style={{ backgroundColor: '#EFF6FF' }}
+            >
+              {swapItem.imageUrl ? (
+                <Image source={{ uri: swapItem.imageUrl }} className="w-full h-full" />
+              ) : (
+                <Ionicons name="footsteps-outline" size={28} color="#9CA3AF" />
+              )}
+            </View>
           )}
         </View>
 
         {isSwap ? (
-          <View>
-            <View className="flex-row items-center gap-2 mb-1">
-              <Text className="text-gray-900 font-semibold text-sm flex-1" numberOfLines={1}>
-                {swapItem?.model ?? 'Their listing'}
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-gray-400 text-xs">
+              Size {listing?.size ?? '—'} · Item swap
+            </Text>
+            {swapItem?.size && (
+              <Text className="text-gray-400 text-xs text-right">
+                Size {swapItem.size}
               </Text>
-              <Ionicons name="swap-horizontal" size={16} color="#9CA3AF" />
-              <Text className="text-gray-900 font-semibold text-sm flex-1 text-right" numberOfLines={1}>
-                {listing?.model ?? 'Your listing'}
-              </Text>
-            </View>
-            <Text className="text-gray-400 text-xs mb-3">Size {listing?.size ?? '—'} · Item swap</Text>
+            )}
           </View>
         ) : (
           <View className="mb-3">
@@ -141,7 +154,7 @@ export default function OfferCard({
         )}
 
         {canEdit && (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             className="flex-row items-center justify-center py-2 mt-2 gap-1"
             activeOpacity={0.7}
             onPress={onEdit}
@@ -149,7 +162,7 @@ export default function OfferCard({
           >
             <Ionicons name="create-outline" size={15} color="#2563EB" />
             <Text className="text-blue-600 font-semibold text-sm">Edit offer</Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         )}
       </View>
       <Text className={`text-gray-300 text-xs mt-1 ${isMe ? 'mr-1' : 'ml-1'}`}>{time}</Text>

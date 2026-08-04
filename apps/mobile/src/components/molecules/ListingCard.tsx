@@ -19,7 +19,8 @@ export interface Listing {
   imageUrlRightSide: string;
   imageUrlTop: string;
   imageUrlSole: string;
-  imageUrlInsole: string;
+  imageUrlInsoleLeft: string;
+  imageUrlInsoleRight: string;
   conditionScore: number;
   listingMode?: 'Swap' | 'Sale' | 'Both' | 'Hot' | 'Flash Deal';
   description?: string;
