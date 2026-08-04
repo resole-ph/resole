@@ -170,7 +170,7 @@ export default function BrowseFeed({
       ) : (
         <>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 }}>
-            {visibleListings.map((listing) => (
+            {visibleListings.map((listing) => visibleListings.find(otherListing => otherListing.id === listing.id) === listing && (
               <View key={listing.id} style={{ width: '50%', padding: 5 }}>
                 <ListingCard
                   listing={listing}

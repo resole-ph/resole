@@ -185,7 +185,7 @@ export default function ConversationScreen() {
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   
-  const [ratingTarget, setRatingTarget] = useState<{ transactionId: number; sellerId: string; sellerName: string } | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<{ transactionId: number; rateeId: string; rateeName: string; raterRole: 'seller' | 'recipient' | undefined } | null>(null);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [skippedRatingIds, setSkippedRatingIds] = useState<Set<number>>(new Set());
 
@@ -268,7 +268,7 @@ export default function ConversationScreen() {
     };
   }, []);
   
-  // The buyer (recipient) is the only party allowed to submit a rating — prompt
+  // Both seller and recipient should be allowed to submit a rating — prompt
   // them once they land on a conversation with an accepted-but-unrated offer.
   useEffect(() => {
     if (!currentUserId || ratingTarget) return;
@@ -277,15 +277,31 @@ export default function ConversationScreen() {
       (offer: any) =>
         offer.isAccepted === true &&
         !offer.isRated &&
-        offer.recipientId === currentUserId &&
+        (offer.recipientId === currentUserId || offer.listing.sellerId === currentUserId) &&
         !skippedRatingIds.has(offer.id)
     );
+
     if (!pending) return;
 
-    const seller = offerExtrasById[pending.id]?.listing?.seller;
-    if (!seller?.id) return;
+    let ratee = null;
+    let raterRole: 'seller' | 'recipient' | null = null;
 
-    setRatingTarget({ transactionId: pending.id, sellerId: seller.id, sellerName: seller.name });
+    if (pending.recipientId === currentUserId) {
+      ratee = offerExtrasById[pending.id]?.listing?.seller;
+      raterRole = 'recipient';
+    } else if (pending.listing?.sellerId === currentUserId) {
+      ratee = offersById[pending.id]?.recipient;
+      raterRole = 'seller';
+    }
+
+    if (ratee && raterRole) {
+      setRatingTarget({
+        transactionId: pending.id,
+        rateeId: ratee.id,
+        rateeName: ratee.name,
+        raterRole,
+      });
+    } 
   }, [currentUserId, offersById, offerExtrasById, skippedRatingIds, ratingTarget]);
 
   const handleSend = async (text: string) => {
@@ -329,7 +345,7 @@ export default function ConversationScreen() {
     if (!ratingTarget) return;
     try {
       setIsSubmittingRating(true);
-      await TransactionService.submitRating(ratingTarget.transactionId, rating, comment);
+      await TransactionService.submitRating(ratingTarget.transactionId, rating, comment, ratingTarget.raterRole);
       setOffersById((prev) => ({
         ...prev,
         [ratingTarget.transactionId]: { ...prev[ratingTarget.transactionId], isRated: true },
@@ -445,7 +461,7 @@ export default function ConversationScreen() {
 
       <RatingModal
         visible={!!ratingTarget}
-        targetName={ratingTarget?.sellerName ?? ''}
+        targetName={ratingTarget?.rateeName ?? ''}
         submitting={isSubmittingRating}
         onSubmit={handleSubmitRating}
         onSkip={handleSkipRating}
