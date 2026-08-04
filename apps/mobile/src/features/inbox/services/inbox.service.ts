@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { MsgTab, Message, SystemUpdate } from "../types/inbox.types";
+import { MsgTab, Message, PickedInboxPhoto, SystemUpdate, ThreadMessage } from "../types/inbox.types";
 import { apiFetch } from "@/lib/api-client";
 
 /** The one and only Resole row: every system update as a single thread. */
@@ -95,7 +95,7 @@ export const InboxService = {
         sender: name,
         userId: item.user?.id,
         avatarInitial: name.charAt(0).toUpperCase() || '?',
-        preview: item.latestMessage?.content ?? 'No messages yet',
+        preview: item.latestMessage?.attachment ? 'Photo' : item.latestMessage?.content ?? 'No messages yet',
         time: formatTimestamp(item.latestMessage?.createdAt ?? item.updatedAt),
         unread: notificationIds.length,
         notificationIds,
@@ -116,16 +116,37 @@ export const InboxService = {
   },
 
   async getConversationThread(conversationId: number) {
-    return apiFetch<{ messages: any[]; offers: any[] }>(`api/conversations/${conversationId}`, {
+    return apiFetch<{ messages: ThreadMessage[]; offers: any[] }>(`api/conversations/${conversationId}`, {
       method: 'GET',
       cacheTtl: 0,
     });
   },
 
   async sendMessage(conversationId: number, content: string) {
-    return apiFetch<{ message: any }>(`api/conversations/${conversationId}/messages`, {
+    return apiFetch<{ message: ThreadMessage }>(`api/conversations/${conversationId}/messages`, {
       method: 'POST',
       body: { content },
+    });
+  },
+
+  async sendPhoto(conversationId: number, photo: PickedInboxPhoto) {
+    const form = new FormData();
+    const extension = photo.uri.split('.').pop()?.toLowerCase();
+    const fallbackMime = extension === 'png'
+      ? 'image/png'
+      : extension === 'webp'
+        ? 'image/webp'
+        : 'image/jpeg';
+
+    form.append('photo', {
+      uri: photo.uri,
+      name: photo.fileName ?? `photo-${Date.now()}.${extension ?? 'jpg'}`,
+      type: photo.mimeType ?? fallbackMime,
+    } as unknown as Blob);
+
+    return apiFetch<{ message: ThreadMessage }>(`api/conversations/${conversationId}/photos`, {
+      method: 'POST',
+      body: form,
     });
   },
 

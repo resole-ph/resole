@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, Keyboard,
-  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image, Modal, Dimensions,
 } from 'react-native';
 import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { InboxService, RESOLE_THREAD_ID } from '@/features/inbox/services/inbox.service';
-import { SystemUpdate } from '@/features/inbox/types/inbox.types';
+import { SystemUpdate, ThreadMessage } from '@/features/inbox/types/inbox.types';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { UserService } from '@/features/user/services/user.service';
@@ -118,7 +119,76 @@ function TextBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
   );
 }
 
-function InputBar({ onSend, disabled }: { onSend: (text: string) => void, disabled: boolean }) {
+function PhotoBubble({ msg, isMe }: { msg: ThreadMessage; isMe: boolean }) {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const maxWidth = Math.min(260, Dimensions.get('window').width - 64);
+  const aspectRatio = msg.attachment ? msg.attachment.width / msg.attachment.height : 1;
+  const height = Math.min(320, Math.max(160, maxWidth / aspectRatio));
+
+  return (
+    <>
+      <View className={`flex-row mb-1 px-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <View>
+          <GuardedTouchableOpacity
+            activeOpacity={msg.attachment?.url ? 0.85 : 1}
+            disabled={!msg.attachment?.url}
+            onPress={() => setIsPreviewOpen(true)}
+            className={`overflow-hidden rounded-2xl ${isMe ? 'rounded-tr-sm bg-blue-100' : 'rounded-tl-sm bg-gray-200'}`}
+            style={{ width: maxWidth, height, ...(isMe ? {} : CARD_SHADOW) }}
+          >
+            {msg.attachment?.url ? (
+              <Image
+                source={{ uri: msg.attachment.url }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="contain"
+                accessibilityLabel="Photo attachment"
+              />
+            ) : (
+              <View className="flex-1 items-center justify-center gap-2">
+                <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                <Text className="text-gray-500 text-xs">Photo unavailable</Text>
+              </View>
+            )}
+          </GuardedTouchableOpacity>
+          <Text className={`text-gray-300 text-xs mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+      </View>
+
+      <Modal
+        visible={isPreviewOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPreviewOpen(false)}
+      >
+        <View className="flex-1 bg-black items-center justify-center">
+          <GuardedTouchableOpacity
+            onPress={() => setIsPreviewOpen(false)}
+            className="absolute right-5 top-14 z-10 w-11 h-11 rounded-full bg-white/20 items-center justify-center"
+            accessibilityLabel="Close photo"
+          >
+            <Ionicons name="close" size={26} color="#fff" />
+          </GuardedTouchableOpacity>
+          {msg.attachment?.url && (
+            <Image
+              source={{ uri: msg.attachment.url }}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="contain"
+              accessibilityLabel="Photo attachment preview"
+            />
+          )}
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+function InputBar({ onSend, onPhoto, disabled }: {
+  onSend: (text: string) => void;
+  onPhoto: () => void;
+  disabled: boolean;
+}) {
   const [text, setText] = useState('');
   const insets = useSafeAreaInsets();
 
@@ -132,6 +202,19 @@ function InputBar({ onSend, disabled }: { onSend: (text: string) => void, disabl
   return (
     <View className="bg-white border-t border-gray-100 px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
       <View className="flex-row items-end gap-2">
+        <GuardedTouchableOpacity
+          className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
+          activeOpacity={disabled ? 0.6 : 0.8}
+          onPress={onPhoto}
+          disabled={disabled}
+          accessibilityLabel="Send a photo"
+        >
+          {disabled ? (
+            <ActivityIndicator size="small" color="#2563EB" />
+          ) : (
+            <Ionicons name="image-outline" size={22} color="#2563EB" />
+          )}
+        </GuardedTouchableOpacity>
         <View className="flex-1 bg-gray-100 rounded-2xl px-4 py-2.5 max-h-28 justify-center">
           <TextInput
             value={text}
@@ -178,7 +261,7 @@ export default function ConversationScreen() {
   const [notFound, setNotFound] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [offersById, setOffersById] = useState<Record<number, any>>({});
   const [offerExtrasById, setOfferExtrasById] = useState<Record<number, { listing: Listing | null; swapItem: Listing | null }>>({});
 
@@ -315,6 +398,41 @@ export default function ConversationScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     } catch (error) {
       console.error('Failed to send message:', error);
+      Alert.alert('Message not sent', error instanceof Error ? error.message : 'Please try again.');
+    } finally {
+      setIsLoadingSend(false);
+    }
+  };
+
+  const handleSendPhoto = async () => {
+    if (isLoadingSend) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1,
+        selectionLimit: 1,
+      });
+      const photo = result.canceled ? null : result.assets[0];
+      if (!photo) return;
+
+      if (photo.fileSize && photo.fileSize > 20 * 1024 * 1024) {
+        Alert.alert('Photo too large', 'Choose a photo smaller than 20MB.');
+        return;
+      }
+
+      setIsLoadingSend(true);
+      const res = await InboxService.sendPhoto(numericId, {
+        uri: photo.uri,
+        fileName: photo.fileName ?? null,
+        mimeType: photo.mimeType ?? null,
+      });
+      setMessages((prev) => [...prev, res.message]);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    } catch (error) {
+      console.error('Failed to send photo:', error);
+      Alert.alert('Photo not sent', error instanceof Error ? error.message : 'Please try again.');
     } finally {
       setIsLoadingSend(false);
     }
@@ -463,7 +581,7 @@ export default function ConversationScreen() {
 
             return (
               <View key={msg.id}>
-                <TextBubble msg={msg} isMe={isMe} />
+                {msg.attachment ? <PhotoBubble msg={msg} isMe={isMe} /> : <TextBubble msg={msg} isMe={isMe} />}
                 {offerItem && (
                   <OfferCard
                     type={offerItem.type}
@@ -487,6 +605,7 @@ export default function ConversationScreen() {
 
         <InputBar
           onSend={handleSend}
+          onPhoto={handleSendPhoto}
           disabled={isLoadingSend}
         />
       </KeyboardAvoidingView>
