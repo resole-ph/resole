@@ -1,5 +1,5 @@
 {
-  "id": "8dcb4390-1d72-465e-a43d-5320277538c5",
+  "id": "8dcb4390-1d72-465e-a43d-5320277538c5"
   "prevId": "8e131f69-87d7-42bf-86cb-b5bcd8a59c55",
   "version": "7",
   "dialect": "postgresql",
@@ -3386,8 +3386,12 @@
       "name": "referal_enum",
       "schema": "public",
       "values": [
-        "seller",
-        "recipient"
+        "facebook",
+        "messenger",
+        "x",
+        "instagram",
+        "code",
+        "other"
       ]
     },
     "public.ticket_priority_enum": {
