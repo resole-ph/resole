@@ -26,8 +26,10 @@ type OfferCardProps = {
   price: string | null;
   status: OfferStatus;
   canRespond: boolean;
+  canEdit: boolean;
   onAccept: () => void;
   onDecline: () => void;
+  onEdit: () => void;
   time: string;
   isMe: boolean;
   isAccepting: boolean;
@@ -35,7 +37,7 @@ type OfferCardProps = {
 };
 
 export default function OfferCard({
-  type, listing, swapItem, price, status, canRespond, onAccept, onDecline, time, isMe, isAccepting, isDeclining
+  type, listing, swapItem, price, status, canRespond, canEdit, onAccept, onDecline, onEdit, time, isMe, isAccepting, isDeclining
 }: OfferCardProps) {
   const isSwap = type === 'swap';
   const disabled = isAccepting || isDeclining;
@@ -136,6 +138,18 @@ export default function OfferCard({
               {status === 'accepted' ? 'Offer accepted' : 'Offer declined'}
             </Text>
           </View>
+        )}
+
+        {canEdit && (
+          <TouchableOpacity
+            className="flex-row items-center justify-center py-2 mt-2 gap-1"
+            activeOpacity={0.7}
+            onPress={onEdit}
+            disabled={disabled}
+          >
+            <Ionicons name="create-outline" size={15} color="#2563EB" />
+            <Text className="text-blue-600 font-semibold text-sm">Edit offer</Text>
+          </TouchableOpacity>
         )}
       </View>
       <Text className={`text-gray-300 text-xs mt-1 ${isMe ? 'mr-1' : 'ml-1'}`}>{time}</Text>

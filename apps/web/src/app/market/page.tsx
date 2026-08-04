@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import ListingCard from "@/components/ListingCard";
 import DownloadAppModal from "@/components/DownloadAppModal";
 import { useListings } from "@/features/shoe/queries/listing.queries";
+import { useSearchSuggestions } from "@/features/search/queries/search.queries";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
 
@@ -20,10 +22,31 @@ const COLORS = {
 const BRANDS = ["All", "Nike", "Adidas", "Jordan", "New Balance", "Yeezy", "Asics"];
 
 export default function MarketPage() {
+  const router = useRouter();
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBrand, setSelectedBrand] = useState<string>("All");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Closing the dropdown on the input's `onBlur` raced with the click on a
+  // suggestion — the blur fired and unmounted the dropdown before the click
+  // event landed, so suggestions looked unclickable. Closing only on a real
+  // outside click removes that race entirely.
+  useEffect(() => {
+    if (!isSearchFocused) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSearchFocused]);
 
   // App Modal State
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
@@ -38,6 +61,24 @@ export default function MarketPage() {
   // settled value reaches the query — otherwise typing "jordan" fired twelve
   // uncached requests across the two boards.
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
+
+  const { data: suggestions } = useSearchSuggestions(debouncedSearch);
+  const shoeSuggestions = suggestions?.shoes ?? [];
+  const peopleSuggestions = suggestions?.people ?? [];
+  const showSuggestions =
+    isSearchFocused &&
+    debouncedSearch.trim().length >= 2 &&
+    (shoeSuggestions.length > 0 || peopleSuggestions.length > 0);
+
+  const handlePickShoe = (shoe: { brand: string; model: string }) => {
+    setSearchQuery(`${shoe.brand} ${shoe.model}`);
+    setIsSearchFocused(false);
+  };
+
+  const handlePickPerson = (person: { id: string; name: string }) => {
+    setIsSearchFocused(false);
+    router.push(`/users/${person.id}`);
+  };
 
   // Cached per (section, brand, search), so clearing a filter or retyping a
   // previous search resolves from cache, and coming back from a listing page
@@ -60,10 +101,12 @@ export default function MarketPage() {
   const filterListings = (list: SerializedShoeListing[]) => {
     return list.filter((item) => {
       const matchesBrand = selectedBrand === "All" || item.brand.toLowerCase() === selectedBrand.toLowerCase();
-      const matchesSearch = !searchQuery || 
-        item.model.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        item.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.colorway && item.colorway.toLowerCase().includes(searchQuery.toLowerCase()));
+      const term = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery ||
+        item.model.toLowerCase().includes(term) ||
+        item.brand.toLowerCase().includes(term) ||
+        `${item.brand} ${item.model}`.toLowerCase().includes(term) ||
+        (item.colorway && item.colorway.toLowerCase().includes(term));
       return matchesBrand && matchesSearch;
     });
   };
@@ -87,7 +130,7 @@ export default function MarketPage() {
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 24px 80px" }}>
         
         {/* SEARCH BAR */}
-        <div style={{ marginBottom: 16, position: "relative" }}>
+        <div ref={searchContainerRef} style={{ marginBottom: 16, position: "relative" }}>
           <span className="material-symbols-outlined" style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: COLORS.textFaint, fontSize: 20 }}>
             search
           </span>
@@ -96,6 +139,7 @@ export default function MarketPage() {
             placeholder="Search model, brand, or colorway..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
             style={{
               width: "100%",
               padding: "14px 16px 14px 48px",
@@ -114,6 +158,123 @@ export default function MarketPage() {
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
             </button>
+          )}
+
+          {showSuggestions && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                left: 0,
+                right: 0,
+                background: COLORS.surface,
+                borderRadius: 18,
+                border: `1px solid ${COLORS.border}`,
+                boxShadow: "0px 12px 32px rgba(0,0,0,0.1)",
+                zIndex: 20,
+                overflow: "hidden",
+              }}
+            >
+              {shoeSuggestions.length > 0 && (
+                <div style={{ padding: "12px 10px 6px" }}>
+                  <p style={{ margin: "0 10px 6px", fontSize: 11.5, fontWeight: 700, color: COLORS.textFaint, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                    Shoes
+                  </p>
+                  {shoeSuggestions.map((shoeItem: { brand: string; model: string }, index: number) => (
+                    <button
+                      key={`${shoeItem.brand}-${shoeItem.model}-${index}`}
+                      onClick={() => handlePickShoe(shoeItem)}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        padding: "12px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        borderRadius: 12,
+                        fontSize: 15,
+                        color: COLORS.textMain,
+                        transition: "background 0.12s ease",
+                      }}
+                      className="hover:bg-gray-50"
+                    >
+                      <span
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 12,
+                          background: "rgba(37,99,235,0.1)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                        aria-hidden
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 22, color: COLORS.primary }}>
+                          footprint
+                        </span>
+                      </span>
+                      <span>
+                        <span style={{ fontWeight: 700 }}>{shoeItem.brand}</span> {shoeItem.model}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {peopleSuggestions.length > 0 && (
+                <div style={{ padding: "6px 10px 12px", borderTop: shoeSuggestions.length > 0 ? `1px solid ${COLORS.border}` : "none" }}>
+                  <p style={{ margin: "10px 10px 6px", fontSize: 11.5, fontWeight: 700, color: COLORS.textFaint, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                    People
+                  </p>
+                  {peopleSuggestions.map((person: { id: string; name: string }) => (
+                    <button
+                      key={person.id}
+                      onClick={() => handlePickPerson(person)}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        padding: "12px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        borderRadius: 12,
+                        fontSize: 15,
+                        color: COLORS.textMain,
+                        transition: "background 0.12s ease",
+                      }}
+                      className="hover:bg-gray-50"
+                    >
+                      <span
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 12,
+                          background: "rgba(124,58,237,0.1)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                        aria-hidden
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 22, color: "#7C3AED" }}>
+                          person
+                        </span>
+                      </span>
+                      <span style={{ fontWeight: 600 }}>{person.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
 

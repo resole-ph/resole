@@ -117,6 +117,38 @@ function RemovedCard({
   );
 }
 
+function DonateComingSoon({ charityName, onClose }: { charityName: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Donations coming soon"
+        className="w-full max-w-sm bg-surface-container-lowest rounded-xl shadow-[0px_8px_32px_rgba(0,0,0,0.15)] p-6 flex flex-col items-center text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-14 h-14 rounded-full bg-secondary-container/30 flex items-center justify-center mb-4">
+          <span className="material-symbols-outlined text-secondary text-[26px]">favorite</span>
+        </div>
+        <p className="text-secondary text-[12px] font-bold tracking-wide mb-1">COMING SOON</p>
+        <h3 className="text-on-surface font-bold text-[18px] mb-1.5">Donate to {charityName}</h3>
+        <p className="text-on-surface-variant text-[13px] leading-relaxed mb-6">
+          We&apos;re still building donations. Soon you&apos;ll be able to send proceeds straight to {charityName}.
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full py-2.5 rounded-full text-[14px] font-semibold text-white bg-primary hover:opacity-90 transition-opacity"
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EmptyState({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center py-16">
@@ -137,7 +169,9 @@ export default function MyListingsView() {
   const [donateListingId, setDonateListingId] = useState<string | null>(null);
   const [charities, setCharities] = useState<any[]>([]);
   const [charitiesLoading, setCharitiesLoading] = useState(false);
-  const [donating, setDonating] = useState(false);
+  // Donations aren't wired up to actually transfer proceeds yet — picking a
+  // charity shows a "coming soon" notice instead of hitting the donate API.
+  const [comingSoonCharity, setComingSoonCharity] = useState<{ name: string } | null>(null);
 
   // Same cache entry MyListingsPreviewCard fills on /profile, so arriving here
   // via "View all" renders instantly instead of refetching a list we just had.
@@ -225,27 +259,9 @@ export default function MyListingsView() {
     }
   };
 
-  const handleConfirmDonate = async (charityId: number) => {
-    if (!donateListingId) return;
-    setDonating(true);
-    try {
-      const response = await fetch(`/api/listings/${donateListingId}/donate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ charityId }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to donate listing');
-
-      // Donating takes the listing off the account entirely.
-      patchCache((items) => items.filter((l) => l.id !== donateListingId));
-      setDonateListingId(null);
-      alert('Thank you! Your shoe has been donated.');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not donate listing');
-    } finally {
-      setDonating(false);
-    }
+  const handlePickCharity = (charity: { name: string }) => {
+    setDonateListingId(null);
+    setComingSoonCharity(charity);
   };
 
   const handleEdit = (id: string) => {
@@ -354,25 +370,27 @@ export default function MyListingsView() {
                 {charities.map((charity) => (
                   <button
                     key={charity.id}
-                    onClick={() => handleConfirmDonate(charity.id)}
-                    disabled={donating}
+                    onClick={() => handlePickCharity(charity)}
                     className="flex items-center justify-between rounded-xl px-4 py-3 bg-surface-container hover:bg-surface-container-high transition-colors text-left"
                   >
                     <div className="flex-1 min-w-0 mr-3">
                       <p className="text-on-surface font-semibold text-[14px] truncate">{charity.name}</p>
                       <p className="text-on-surface-variant text-[11px] mt-0.5 truncate">{charity.cause}</p>
                     </div>
-                    {donating ? (
-                      <div className="w-5 h-5 border-2 border-secondary border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <span className="material-symbols-outlined text-outline-variant text-[20px] flex items-center justify-center">chevron_right</span>
-                    )}
+                    <span className="material-symbols-outlined text-outline-variant text-[20px] flex items-center justify-center">chevron_right</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
         </div>
+      )}
+
+      {comingSoonCharity && (
+        <DonateComingSoon
+          charityName={comingSoonCharity.name}
+          onClose={() => setComingSoonCharity(null)}
+        />
       )}
     </>
   );

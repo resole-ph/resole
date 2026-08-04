@@ -95,3 +95,6 @@ export type ConversationThreadData = {
   /** Listings behind each offer, keyed by offer id — resolved server-side. */
   offerExtras: Record<number, OfferExtras>;
 };
+
+/** Payload for `PATCH /api/offers/[id]` — shape depends on the offer's type. */
+export type EditOfferPayload = { price: number } | { listings: number[] };

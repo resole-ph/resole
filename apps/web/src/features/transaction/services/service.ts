@@ -631,11 +631,11 @@ export async function acceptOffer(id: number) {
 
 export async function declineOffer(id: number) {
   try {
-    const result = await db 
+    const result = await db
       .update(transaction)
-      .set({ 
+      .set({
         isAccepted: false,
-        acceptedAt: null 
+        acceptedAt: null
       })
       .where(eq(transaction.id, id))
       .returning({ id: transaction.id });
@@ -645,7 +645,71 @@ export async function declineOffer(id: number) {
     console.error("Error declining offer.", error);
     return null
   }
-}   
+}
+
+export async function updateSaleByTransactionId(transactionId: number, price: number) {
+  try {
+    const result = await db
+      .update(sale)
+      .set({ price: price.toString() })
+      .where(eq(sale.transactionId, transactionId))
+      .returning({ id: sale.id });
+
+    if (!result[0]) return null;
+    return getSaleById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error updating sale.", error);
+    return null;
+  }
+}
+
+export async function updateSwapItemsByTransactionId(transactionId: number, listings: number[]) {
+  try {
+    const swapRows = await db
+      .select({ id: swap.id })
+      .from(swap)
+      .where(eq(swap.transactionId, transactionId));
+
+    if (!swapRows[0]) return null;
+
+    const swapId = swapRows[0].id;
+
+    await db.delete(swapItem).where(eq(swapItem.swapId, swapId));
+
+    for (const listing of listings) {
+      await db
+        .insert(swapItem)
+        .values({
+          swapId: swapId,
+          itemId: listing
+        })
+    }
+
+    return getSwapById(swapId) ?? null;
+  } catch (error) {
+    console.error("Error updating swap items.", error);
+    return null;
+  }
+}
+
+/** Buyer edits reopen negotiation — a declined offer goes back to pending so the seller sees it fresh. */
+export async function resetOfferToPending(id: number) {
+  try {
+    const result = await db
+      .update(transaction)
+      .set({
+        isAccepted: null,
+        acceptedAt: null
+      })
+      .where(eq(transaction.id, id))
+      .returning({ id: transaction.id });
+
+    return getTransactionById(result[0].id) ?? null;
+  } catch (error) {
+    console.error("Error resetting offer to pending.", error);
+    return null
+  }
+}
   
 export async function checkoutCart(userId: string, isBuyNow: boolean) {
   const items = await db

@@ -27,6 +27,7 @@ interface ConversationThreadProps {
   onSend: (text: string) => void;
   onAccept: (transactionId: number) => void;
   onDecline: (transactionId: number) => void;
+  onEdit: (transactionId: number) => void;
 }
 
 function getOfferStatus(offer: ThreadOffer): OfferStatus {
@@ -157,19 +158,23 @@ function OfferCard({
   extras,
   isMe,
   canRespond,
+  canEdit,
   disabled,
   time,
   onAccept,
   onDecline,
+  onEdit,
 }: {
   offer: ThreadOffer;
   extras: OfferExtras | undefined;
   isMe: boolean;
   canRespond: boolean;
+  canEdit: boolean;
   disabled: boolean;
   time: string;
   onAccept: () => void;
   onDecline: () => void;
+  onEdit: () => void;
 }) {
   const isSwap = offer.type === 'swap';
   const status = getOfferStatus(offer);
@@ -264,6 +269,17 @@ function OfferCard({
             </span>
           </div>
         )}
+
+        {canEdit && (
+          <button
+            onClick={onEdit}
+            disabled={disabled}
+            className="w-full mt-2 flex items-center justify-center gap-1 py-1.5 text-primary font-semibold text-[12px] hover:underline disabled:opacity-60"
+          >
+            <span className="material-symbols-outlined text-[15px]">edit</span>
+            Edit offer
+          </button>
+        )}
       </div>
 
       <span className="text-outline text-[11px] mt-1 mx-1 block">{time}</span>
@@ -328,6 +344,7 @@ export default function ConversationThread({
   onSend,
   onAccept,
   onDecline,
+  onEdit,
 }: ConversationThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -381,10 +398,12 @@ export default function ConversationThread({
                     extras={extras}
                     isMe={isMe}
                     canRespond={!!currentUserId && extras?.listing?.seller.id === currentUserId}
+                    canEdit={isMe && !offer.isCompleted}
                     disabled={isRespondingToOffer}
                     time={formatMessageTime(msg.createdAt)}
                     onAccept={() => onAccept(offer.id)}
                     onDecline={() => onDecline(offer.id)}
+                    onEdit={() => onEdit(offer.id)}
                   />
                 )}
               </div>

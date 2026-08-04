@@ -2,10 +2,13 @@ import { buildInboxItems } from '../utils/inbox-items';
 import type {
   ConversationSummary,
   ConversationThreadData,
+  EditOfferPayload,
   InboxItem,
   NotificationSummary,
   ThreadMessage,
+  ThreadOffer,
 } from '../types/inbox.types';
+import type { SerializedShoeListing } from '@/features/shoe/utils/listing-dto';
 
 /**
  * Browser-side inbox client. Talks to the same API routes the mobile app uses,
@@ -68,6 +71,18 @@ export const InboxClient = {
 
   declineOffer(transactionId: number) {
     return request<{ message: string }>(`/api/offers/${transactionId}/decline`, { method: 'POST' });
+  },
+
+  editOffer(transactionId: number, payload: EditOfferPayload) {
+    return request<{ message: string; details: ThreadOffer['details'] }>(`/api/offers/${transactionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getMyListings(): Promise<SerializedShoeListing[]> {
+    const data = await request<{ shoeListings: SerializedShoeListing[] }>('/api/users/me/listings');
+    return data.shoeListings ?? [];
   },
 
   async getCurrentUserId(): Promise<string | null> {
