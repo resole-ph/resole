@@ -1,6 +1,8 @@
 import { View, Text, Image, Dimensions } from 'react-native';
 import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
+import { PHOTO_GUIDES } from '../constants/photoGuides';
+import PhotoGuideImage from './PhotoGuideImage';
 import type { SellPhoto, PhotoAngle } from '../types/sell.types';
 
 const CARD_SIZE = (Dimensions.get('window').width - 48) / 2;
@@ -30,6 +32,8 @@ interface PhotoUploadCardProps {
 }
 
 export default function PhotoUploadCard({ angle, photo, onPress }: PhotoUploadCardProps) {
+  const guide = PHOTO_GUIDES[angle];
+
   return (
     <GuardedTouchableOpacity
       onPress={() => onPress(angle)}
@@ -63,7 +67,7 @@ export default function PhotoUploadCard({ angle, photo, onPress }: PhotoUploadCa
         </View>
       ) : (
         <View
-          className="rounded-2xl items-center justify-center bg-surface-container-low"
+          className="rounded-2xl overflow-hidden bg-white"
           style={{
             width: CARD_SIZE,
             height: CARD_SIZE,
@@ -72,15 +76,33 @@ export default function PhotoUploadCard({ angle, photo, onPress }: PhotoUploadCa
             borderColor: '#c2c6d8',
           }}
         >
-          <View className="w-10 h-10 rounded-full bg-secondary-container items-center justify-center mb-2">
-            <Ionicons name={'cloud-upload-outline'} size={20} color="#0054d3" />
+          {/* Reference illustration of the exact shot this angle needs — given
+              most of the card so it actually reads at this size, with the call
+              to action pinned to its own solid strip instead of overlaid text
+              fighting the image for attention. */}
+          <View style={{ height: CARD_SIZE - 46 }}>
+            <PhotoGuideImage guide={guide} zoom={1.45} />
+            <View className="absolute top-1.5 left-1.5 bg-white rounded-full px-2 py-0.5" style={{ borderWidth: 1, borderColor: '#BFDBFE' }}>
+              <Text className="font-label-md text-label-md text-blue-600" style={{ fontWeight: '700' }}>
+                EXAMPLE
+              </Text>
+            </View>
           </View>
-          <Text className="font-body-md text-body-md text-on-surface text-center">
-            {ANGLE_LABELS[angle]}
-          </Text>
-          <Text className="font-label-md text-label-md text-on-surface-variant mt-0.5">
-            Tap to upload
-          </Text>
+
+          <View
+            className="flex-row items-center justify-center px-2"
+            style={{ height: 46, backgroundColor: '#0054d3' }}
+          >
+            <Ionicons name={'cloud-upload-outline'} size={16} color="#fff" />
+            <View className="ml-1.5">
+              <Text className="text-white text-center" style={{ fontSize: 12.5, fontWeight: '700', lineHeight: 15 }} numberOfLines={1}>
+                {ANGLE_LABELS[angle]}
+              </Text>
+              <Text className="text-white/80 text-center" style={{ fontSize: 10.5, lineHeight: 13 }}>
+                Tap to upload
+              </Text>
+            </View>
+          </View>
         </View>
       )}
     </GuardedTouchableOpacity>

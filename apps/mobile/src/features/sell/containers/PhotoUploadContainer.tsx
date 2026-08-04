@@ -7,9 +7,11 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import SellStepHeader from '../components/SellStepHeader';
 import StepFooter from '../components/StepFooter';
 import PhotoGrid from '../components/PhotoGrid';
+import PhotoGuideImage from '../components/PhotoGuideImage';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useSellFlow } from '../hooks/useSellFlow';
 import { sellService } from '../services/sell.service';
+import { PHOTO_GUIDES } from '../constants/photoGuides';
 import type { PhotoAngle, SellPhoto } from '../types/sell.types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -288,6 +290,28 @@ export default function PhotoUploadContainer() {
               marginBottom: 16,
             }}
           />
+
+          {pendingAngle && (
+            <View style={{ paddingHorizontal: 24, marginBottom: 16 }}>
+              <View style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: 1 }}>
+                <PhotoGuideImage guide={PHOTO_GUIDES[pendingAngle]} zoom={1.5} />
+                <View style={{ position: 'absolute', top: 10, left: 10, backgroundColor: '#ffffff', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3, borderWidth: 1, borderColor: '#BFDBFE' }}>
+                  <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#2563EB', letterSpacing: 0.4 }}>
+                    EXAMPLE SHOT
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827', marginTop: 10 }}>
+                {ANGLE_LABELS[pendingAngle]}
+              </Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2, lineHeight: 18 }}>
+                {PHOTO_GUIDES[pendingAngle].caption}
+              </Text>
+            </View>
+          )}
+
+          <View style={{ height: 1, backgroundColor: '#e8eaf0', marginHorizontal: 24, marginBottom: 4 }} />
 
           <GuardedTouchableOpacity
             onPress={handleCameraPress}
