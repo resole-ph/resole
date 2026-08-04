@@ -5,7 +5,6 @@ import { getTransactionsWithDetailsByIds } from '@/features/transaction/services
 import { getRatedTransactions } from '@/features/user-action/services/service';
 import { getShoeListingsByIds } from '@/features/shoe/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
-import { get } from 'node:http';
 
 function parseConversationId(rawId: string) {
   const conversationId = Number.parseInt(rawId, 10);
@@ -64,18 +63,18 @@ export async function GET(
     getRatedTransactions(transactionIds),
   ]);
 
-  const ratedTransactionSet = new Set(ratedTransactions.map((item: any) => ({
-    id: item.id,
-    raterRole: item.raterRole
-  })));
+  const ratedTransactionSet = new Set(
+    ratedTransactions.map((item: any) => `${item.id}-${item.raterRole}`)
+  );
 
-  const offers = transactions.map((transaction) => ({
-    ...transaction,
-    isRated: ratedTransactionSet.has({
-      id: transaction.id,
-      raterRole: currentUser.user.id === transaction.listing.userId ? 'seller' : 'recipient'
-    }),
-  }));
+  const offers = transactions.map((transaction) => {
+    const role = currentUser.user.id === transaction.listing.userId ? 'seller' : 'recipient';
+    
+    return {
+      ...transaction,
+      isRated: ratedTransactionSet.has(`${transaction.id}-${role}`),
+    };
+  });
 
   // Offer cards render the listing being offered on, and for a swap the item put
   // up in exchange. Both are resolved here: left to the client they become one
