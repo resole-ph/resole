@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, Image, ScrollView, TouchableOpacity,
+  View, Text, Image, ScrollView,
   Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Dimensions, NativeSyntheticEvent, NativeScrollEvent,
+  Dimensions, NativeSyntheticEvent, NativeScrollEvent, Alert,
 } from 'react-native';
 
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
-import { OfferService } from '@/features/offer/services/offer.service';
+import { OfferService, type ExistingListingOffer } from '@/features/offer/services/offer.service';
 import { UserService } from '@/features/user/services/user.service';
 import { useSellStore } from '@/store/sell';
 import { usePreferencesStore } from '@/store/preferences';
@@ -42,7 +43,7 @@ type ActionButtonProps = {
 };
 
 const ActionButton = ({ label, icon, color, onPress, disabled }: ActionButtonProps) => (
-  <TouchableOpacity
+  <GuardedTouchableOpacity
     className="flex-1 rounded-2xl py-4 items-center justify-center flex-row"
     activeOpacity={disabled ? 0.6 : 1}
     onPress={onPress}
@@ -51,7 +52,7 @@ const ActionButton = ({ label, icon, color, onPress, disabled }: ActionButtonPro
   >
     <Ionicons name={icon} size={18} color="#fff" />
     <Text className="text-white font-bold text-base ml-2">{label}</Text>
-  </TouchableOpacity>
+  </GuardedTouchableOpacity>
 );
 
 export default function ListingDetailScreen() {
@@ -69,9 +70,12 @@ export default function ListingDetailScreen() {
   const [similarListings, setSimilarListings]     = useState<Listing[] | null>(null);
   const [isLoadingListing, setIsLoadingListing]   = useState(true);
   const [isLoadingOffer, setIsLoadingOffer]       = useState(false);
+  const [isConfirmingOffer, setIsConfirmingOffer] = useState(false);
   const [activePhoto, setActivePhoto]             = useState(0);
   const [currentUserId, setCurrentUserId]         = useState<string | null>(null);
+  const [existingOffer, setExistingOffer]         = useState<ExistingListingOffer | null>(null);
   const [isSaved, setIsSaved]                     = useState(false);
+  const [isUpdatingSave, setIsUpdatingSave]       = useState(false);
 
   const resetSell = useSellStore((s) => s.reset);
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
@@ -80,13 +84,30 @@ export default function ListingDetailScreen() {
     const loadData = async () => {
       setIsLoadingListing(true);
       try {
-        const fetchedListing = await ListingService.getListingById(id, !!isView);
-        setListing(fetchedListing);
+        const [fetchedListing, currentUser] = await Promise.all([
+          ListingService.getListingById(id, !!isView),
+          UserService.getUserInfo().catch((error) => {
+            console.error('Failed to load current user:', error);
+            return null;
+          }),
+        ]);
 
-        if (fetchedListing && fetchedListing.model) {
-          const similarData = await ListingService.getSimilarListings(fetchedListing.model);
-          setSimilarListings(similarData);
-        }
+        const [similarData, existingOfferData] = await Promise.all([
+          fetchedListing?.model
+            ? ListingService.getSimilarListings(fetchedListing.model)
+            : Promise.resolve(null),
+          currentUser && fetchedListing?.seller.id !== currentUser.id
+            ? OfferService.getExistingForListing(id).catch((error) => {
+                console.error('Failed to check existing offer:', error);
+                return null;
+              })
+            : Promise.resolve(null),
+        ]);
+
+        setCurrentUserId(currentUser?.id ?? null);
+        setExistingOffer(existingOfferData);
+        setSimilarListings(similarData);
+        setListing(fetchedListing);
       } finally {
         setIsLoadingListing(false);
       }
@@ -94,9 +115,6 @@ export default function ListingDetailScreen() {
 
     loadData();
     
-    UserService.getUserInfo()
-      .then((user) => setCurrentUserId(user.id))
-      .catch((error) => console.error('Failed to load current user:', error));
     ListingService.getFavouriteListingIds()
       .then((ids) => setIsSaved(ids.includes(id)))
       .catch((error) => console.error('Failed to load saved listings:', error));
@@ -105,6 +123,11 @@ export default function ListingDetailScreen() {
   useEffect(() => {
     if (autoActionHandled || !listing || !action) return;
     if (currentUserId && listing.seller.id === currentUserId) {
+      setAutoActionHandled(true);
+      return;
+    }
+    if (existingOffer) {
+      handleExistingOffer();
       setAutoActionHandled(true);
       return;
     }
@@ -119,19 +142,19 @@ export default function ListingDetailScreen() {
       handleSwap();
     }
     setAutoActionHandled(true);
-  }, [listing, action, currentUserId, autoActionHandled]);
+  }, [listing, action, currentUserId, existingOffer, autoActionHandled]);
 
   if (isLoadingListing) {
     return (
       <View className="flex-1 items-center justify-center bg-gray-50">
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="absolute z-10 w-10 h-10 rounded-full bg-white items-center justify-center"
           style={{ top: insets.top + 12, left: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 4 }}
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
           <Ionicons name="arrow-back" size={20} color="#111827" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
         <ActivityIndicator size="large" color="#2563EB" />
         <Text className="text-gray-400 mt-3">Loading listing…</Text>
       </View>
@@ -143,9 +166,9 @@ export default function ListingDetailScreen() {
       <View className="flex-1 items-center justify-center bg-gray-50">
         <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
         <Text className="text-gray-400 mt-3">Listing not found</Text>
-        <TouchableOpacity className="mt-4" onPress={() => router.back()}>
+        <GuardedTouchableOpacity className="mt-4" onPress={() => router.back()}>
           <Text className="text-blue-600 font-medium">Go back</Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     );
   }
@@ -154,7 +177,7 @@ export default function ListingDetailScreen() {
   const canSwap        = listing.isAvailable && (listing.listingMode === 'Swap' || listing.listingMode === 'Both');
   const conditionColor = CONDITION_COLORS[listing.condition];
   const isOwnListing   = !!currentUserId && listing.seller.id === currentUserId;
-  const isMakeOfferButtonActive = Boolean(offerPrice && !isLoadingOffer && !offerSent);
+  const isMakeOfferButtonActive = Boolean(offerPrice && !isLoadingOffer && !isConfirmingOffer && !offerSent);
 
   const photoUrls = [
     listing.imageUrlTop,
@@ -170,8 +193,11 @@ export default function ListingDetailScreen() {
   ).slice(0, 6) || [];
 
   async function handleToggleSave() {
+    if (isUpdatingSave) return;
+
     const wasSaved = isSaved;
     setIsSaved(!wasSaved);
+    setIsUpdatingSave(true);
 
     try {
       if (wasSaved) {
@@ -182,6 +208,8 @@ export default function ListingDetailScreen() {
     } catch (error) {
       console.error('Failed to update saved listing:', error);
       setIsSaved(wasSaved);
+    } finally {
+      setIsUpdatingSave(false);
     }
   }
 
@@ -191,8 +219,24 @@ export default function ListingDetailScreen() {
     router.push({ pathname: '/profile/edit-listing', params: { id: listing!.id } });
   }
 
+  function handleExistingOffer() {
+    if (!existingOffer || !listing) return;
+
+    router.push({
+      pathname: '/inbox/[id]',
+      params: {
+        id: `o${existingOffer.conversationId}`,
+        sender: listing.seller.name,
+        otherUserId: listing.seller.id,
+        avatarInitial: listing.seller.name.charAt(0).toUpperCase() || '?',
+        avatarColor: listing.seller.avatarColor ?? '',
+        isSystem: '0',
+      },
+    } as any);
+  }
+
   function handleSwap() {
-    if (isOwnListing) return;
+    if (isOwnListing || isLoadingOffer) return;
     setIsLoadingOffer(true);
     
     try {
@@ -210,14 +254,11 @@ export default function ListingDetailScreen() {
     }
   }
 
-  async function handleSendOffer() {
-    if (!id || isOwnListing) return;
+  async function submitSaleOffer(price: number) {
+    if (!id || isLoadingOffer) return;
 
-    const price = Number(offerPrice);
-    if (price <= 0 || price > 100000) return;
-
+    setIsConfirmingOffer(false);
     setIsLoadingOffer(true);
-    
     try {
       await OfferService.createSale(id, price, offerNote || `Hello! I am interested in buying your ${listing?.model ?? 'shoe listing'}, and will offer to pay the full price of ₱${parseInt(offerPrice, 10).toLocaleString()}`);
       
@@ -234,27 +275,46 @@ export default function ListingDetailScreen() {
     }
   }
 
+  function handleSendOffer() {
+    if (!id || isOwnListing || isLoadingOffer || isConfirmingOffer || offerSent) return;
+
+    const price = Number(offerPrice);
+    if (price <= 0 || price > 100000) return;
+
+    setIsConfirmingOffer(true);
+    Alert.alert(
+      'Send offer?',
+      `Send a ₱${price.toLocaleString()} offer for ${listing?.model ?? 'this listing'}?`,
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => setIsConfirmingOffer(false) },
+        { text: 'Send Offer', onPress: () => void submitSaleOffer(price) },
+      ],
+      { cancelable: true, onDismiss: () => setIsConfirmingOffer(false) },
+    );
+  }
+
   return (
     <View className="flex-1 bg-gray-50">
       {/* Back button */}
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         className="absolute z-10 w-10 h-10 rounded-full bg-white items-center justify-center"
         style={{ top: insets.top + 12, left: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 4 }}
         onPress={() => router.back()}
         activeOpacity={0.8}
       >
         <Ionicons name="arrow-back" size={20} color="#111827" />
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
 
       {!isOwnListing && (
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="absolute z-10 w-10 h-10 rounded-full bg-white items-center justify-center"
           style={{ top: insets.top + 12, right: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 4 }}
           onPress={handleToggleSave}
+          disabled={isUpdatingSave}
           activeOpacity={0.8}
         >
           <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={20} color={isSaved ? '#EF4444' : '#111827'} />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
@@ -326,7 +386,7 @@ export default function ListingDetailScreen() {
 
           {/* Seller */}
           <Text className="text-gray-900 font-bold text-base mb-3">Seller</Text>
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             className="flex-row items-center bg-white rounded-2xl p-4 mb-6"
             style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}
             activeOpacity={isOwnListing || !listing.seller.id ? 1 : 0.8}
@@ -357,7 +417,7 @@ export default function ListingDetailScreen() {
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
 
           {/* Description */}
           <Text className="text-gray-900 font-bold text-base mb-3">Description</Text>
@@ -370,7 +430,7 @@ export default function ListingDetailScreen() {
               <Text className="text-gray-900 font-bold text-base mb-3">Similar Items</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                 {similarItems.map((item) => (
-                  <TouchableOpacity
+                  <GuardedTouchableOpacity
                     key={item.id}
                     activeOpacity={0.85}
                     style={{ width: '47%' }}
@@ -380,7 +440,7 @@ export default function ListingDetailScreen() {
                     <Text className="text-gray-400 text-xs mt-2">{item.brand}</Text>
                     <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>{item.model}</Text>
                     <Text className="text-blue-600 font-bold text-sm">₱{item.price.toLocaleString()}</Text>
-                  </TouchableOpacity>
+                  </GuardedTouchableOpacity>
                 ))}
               </View>
             </>
@@ -404,36 +464,45 @@ export default function ListingDetailScreen() {
           </View>
         ) : (
           <View className="flex-row gap-3">
-            
-            {canOffer && (
+            {existingOffer ? (
               <ActionButton
-                label="Make Offer"
-                icon="pricetag-outline"
+                label="Offer Sent"
+                icon="chatbubble-ellipses-outline"
                 color="#D97706"
-                onPress={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
-                disabled={isLoadingOffer}
+                onPress={handleExistingOffer}
               />
-            )}
+            ) : (
+              <>
+                {canOffer && (
+                  <ActionButton
+                    label="Make Offer"
+                    icon="pricetag-outline"
+                    color="#D97706"
+                    onPress={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
+                    disabled={isLoadingOffer}
+                  />
+                )}
 
-            {canSwap && (
-              <ActionButton
-                label="Offer Swap"
-                icon="swap-horizontal"
-                color="#7C3AED"
-                onPress={handleSwap}
-                disabled={isLoadingOffer}
-              />
-            )}
+                {canSwap && (
+                  <ActionButton
+                    label="Offer Swap"
+                    icon="swap-horizontal"
+                    color="#7C3AED"
+                    onPress={handleSwap}
+                    disabled={isLoadingOffer}
+                  />
+                )}
 
-            {!canOffer && !canSwap && (
-              <ActionButton
-                label="Unavailable"
-                icon="pricetag-outline"
-                color="#4E4D4B"
-                disabled={true}
-              />
+                {!canOffer && !canSwap && (
+                  <ActionButton
+                    label="Unavailable"
+                    icon="pricetag-outline"
+                    color="#4E4D4B"
+                    disabled={true}
+                  />
+                )}
+              </>
             )}
-
           </View>
         )}
 
@@ -442,7 +511,7 @@ export default function ListingDetailScreen() {
       {/* ── Make Offer modal ── */}
       <Modal visible={showOfferModal} transparent animationType="slide" onRequestClose={() => setShowOfferModal(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setShowOfferModal(false)} />
+          <GuardedTouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setShowOfferModal(false)} />
           <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: Math.max(insets.bottom, 24) }}>
             <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 20 }} />
 
@@ -475,7 +544,7 @@ export default function ListingDetailScreen() {
               style={{ backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, fontSize: 14, color: '#111827', textAlignVertical: 'top', minHeight: 80, borderWidth: 1.5, borderColor: '#E5E7EB', marginBottom: 20 }}
             />
 
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               onPress={isMakeOfferButtonActive ? handleSendOffer : undefined}
               disabled={!isMakeOfferButtonActive}
               style={{
@@ -504,7 +573,7 @@ export default function ListingDetailScreen() {
               >
                 {isLoadingOffer ? 'Loading...' : offerSent ? 'Offer Sent!' : 'Send Offer'}
               </Text>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>

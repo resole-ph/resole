@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, Text, Modal, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 
 interface DropdownFieldProps {
@@ -28,7 +29,7 @@ export default function DropdownField({
 
   return (
     <View className="gap-1">
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         onPress={() => setOpen(true)}
         activeOpacity={0.7}
         className="flex-row items-center justify-between bg-surface-container-lowest border rounded-xl px-4 py-3"
@@ -38,11 +39,11 @@ export default function DropdownField({
           {value || placeholder}
         </Text>
         <Ionicons name="chevron-down" size={16} color="#727687" />
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
       {error && <Text className="font-label-md text-label-md text-error">{error}</Text>}
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={() => setOpen(false)}
@@ -54,7 +55,7 @@ export default function DropdownField({
           </Text>
           <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
             {allOptions.map((opt) => (
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 key={opt}
                 className="flex-row items-center px-5 py-3.5"
                 activeOpacity={0.7}
@@ -67,7 +68,7 @@ export default function DropdownField({
                   {opt}
                 </Text>
                 {opt === value && <Ionicons name="checkmark" size={18} color="#2563EB" />}
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             ))}
           </ScrollView>
         </View>

@@ -30,3 +30,29 @@ export type Message = {
   /** Set on the single aggregated "Resole" row — every system update, oldest first. */
   updates?: SystemUpdate[];
 };
+
+export type PhotoAttachment = {
+  type: 'image';
+  mimeType: string;
+  size: number;
+  width: number;
+  height: number;
+  fileName: string;
+  url: string | null;
+};
+
+export type ThreadMessage = {
+  id: number;
+  userId: string;
+  conversationId: number;
+  transactionId: number | null;
+  content: string;
+  attachment: PhotoAttachment | null;
+  createdAt: string;
+};
+
+export type PickedInboxPhoto = {
+  uri: string;
+  fileName: string | null;
+  mimeType: string | null;
+};

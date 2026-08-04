@@ -86,6 +86,7 @@ export const shoeListing = pgTable('shoe_listing', {
   isRefurbished: boolean('is_refurbished').default(false).notNull(),
   isFinalPrice: boolean('is_final_price').default(false).notNull(),
   isAvailable: boolean('is_available').default(true).notNull(),
+  archivedAt: timestamp('archived_at'),
   imageUrlTop: text('image_url_top').notNull(),
   imageUrlLeftSide: text('image_url_left_side').notNull(),
   imageUrlRightSide: text('image_url_right_side').notNull(),
@@ -97,14 +98,19 @@ export const shoeListing = pgTable('shoe_listing', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  deletedAt: timestamp('deleted_at')
+    .notNull()
 }, (table) => [
   check('value_check', sql`${table.value} > 0`),
   // Sizes are stored as US Men's; bounds match the conversion chart in
   // src/features/shoe/utils/size-conversion.ts.
   check('size_check', sql`${table.size} >= 3 AND ${table.size} <= 16`),
   check('condition_score_check', sql`${table.conditionScore} > 0`),
+  index('shoe_listing_active_retention_idx')
+    .on(table.createdAt)
+    .where(sql`${table.archivedAt} IS NULL`),
+  index('shoe_listing_archived_retention_idx')
+    .on(table.archivedAt)
+    .where(sql`${table.archivedAt} IS NOT NULL`),
 ]);
 
 type PricingData = {

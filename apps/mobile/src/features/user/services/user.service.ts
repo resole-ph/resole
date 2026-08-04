@@ -159,6 +159,15 @@ export const UserService = {
     return sellerAnalytics;
   }, 
 
+  async editUser(body: any) {
+    const res = await apiFetch<any>(`/api/users/me`, {
+      method: 'PATCH',
+      body: body
+    })
+
+    return res;
+  },
+
   async saveUserView(userId: string) {
     const res = await apiFetch<unknown>(`/api/users/${userId}/view`, {
       method: 'POST'

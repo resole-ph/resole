@@ -2,26 +2,18 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getConversationById, getConversationMessages } from '@/features/inbox/services/service';
 import { getTransactionsWithDetailsByIds } from '@/features/transaction/services/service';
-import { getRatedTransactionIds } from '@/features/user-action/services/service';
+import { getRatedTransactions } from '@/features/user-action/services/service';
 import { getShoeListingsByIds } from '@/features/shoe/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
-
-function parseConversationId(rawId: string) {
-  const conversationId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(conversationId) || conversationId <= 0) {
-    return null;
-  }
-
-  return conversationId;
-}
+import { parsePositiveInt } from '@/lib/id';
+import { createInboxPhotoSignedUrl } from '@/features/inbox/services/inbox-photo-storage';
 
 export async function GET(
   request: Request, 
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const conversationId = parseConversationId(id);
+  const conversationId = parsePositiveInt(id);
   if (!conversationId) {
     return NextResponse.json({ error: 'Invalid conversation id' }, { status: 400 });
   }
@@ -54,19 +46,38 @@ export async function GET(
     return NextResponse.json({ error: 'Messages not found' }, { status: 404 });
   }
 
+  const messagesWithAttachments = await Promise.all(
+    messages.map(async (message) => {
+      if (!message.attachment) return message;
+
+      const url = await createInboxPhotoSignedUrl(message.attachment.path).catch(() => null);
+      return { ...message, attachment: { ...message.attachment, url } };
+    })
+  );
+
   const transactionIds = Array.from(
     new Set(messages.map((m) => m.transactionId).filter((tid): tid is number => tid != null))
   );
 
-  const [transactions, ratedTransactionIds] = await Promise.all([
+  const [transactions, ratedTransactions] = await Promise.all([
     getTransactionsWithDetailsByIds(transactionIds),
-    getRatedTransactionIds(transactionIds),
+    getRatedTransactions(transactionIds),
   ]);
 
-  const offers = transactions.map((transaction) => ({
-    ...transaction,
-    isRated: ratedTransactionIds.has(transaction.id),
-  }));
+  const ratedTransactionSet = new Set(
+    // A rating row has its own primary key. Match against the offer/transaction
+    // id so this status is scoped to the current participant's rating.
+    ratedTransactions.map((item) => `${item.transactionId}-${item.raterRole}`)
+  );
+
+  const offers = transactions.map((transaction) => {
+    const role = currentUser.user.id === transaction.listing.userId ? 'seller' : 'recipient';
+    
+    return {
+      ...transaction,
+      isRated: ratedTransactionSet.has(`${transaction.id}-${role}`),
+    };
+  });
 
   // Offer cards render the listing being offered on, and for a swap the item put
   // up in exchange. Both are resolved here: left to the client they become one
@@ -97,7 +108,7 @@ export async function GET(
       return [
         offer.id,
         {
-          listing: listingById.get(offer.listingId) ?? null,
+          listing: offer.listingId != null ? listingById.get(offer.listingId) ?? null : null,
           swapItem: swapItemId != null ? listingById.get(swapItemId) ?? null : null,
         },
       ];
@@ -105,7 +116,7 @@ export async function GET(
   );
 
   return NextResponse.json({
-    messages: messages,
+    messages: messagesWithAttachments,
     offers: offers,
     offerExtras: offerExtras
   });

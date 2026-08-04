@@ -34,7 +34,7 @@
         "expo-image-picker",
         {
           "cameraPermission": "Allow Resole to take photos of your shoes.",
-          "photosPermission": "Allow Resole to access your photos to upload shoe images."
+          "photosPermission": "Allow Resole to access your photos to upload and share images."
         }
       ],
       "./plugins/withCropUIColors",

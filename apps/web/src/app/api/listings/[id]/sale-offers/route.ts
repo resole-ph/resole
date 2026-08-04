@@ -2,16 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { createTransaction, createSale } from '@/features/transaction/services/service';
 import { getShoeListingById } from '@/features/shoe/services/service';
-
-function parseShoeListingId(rawId: string) {
-  const shoeListingId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(shoeListingId) || shoeListingId <= 0) {
-    return null;
-  }
-
-  return shoeListingId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function POST(
   request: Request,
@@ -24,7 +15,7 @@ export async function POST(
   }
 
   const { id } = await context.params;
-  const shoeListingId = parseShoeListingId(id);
+  const shoeListingId = parsePositiveInt(id);
   if (!shoeListingId) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
@@ -32,6 +23,9 @@ export async function POST(
   const shoeListing = await getShoeListingById(shoeListingId);
   if (!shoeListing) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 404 });
+  }
+  if (!shoeListing.isAvailable || shoeListing.archivedAt) {
+    return NextResponse.json({ error: 'This listing is no longer available' }, { status: 409 });
   }
 
   if (shoeListing.seller.id === currentUser.user.id) {

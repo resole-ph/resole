@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,7 +17,7 @@ export default function ProfileHeader({ onSettingsPress }: ProfileHeaderProps) {
     >
       <Text className="text-2xl font-semibold text-gray-900">Profile</Text>
 
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         className="w-10 h-10 rounded-full bg-white items-center justify-center"
         activeOpacity={0.7}
         onPress={onSettingsPress}
@@ -29,7 +30,7 @@ export default function ProfileHeader({ onSettingsPress }: ProfileHeaderProps) {
         }}
       >
         <Ionicons name="settings-outline" size={20} color="#6B7280" />
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
     </View>
   );
 }

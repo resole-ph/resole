@@ -498,6 +498,24 @@ export async function getRatedTransactionIds(transactionIds: number[]): Promise<
   }
 }
 
+export async function getRatedTransactions(transactionIds: number[]) {
+  if (transactionIds.length === 0) {
+    return [];
+  }
+
+  try {
+    const rows = await db
+      .select()
+      .from(rating)
+      .where(inArray(rating.transactionId, transactionIds));
+
+    return rows;
+  } catch (error) {
+    console.error("Error fetching rated transactions.", error);
+    return [];
+  }
+}
+
 export async function checkIfTransactionIsRated(transactionId: number): Promise<boolean> {
   const existingRating = await db.query.rating.findFirst({
     where: eq(rating.transactionId, transactionId),

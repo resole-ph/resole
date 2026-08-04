@@ -1,16 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getNotificationForUser, markNotificationAsRead } from '@/features/notifications/services/service';
-
-function parseNotificationId(rawId: string) {
-  const notificationId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(notificationId) || notificationId <= 0) {
-    return null;
-  }
-
-  return notificationId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function POST(
   request: Request, 
@@ -23,7 +14,7 @@ export async function POST(
   }
 
   const { id } = await context.params;
-  const notificationId = parseNotificationId(id);
+  const notificationId = parsePositiveInt(id);
   if (!notificationId) {
     return NextResponse.json({ error: 'Invalid notification id' }, { status: 400 });
   }

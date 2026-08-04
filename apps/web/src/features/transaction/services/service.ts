@@ -381,24 +381,24 @@ export async function getUserTransactionHistory(userId: string) {
         updatedAt: transaction.updatedAt,
         acceptedAt: transaction.acceptedAt,
         completedAt: transaction.completedAt,
-        amount: sql<string | null>`coalesce(${sale.price}, ${shoeListing.value})`,
-        listingId: shoeListing.id,
-        listingColorway: shoeListing.colorway,
-        listingSize: shoeListing.size,
-        listingConditionScore: shoeListing.conditionScore,
-        listingValue: shoeListing.value,
-        listingMode: shoeListing.listingMode,
-        listingIsAvailable: shoeListing.isAvailable,
+        amount: sql<string | null>`coalesce(${sale.price}, ${shoeListing.value}, ${transaction.listingSnapshot}->>'value')`,
+        listingId: sql<number>`coalesce(${shoeListing.id}, (${transaction.listingSnapshot}->>'id')::integer)`,
+        listingColorway: sql<string>`coalesce(${shoeListing.colorway}, ${transaction.listingSnapshot}->>'colorway')`,
+        listingSize: sql<string>`coalesce(${shoeListing.size}::text, ${transaction.listingSnapshot}->>'size')`,
+        listingConditionScore: sql<string>`coalesce(${shoeListing.conditionScore}::text, ${transaction.listingSnapshot}->>'conditionScore')`,
+        listingValue: sql<string>`coalesce(${shoeListing.value}::text, ${transaction.listingSnapshot}->>'value')`,
+        listingMode: sql<string>`coalesce(${shoeListing.listingMode}::text, ${transaction.listingSnapshot}->>'listingMode')`,
+        listingIsAvailable: sql<boolean>`coalesce(${shoeListing.isAvailable}, false)`,
         listingImageUrlTop: shoeListing.imageUrlTop,
         listingImageUrlLeftSide: shoeListing.imageUrlLeftSide,
-        shoeId: shoe.id,
-        shoeBrand: shoe.brand,
-        shoeModel: shoe.model,
-        shoeCategory: shoe.category,
-        ownerId: listingOwner.id,
-        ownerName: listingOwner.name,
-        ownerImage: listingOwner.image,
-        ownerCity: listingOwner.city,
+        shoeId: sql<number>`coalesce(${shoe.id}, ((${transaction.listingSnapshot}->'shoe')->>'id')::integer)`,
+        shoeBrand: sql<string>`coalesce(${shoe.brand}, (${transaction.listingSnapshot}->'shoe')->>'brand')`,
+        shoeModel: sql<string>`coalesce(${shoe.model}, (${transaction.listingSnapshot}->'shoe')->>'model')`,
+        shoeCategory: sql<string>`coalesce(${shoe.category}::text, (${transaction.listingSnapshot}->'shoe')->>'category')`,
+        ownerId: sql<string>`coalesce(${listingOwner.id}, (${transaction.listingSnapshot}->'owner')->>'id')`,
+        ownerName: sql<string>`coalesce(${listingOwner.name}, (${transaction.listingSnapshot}->'owner')->>'name')`,
+        ownerImage: sql<string | null>`coalesce(${listingOwner.image}, (${transaction.listingSnapshot}->'owner')->>'image')`,
+        ownerCity: sql<string | null>`coalesce(${listingOwner.city}, (${transaction.listingSnapshot}->'owner')->>'city')`,
         recipientId: user.id,
         recipientName: user.name,
         recipientImage: user.image,
@@ -411,9 +411,9 @@ export async function getUserTransactionHistory(userId: string) {
         charityName: charity.name,
       })
       .from(transaction)
-      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
-      .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
-      .innerJoin(listingOwner, eq(shoeListing.userId, listingOwner.id))
+      .leftJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .leftJoin(shoe, eq(shoeListing.shoeId, shoe.id))
+      .leftJoin(listingOwner, eq(shoeListing.userId, listingOwner.id))
       .leftJoin(user, eq(transaction.recipientId, user.id))
       .leftJoin(sale, eq(sale.transactionId, transaction.id))
       .leftJoin(swap, eq(swap.transactionId, transaction.id))
@@ -422,7 +422,8 @@ export async function getUserTransactionHistory(userId: string) {
       .where(
         or(
           eq(transaction.recipientId, userId),
-          eq(shoeListing.userId, userId)
+          eq(shoeListing.userId, userId),
+          sql`${transaction.listingSnapshot}->>'userId' = ${userId}`
         )
       )
       .orderBy(desc(transaction.createdAt));
@@ -609,9 +610,19 @@ export async function acceptOffer(id: number) {
         completedAt: new Date() 
       })
       .where(eq(transaction.id, id))
-      .returning({ id: transaction.id });
+      .returning();
+    
+    if (!result) return
+    
+    if (result[0].listingId != null) {
+      await db
+        .update(shoeListing)
+        .set({ isAvailable: false })
+        .where(eq(shoeListing.id, result[0].listingId));
+    }
 
-    return getTransactionById(result[0].id) ?? null;
+
+    return result[0];
   } catch (error) {
     console.error("Error accepting offer.", error);
     return null
@@ -812,10 +823,6 @@ export async function donateShoeListing(userId: string, listingId: number, chari
       throw new Error('Shoe listing not found');
     }
 
-    if (listing.deletedAt) {
-      throw new Error('Shoe listing is deleted');
-    }
-
     const charities = await tx
       .select({ id: charity.id })
       .from(charity)
@@ -889,10 +896,6 @@ export async function scheduleDonationPickup(userId: string, data: DonationPicku
     const listing = listings[0];
     if (!listing) {
       throw new Error('Shoe listing not found');
-    }
-
-    if (listing.deletedAt) {
-      throw new Error('Shoe listing is deleted');
     }
 
     if (!listing.isAvailable) {

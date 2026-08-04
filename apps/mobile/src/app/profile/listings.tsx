@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
+import { useState, useMemo, useEffect } from 'react';
+import { View, Text, Image, ScrollView, Alert, Modal, ActivityIndicator } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,9 +11,10 @@ import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { CharityService } from '@/features/charity/services/charity.service';
 import { Charity } from '@/features/charity/types/charity.types';
-import DonateSheet from '@/components/organisms/DonateSheet';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
+import FilterSheet, { EMPTY_FILTERS, type MarketFilters } from '@/components/organisms/FilterSheet';
+import SortSheet, { type SortOption } from '@/components/organisms/SortSheet';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -64,7 +66,7 @@ function ActiveCard({
 }) {
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="bg-white rounded-2xl p-4 mb-3 mx-5 flex-row items-center"
       style={CARD_SHADOW}
       activeOpacity={0.85}
@@ -90,22 +92,22 @@ function ActiveCard({
       </View>
 
       <View className="flex-row items-center gap-2">
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="w-9 h-9 rounded-xl bg-gray-50 items-center justify-center"
           activeOpacity={0.7}
           onPress={(e) => { e.stopPropagation(); onEdit(); }}
         >
           <Ionicons name="create-outline" size={18} color="#6B7280" />
-        </TouchableOpacity>
-        <TouchableOpacity
+        </GuardedTouchableOpacity>
+        <GuardedTouchableOpacity
           className="w-9 h-9 rounded-xl bg-gray-50 items-center justify-center"
           activeOpacity={0.7}
           onPress={(e) => { e.stopPropagation(); onArchive(); }}
         >
           <Ionicons name="archive-outline" size={18} color="#6B7280" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -121,6 +123,7 @@ function PendingCard({
   onDelete: () => void;
 }) {
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
+  const isArchived = Boolean(item.archivedAt);
   return (
     <View className="bg-white rounded-2xl p-4 mb-3 mx-5" style={CARD_SHADOW}>
       <View className="flex-row items-center mb-3">
@@ -139,13 +142,20 @@ function PendingCard({
           <Text className="text-blue-600 font-bold text-sm mt-1">Price: ₱{item.price.toLocaleString()}</Text>
           <View className="flex-row items-center mt-1">
             <View className="w-1.5 h-1.5 rounded-full bg-gray-300 mr-1" />
-            <Text className="text-gray-400 text-xs">Archived</Text>
+            <Text className="text-gray-400 text-xs">{isArchived ? 'Archived' : 'Unavailable'}</Text>
           </View>
         </View>
       </View>
 
+      {isArchived ? (
+        <View className="rounded-xl px-3 py-2.5 bg-gray-50">
+          <Text className="text-gray-500 text-xs text-center">
+            Hidden from the marketplace until automatic deletion.
+          </Text>
+        </View>
+      ) : <>
       <View className="flex-row gap-2 mb-2">
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="flex-1 flex-row items-center justify-center rounded-xl py-2.5"
           style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
           activeOpacity={0.8}
@@ -155,8 +165,8 @@ function PendingCard({
           <Text style={{ color: '#2563EB', fontSize: 12.5, fontWeight: '700', marginLeft: 5 }}>
             Re-list
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </GuardedTouchableOpacity>
+        <GuardedTouchableOpacity
           className="flex-1 flex-row items-center justify-center rounded-xl py-2.5"
           style={{ backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }}
           activeOpacity={0.8}
@@ -166,10 +176,10 @@ function PendingCard({
           <Text style={{ color: '#16A34A', fontSize: 12.5, fontWeight: '700', marginLeft: 5 }}>
             Donate
           </Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
 
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         className="flex-row items-center justify-center rounded-xl py-2.5"
         style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' }}
         activeOpacity={0.8}
@@ -179,7 +189,8 @@ function PendingCard({
         <Text style={{ color: '#EF4444', fontSize: 12.5, fontWeight: '700', marginLeft: 5 }}>
           Delete Permanently
         </Text>
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
+      </>}
     </View>
   );
 }
@@ -199,22 +210,45 @@ export default function ListingsScreen() {
 
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('active');
+  const [filters, setFilters] = useState<MarketFilters>(EMPTY_FILTERS);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [sortVisible, setSortVisible] = useState(false);
+  const [sizeOptions, setSizeOptions] = useState<string[]>([]);
+  const [colorOptions, setColorOptions] = useState<string[]>([]);
 
   const [donateTargetId, setDonateTargetId] = useState<string | null>(null);
   const [charities, setCharities] = useState<Charity[]>([]);
   const [charitiesLoading, setCharitiesLoading] = useState(false);
-  // Donations aren't wired up to actually transfer proceeds yet — picking a
-  // charity shows the same "coming soon" sheet as the home screen instead of
-  // hitting the donate API.
-  const [comingSoonCharity, setComingSoonCharity] = useState<Charity | null>(null);
+  const [donating, setDonating] = useState(false);
 
   // Shared with the home screen's "Your Listings" row, so arriving here from
   // "View all" renders from cache instead of refetching the same list.
-  const { data } = useMyListings();
+  const listingQuery = useMemo(
+    () => ({ ...filters, sort: sortOption }),
+    [filters, sortOption],
+  );
+  const { data } = useMyListings(true, listingQuery);
+
+  // The first (unfiltered) response supplies the available facets. Keep those
+  // options while narrower server-side results arrive so selected filters can
+  // be combined or cleared without the sheet losing valid choices.
+  useEffect(() => {
+    if (!data) return;
+
+    setSizeOptions((previous) => Array.from(new Set([
+      ...previous,
+      ...data.map((item) => item.size).filter((size): size is string => !!size),
+    ])).sort((a, b) => Number(a) - Number(b)));
+    setColorOptions((previous) => Array.from(new Set([
+      ...previous,
+      ...data.map((item) => item.colorway).filter((color): color is string => !!color),
+    ])).sort());
+  }, [data]);
 
   /** Applies a change to the cached list; every screen reading it updates. */
   const patchCache = (fn: (items: Listing[]) => Listing[]) =>
-    queryClient.setQueryData<Listing[]>(userKeys.myListings(), (prev) => fn(prev ?? []));
+    queryClient.setQueriesData<Listing[]>({ queryKey: userKeys.myListings() }, (prev) => fn(prev ?? []));
 
   // Derived rather than stored in two parallel arrays, so the tabs cannot
   // drift apart. getDaysLeft is synchronous date maths, despite the awaits
@@ -227,7 +261,7 @@ export default function ListingsScreen() {
 
     return {
       active: items.filter(
-        (item) => item.isAvailable !== false && item.daysLeft !== undefined && item.daysLeft > 0
+        (item) => !item.archivedAt && item.isAvailable !== false && item.daysLeft !== undefined && item.daysLeft > 0
       ),
       pending: items.filter((item) => item.isAvailable === false),
     };
@@ -260,9 +294,6 @@ export default function ListingsScreen() {
     ]);
   };
 
-  // Only listings already archived can be permanently deleted — the backend
-  // records this as a real deletion (deletedAt) and blocks re-listing
-  // afterward, unlike archiving which just flips isAvailable off.
   const handlePermanentDelete = (id: string) => {
     Alert.alert(
       'Delete permanently?',
@@ -278,7 +309,8 @@ export default function ListingsScreen() {
               patchCache((items) => items.filter((l) => l.id !== id));
             } catch (error) {
               console.error('Failed to delete listing:', error);
-              Alert.alert('Could not delete listing', 'Please try again.');
+              const message = error instanceof Error ? error.message : 'Please try again.';
+              Alert.alert('Could not delete listing', message);
             }
           }
         },
@@ -315,9 +347,20 @@ export default function ListingsScreen() {
     }
   };
 
-  const handlePickCharity = (charity: Charity) => {
-    setDonateTargetId(null);
-    setComingSoonCharity(charity);
+  const handleConfirmDonate = async (charityId: number) => {
+    if (!donateTargetId) return;
+    setDonating(true);
+    try {
+      await ListingService.donateListing(Number(donateTargetId), charityId);
+      patchCache((items) => items.filter((l) => l.id !== donateTargetId));
+      setDonateTargetId(null);
+      Alert.alert('Thank you!', 'Your shoe has been donated.');
+    } catch (error) {
+      console.error('Failed to donate listing:', error);
+      Alert.alert('Could not donate listing', 'Please try again.');
+    } finally {
+      setDonating(false);
+    }
   };
 
   const handleEdit = (id: string) => {
@@ -337,7 +380,7 @@ export default function ListingsScreen() {
       {/* Tab switcher */}
       <View className="flex-row mx-5 bg-gray-100 rounded-2xl p-1 mb-4">
         {(['active', 'pending'] as Tab[]).map((t) => (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             key={t}
             className={`flex-1 py-2 rounded-xl items-center ${tab === t ? 'bg-white' : ''}`}
             activeOpacity={0.7}
@@ -354,8 +397,33 @@ export default function ListingsScreen() {
                 ({counts[t]})
               </Text>
             </Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         ))}
+      </View>
+
+      <View className="flex-row items-center px-5 mb-3">
+        <Text style={{ color: '#9CA3AF', fontSize: 12.5, flex: 1 }}>
+          <Text style={{ color: '#374151', fontWeight: '600' }}>{counts[tab]}</Text>
+          {' listings found'}
+        </Text>
+        <GuardedTouchableOpacity
+          className="flex-row items-center rounded-xl px-3 py-1.5 bg-white mr-2"
+          style={CARD_SHADOW}
+          onPress={() => setFilterVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="options-outline" size={13} color="#2563EB" />
+          <Text style={{ color: '#2563EB', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Filter</Text>
+        </GuardedTouchableOpacity>
+        <GuardedTouchableOpacity
+          className="flex-row items-center rounded-xl px-3 py-1.5 bg-white"
+          style={CARD_SHADOW}
+          onPress={() => setSortVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="swap-vertical-outline" size={13} color="#6B7280" />
+          <Text style={{ color: '#6B7280', fontSize: 11.5, fontWeight: '600', marginLeft: 4 }}>Sort</Text>
+        </GuardedTouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
@@ -388,6 +456,21 @@ export default function ListingsScreen() {
           ))}
       </ScrollView>
 
+      <SortSheet
+        visible={sortVisible}
+        value={sortOption}
+        onSelect={setSortOption}
+        onClose={() => setSortVisible(false)}
+      />
+      <FilterSheet
+        visible={filterVisible}
+        value={filters}
+        sizeOptions={sizeOptions}
+        colorOptions={colorOptions}
+        onApply={setFilters}
+        onClose={() => setFilterVisible(false)}
+      />
+
       <Modal
         visible={donateTargetId !== null}
         transparent
@@ -398,9 +481,9 @@ export default function ListingsScreen() {
           <View className="bg-white rounded-t-3xl p-5" style={{ maxHeight: '70%' }}>
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-gray-900 font-bold text-base">Choose a charity</Text>
-              <TouchableOpacity onPress={() => setDonateTargetId(null)} activeOpacity={0.7}>
+              <GuardedTouchableOpacity onPress={() => setDonateTargetId(null)} activeOpacity={0.7}>
                 <Ionicons name="close" size={22} color="#6B7280" />
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             </View>
 
             {charitiesLoading ? (
@@ -408,30 +491,29 @@ export default function ListingsScreen() {
             ) : (
               <ScrollView showsVerticalScrollIndicator={false}>
                 {charities.map((charity) => (
-                  <TouchableOpacity
+                  <GuardedTouchableOpacity
                     key={charity.id}
                     className="flex-row items-center justify-between rounded-xl px-4 py-3 mb-2 bg-gray-50"
                     activeOpacity={0.7}
-                    onPress={() => handlePickCharity(charity)}
+                    disabled={donating}
+                    onPress={() => handleConfirmDonate(charity.id)}
                   >
                     <View className="flex-1 mr-2">
                       <Text className="text-gray-900 font-semibold text-sm">{charity.name}</Text>
                       <Text className="text-gray-400 text-xs mt-0.5">{charity.cause}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-                  </TouchableOpacity>
+                    {donating ? (
+                      <ActivityIndicator color="#16A34A" size="small" />
+                    ) : (
+                      <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                    )}
+                  </GuardedTouchableOpacity>
                 ))}
               </ScrollView>
             )}
           </View>
         </View>
       </Modal>
-
-      <DonateSheet
-        visible={comingSoonCharity != null}
-        charity={comingSoonCharity}
-        onClose={() => setComingSoonCharity(null)}
-      />
     </View>
   );
 }

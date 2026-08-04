@@ -1,5 +1,5 @@
 {
-  "id": "699f5b09-11a2-4fb9-b87a-e562d56907c4",
+  "id": "8dcb4390-1d72-465e-a43d-5320277538c5",
   "prevId": "8e131f69-87d7-42bf-86cb-b5bcd8a59c55",
   "version": "7",
   "dialect": "postgresql",
@@ -351,7 +351,7 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
-          "default": "'us_m'"
+          "default": "'us'"
         },
         "classification": {
           "name": "classification",
@@ -2250,6 +2250,14 @@
           "primaryKey": false,
           "notNull": false
         },
+        "raterRole": {
+          "name": "raterRole",
+          "type": "referal_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'recipient'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -2272,11 +2280,17 @@
         }
       },
       "indexes": {
-        "rating_transaction_id_idx": {
-          "name": "rating_transaction_id_idx",
+        "rating_rater_idx": {
+          "name": "rating_rater_idx",
           "columns": [
             {
               "expression": "transaction_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "raterRole",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2339,7 +2353,7 @@
         },
         "rating_check": {
           "name": "rating_check",
-          "value": "\"rating\".\"rating\" BETWEEN 0 AND 5"
+          "value": "\"rating\".\"rating\" BETWEEN 1 AND 5"
         }
       },
       "isRLSEnabled": false
@@ -3273,11 +3287,14 @@
       "name": "unit_enum",
       "schema": "public",
       "values": [
-        "us_m",
-        "us_w",
-        "eur",
+        "us",
         "uk",
-        "jp_cm"
+        "eu",
+        "au",
+        "mx",
+        "mm",
+        "cm",
+        "in"
       ]
     },
     "public.cause_enum": {

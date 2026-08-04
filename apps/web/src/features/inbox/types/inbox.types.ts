@@ -1,4 +1,5 @@
 import type { SerializedShoeListing } from '@/features/shoe/utils/listing-dto';
+import type { MessageAttachment } from '@/db/subschemas/inbox.schema';
 
 /** Client-side inbox types. Server/Drizzle types live in `./types.ts`. */
 
@@ -45,7 +46,7 @@ export type ConversationSummary = {
   updatedAt: string;
   user: { id: string; name: string } | null;
   transaction: { type: string } | null;
-  latestMessage: { content: string; createdAt: string } | null;
+  latestMessage: { content: string; attachment: MessageAttachment | null; createdAt: string } | null;
 };
 
 /** A notification as `/api/notifications` returns it. */
@@ -66,6 +67,7 @@ export type ThreadMessage = {
   conversationId: number;
   transactionId: number | null;
   content: string;
+  attachment: (MessageAttachment & { url: string | null }) | null;
   isEdited: boolean;
   createdAt: string;
 };

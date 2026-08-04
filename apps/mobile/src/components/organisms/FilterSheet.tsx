@@ -1,16 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
-import { Listing } from '@/components/molecules/ListingCard';
+import type { Listing } from '@/components/molecules/ListingCard';
+import type { MarketFilters } from '@/features/listing/types/listing.types';
 
-export interface MarketFilters {
-  sizes: string[];
-  colors: string[];
-  conditions: Listing['condition'][];
-  minRating: number | null;
-  priceMin: string;
-  priceMax: string;
-}
+export type { MarketFilters } from '@/features/listing/types/listing.types';
 
 export const EMPTY_FILTERS: MarketFilters = {
   sizes: [],
@@ -35,13 +30,13 @@ interface FilterSheetProps {
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className={`rounded-full px-3.5 py-2 mr-2 mb-2 border ${active ? 'bg-blue-600 border-blue-600' : 'bg-gray-50 border-gray-200'}`}
       activeOpacity={0.75}
       onPress={onPress}
     >
       <Text className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-700'}`}>{label}</Text>
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -75,7 +70,7 @@ export default function FilterSheet({ visible, value, sizeOptions, colorOptions,
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={onClose}
@@ -85,9 +80,9 @@ export default function FilterSheet({ visible, value, sizeOptions, colorOptions,
 
           <View className="flex-row items-center justify-between">
             <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>Filters</Text>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+            <GuardedTouchableOpacity onPress={onClose} activeOpacity={0.7}>
               <Ionicons name="close" size={22} color="#6B7280" />
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
@@ -171,14 +166,14 @@ export default function FilterSheet({ visible, value, sizeOptions, colorOptions,
           </ScrollView>
 
           <View className="flex-row gap-3" style={{ paddingBottom: 28, paddingTop: 8 }}>
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               className="rounded-2xl py-4 items-center justify-center px-5 bg-gray-100"
               activeOpacity={0.8}
               onPress={() => setDraft(EMPTY_FILTERS)}
             >
               <Text className="text-gray-600 font-semibold text-sm">Clear</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </GuardedTouchableOpacity>
+            <GuardedTouchableOpacity
               className="flex-1 rounded-2xl py-4 items-center justify-center bg-blue-600"
               activeOpacity={0.85}
               onPress={() => {
@@ -189,7 +184,7 @@ export default function FilterSheet({ visible, value, sizeOptions, colorOptions,
               <Text className="text-white font-bold text-sm">
                 Apply Filters{activeCount > 0 ? ` (${activeCount})` : ''}
               </Text>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>

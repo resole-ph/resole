@@ -3,16 +3,7 @@ import { getAuthenticatedUser } from '@/lib/request-auth';
 import { acceptOffer } from '@/features/transaction/services/service';
 import { getTransactionById } from '@/features/transaction/services/service';
 import { createNotification } from '@/features/notifications/services/service';
-
-function parseTransactionId(rawId: string) {
-  const shoeListingId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(shoeListingId) || shoeListingId <= 0) {
-    return null;
-  }
-
-  return shoeListingId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function POST(
   request: Request, 
@@ -25,7 +16,7 @@ export async function POST(
   }
 
   const { id } = await context.params;
-  const transactionId = parseTransactionId(id);
+  const transactionId = parsePositiveInt(id);
   if (!transactionId) {
     return NextResponse.json({ error: 'Invalid transaction id' }, { status: 400 });
   }

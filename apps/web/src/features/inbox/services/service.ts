@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
-import { and, or, asc, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
-import { conversation, message, transaction, user } from '@/db/schema';
+import { and, or, ne, asc, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
+import { conversation, message, shoeListing, transaction, user } from '@/db/schema';
 import { Conversation, CreateConversation, Message, CreateMessage } from '../types/types';
 import { alias } from 'drizzle-orm/pg-core';
 
@@ -93,6 +93,46 @@ export async function getConversationBetweenUsers(userAId: string, userBId: stri
   }
 }
 
+export async function getOfferConversationForListing(userId: string, listingId: number) {
+  try {
+    const result = await db
+      .select({
+        transactionId: transaction.id,
+        type: transaction.type,
+        conversationId: conversation.id,
+      })
+      .from(transaction)
+      .innerJoin(shoeListing, eq(transaction.listingId, shoeListing.id))
+      .innerJoin(
+        conversation,
+        or(
+          and(
+            eq(conversation.listerId, shoeListing.userId),
+            eq(conversation.recipientId, userId),
+          ),
+          and(
+            eq(conversation.listerId, userId),
+            eq(conversation.recipientId, shoeListing.userId),
+          ),
+        ),
+      )
+      .where(
+        and(
+          eq(transaction.listingId, listingId),
+          eq(transaction.recipientId, userId),
+          ne(transaction.isAccepted, false)
+        ),
+      )
+      .orderBy(desc(transaction.createdAt))
+      .limit(1);
+
+    return result[0] ?? null;
+  } catch (error) {
+    console.error('Error fetching offer conversation for listing.', error);
+    return null;
+  }
+}
+
 export async function getUserConversations(id: string) {
   try {
     const otherUser = alias(user, 'otherUser');
@@ -117,6 +157,7 @@ export async function getUserConversations(id: string) {
           senderId: latestMessageSq.userId,
           recipientId: latestMessageSq.replyTo,
           content: latestMessageSq.content,
+          attachment: latestMessageSq.attachment,
           isEdited: latestMessageSq.isEdited,
           createdAt: latestMessageSq.createdAt,
           deletedAt: latestMessageSq.deletedAt

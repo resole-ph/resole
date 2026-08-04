@@ -1,7 +1,9 @@
-import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, Modal } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
+import type { SortOption } from '@/features/listing/types/listing.types';
 
-export type SortOption = 'newest' | 'oldest' | 'price_low' | 'price_high';
+export type { SortOption } from '@/features/listing/types/listing.types';
 
 const SORT_OPTIONS: { id: SortOption; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'newest', label: 'Newest First', icon: 'time-outline' },
@@ -21,7 +23,7 @@ export default function SortSheet({ visible, value, onSelect, onClose }: SortShe
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={onClose}
@@ -31,15 +33,15 @@ export default function SortSheet({ visible, value, onSelect, onClose }: SortShe
 
           <View className="flex-row items-center justify-between mb-4">
             <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>Sort by</Text>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+            <GuardedTouchableOpacity onPress={onClose} activeOpacity={0.7}>
               <Ionicons name="close" size={22} color="#6B7280" />
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           </View>
 
           {SORT_OPTIONS.map((option) => {
             const isActive = value === option.id;
             return (
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 key={option.id}
                 className={`flex-row items-center justify-between rounded-xl px-4 py-3 mb-2 ${isActive ? 'bg-blue-50' : 'bg-gray-50'}`}
                 activeOpacity={0.75}
@@ -58,7 +60,7 @@ export default function SortSheet({ visible, value, onSelect, onClose }: SortShe
                   </Text>
                 </View>
                 {isActive && <Ionicons name="checkmark-circle" size={18} color="#2563EB" />}
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             );
           })}
         </View>

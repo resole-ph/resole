@@ -120,6 +120,39 @@ function TextBubble({ msg, isMe }: { msg: ThreadMessage; isMe: boolean }) {
   );
 }
 
+function PhotoBubble({ msg, isMe }: { msg: ThreadMessage; isMe: boolean }) {
+  return (
+    <div className={`flex mb-1 px-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
+      <div>
+        {msg.attachment?.url ? (
+          <a
+            href={msg.attachment.url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open photo attachment"
+            className="block w-64 max-w-[70vw] max-h-80 overflow-hidden rounded-2xl bg-surface-container border border-outline-variant"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs cannot use the static host allowlist */}
+            <img
+              src={msg.attachment.url}
+              alt="Photo attachment"
+              className="w-full max-h-80 object-contain"
+            />
+          </a>
+        ) : (
+          <div className="w-64 h-40 rounded-2xl bg-surface-container border border-outline-variant flex flex-col items-center justify-center text-outline">
+            <span className="material-symbols-outlined text-[28px]">image</span>
+            <span className="text-[12px] mt-1">Photo unavailable</span>
+          </div>
+        )}
+        <div className={`mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+          <span className="text-outline text-[11px]">{formatMessageTime(msg.createdAt)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OfferCard({
   offer,
   extras,
@@ -358,7 +391,7 @@ export default function ConversationThread({
 
             return (
               <div key={msg.id}>
-                <TextBubble msg={msg} isMe={isMe} />
+                {msg.attachment ? <PhotoBubble msg={msg} isMe={isMe} /> : <TextBubble msg={msg} isMe={isMe} />}
                 {offer && (
                   <OfferCard
                     offer={offer}

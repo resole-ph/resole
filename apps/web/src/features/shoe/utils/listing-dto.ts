@@ -21,6 +21,7 @@ export function serializeShoeListing(row: ShoeListing) {
     imageUrlInsole: row.imageUrlInsole,
     listingMode: row.listingMode,
     isAvailable: row.isAvailable,
+    archivedAt: row.archivedAt ? new Date(row.archivedAt).toISOString() : null,
     isRefurbished: row.isRefurbished,
     // TODO: no backing column yet — shipping is a planned feature. Hardcoded false so
     // the badge stays hidden until shoe_listing gains a real free-shipping flag.
@@ -35,7 +36,6 @@ export function serializeShoeListing(row: ShoeListing) {
     swapFor: undefined as string | undefined,
     createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : new Date().toISOString(),
     updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : new Date().toISOString(),
-    deletedAt: row.deletedAt ? new Date(row.deletedAt).toISOString() : undefined,
     seller: {
       id: row.seller.id,
       name: row.seller.name,

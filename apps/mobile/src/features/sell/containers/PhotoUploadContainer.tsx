@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, Dimensions, Alert, Linking, Platform } from 'react-native';
+import { View, Text, ScrollView, Modal, Image, Dimensions, Alert, Linking, Platform } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -264,7 +265,7 @@ export default function PhotoUploadContainer() {
         onRequestClose={() => setPendingAngle(null)}
         onDismiss={handlePickerModalDismiss}
       >
-        <Pressable
+        <GuardedTouchableOpacity
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
           onPress={() => setPendingAngle(null)}
         />
@@ -288,7 +289,7 @@ export default function PhotoUploadContainer() {
             }}
           />
 
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={handleCameraPress}
             style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, gap: 14 }}
           >
@@ -299,9 +300,9 @@ export default function PhotoUploadContainer() {
               <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600' }}>Take Photo</Text>
               <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>Use your camera</Text>
             </View>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
 
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={handleLibraryPress}
             style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, gap: 14 }}
           >
@@ -312,16 +313,16 @@ export default function PhotoUploadContainer() {
               <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600' }}>Choose from Library</Text>
               <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>Pick from your photos</Text>
             </View>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
 
           <View style={{ height: 1, backgroundColor: '#e8eaf0', marginHorizontal: 24, marginVertical: 4 }} />
 
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={() => setPendingAngle(null)}
             style={{ paddingVertical: 16, paddingHorizontal: 24, alignItems: 'center' }}
           >
             <Text style={{ fontSize: 16, color: '#727687' }}>Cancel</Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         </View>
       </Modal>
 
@@ -363,22 +364,22 @@ export default function PhotoUploadContainer() {
               </View>
 
               <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
-                <TouchableOpacity
+                <GuardedTouchableOpacity
                   onPress={() => handleRotate('ccw')}
                   style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <MaterialIcons name="rotate-left" size={22} color="#ffffff" />
-                </TouchableOpacity>
-                <TouchableOpacity
+                </GuardedTouchableOpacity>
+                <GuardedTouchableOpacity
                   onPress={() => handleRotate('cw')}
                   style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <MaterialIcons name="rotate-right" size={22} color="#ffffff" />
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
               </View>
 
               <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
-                <TouchableOpacity
+                <GuardedTouchableOpacity
                   onPress={handleRetakePhoto}
                   style={{
                     flex: 1,
@@ -389,9 +390,9 @@ export default function PhotoUploadContainer() {
                   }}
                 >
                   <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '500' }}>Retake</Text>
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
 
-                <TouchableOpacity
+                <GuardedTouchableOpacity
                   onPress={handleConfirmPhoto}
                   disabled={confirming}
                   style={{
@@ -411,7 +412,7 @@ export default function PhotoUploadContainer() {
                   <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>
                     {confirming ? 'Saving...' : 'Use Photo'}
                   </Text>
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
               </View>
             </>
           )}

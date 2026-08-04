@@ -1,23 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import {
-  deleteUserShoeListing,
   getShoeListingById,
-  updateShoeListing
+  updateShoeListing,
+  permanentlyDeleteShoeListing,
+  ListingNotArchivedError,
+  ListingHasTransactionHistoryError
 } from '@/features/shoe/services/service';
 import type { UpdateShoeListing } from '@/features/shoe/types/types';
 import { createListingView } from '@/features/view/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
-
-function parseShoeListingId(rawId: string) {
-  const shoeListingId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(shoeListingId) || shoeListingId <= 0) {
-    return null;
-  }
-
-  return shoeListingId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function GET(
   request: Request, 
@@ -30,13 +23,17 @@ export async function GET(
   }
 
   const { id } = await context.params;
-  const shoeListingId = parseShoeListingId(id);
+  const shoeListingId = parsePositiveInt(id);
   if (!shoeListingId) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
 
   const shoeListing = await getShoeListingById(shoeListingId);
   if (!shoeListing) {
+    return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
+  }
+
+  if (shoeListing.archivedAt && shoeListing.seller.id !== currentUser.user.id) {
     return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
   }
 
@@ -161,7 +158,7 @@ export async function PATCH(
   }
 
   const { id } = await context.params;
-  const shoeListingId = parseShoeListingId(id);
+  const shoeListingId = parsePositiveInt(id);
   if (!shoeListingId) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
@@ -177,14 +174,15 @@ export async function PATCH(
 
   try {
     const body = await request.json();
+
+    if (shoeListing.archivedAt) {
+      return NextResponse.json({ error: 'Archived listings cannot be edited or relisted' }, { status: 409 });
+    }
+
     const updateData = getEditableShoeListingFields(body);
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No editable listing fields provided' }, { status: 400 });
-    }
-
-    if (updateData.isAvailable === true && shoeListing.deletedAt) {
-      return NextResponse.json({ error: 'Cannot re-list a deleted shoe listing' }, { status: 400 });
     }
 
     const updatedShoeListing = await updateShoeListing(updateData, shoeListingId);
@@ -209,7 +207,7 @@ export async function DELETE(
   }
 
   const { id } = await context.params;
-  const shoeListingId = parseShoeListingId(id);
+  const shoeListingId = parsePositiveInt(id);
   if (!shoeListingId) {
     return NextResponse.json({ error: 'Invalid shoe listing id' }, { status: 400 });
   }
@@ -223,10 +221,20 @@ export async function DELETE(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const deletedShoeListing = await deleteUserShoeListing(currentUser.user.id, shoeListingId);
-  if (!deletedShoeListing) {
+  try {
+    const deletedShoeListing = await permanentlyDeleteShoeListing(currentUser.user.id, shoeListingId);
+    if (!deletedShoeListing) {
+      return NextResponse.json({ error: 'Failed to delete shoe listing' }, { status: 400 });
+    }
+
+    return NextResponse.json({ message: deletedShoeListing });
+  } catch (error: unknown) {
+    if (error instanceof ListingNotArchivedError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    if (error instanceof ListingHasTransactionHistoryError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     return NextResponse.json({ error: 'Failed to delete shoe listing' }, { status: 400 });
   }
-
-  return NextResponse.json({ message: deletedShoeListing });
 }

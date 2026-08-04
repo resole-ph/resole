@@ -61,4 +61,11 @@ export const authService = {
       return null;
     }
   },
+
+  async changePassword(body: {currentPassword: string, newPassword: string}) {
+    await apiFetch(`/api/auth/change-password`, {
+      method: 'POST',
+      body: body
+    })
+  }
 };

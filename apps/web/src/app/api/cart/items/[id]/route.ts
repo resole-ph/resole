@@ -1,16 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { updateCartItem, deleteCartItem } from '@/features/cart/services/service';
-
-function parseCartItemId(rawId: string) {
-  const cartItemId = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(cartItemId) || cartItemId <= 0) {
-    return null;
-  }
-
-  return cartItemId;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 export async function PATCH(
   request: Request,
@@ -24,7 +15,7 @@ export async function PATCH(
 
   try {
     const { id } = await context.params;
-    const cartItemId = parseCartItemId(id);
+    const cartItemId = parsePositiveInt(id);
     if (!cartItemId) {
       return NextResponse.json({ error: 'Invalid cart item id' }, { status: 400 });
     }
@@ -56,7 +47,7 @@ export async function DELETE(
 
   try {
     const { id } = await context.params;
-    const cartItemId = parseCartItemId(id);
+    const cartItemId = parsePositiveInt(id);
     if (!cartItemId) {
       return NextResponse.json({ error: 'Invalid cart item id' }, { status: 400 });
     }

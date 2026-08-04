@@ -99,7 +99,7 @@ export function buildInboxItems(
       isSystem: false,
       otherUserId: item.user?.id,
       subtitle: item.transaction?.type === 'swap' ? 'Swap conversation' : 'Offer conversation',
-      preview: item.latestMessage?.content ?? 'No messages yet',
+      preview: item.latestMessage?.attachment ? 'Photo' : item.latestMessage?.content ?? 'No messages yet',
       rawTime: timestamp ?? null,
       unread: notificationIds.length,
       notificationIds,

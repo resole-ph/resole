@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
@@ -37,7 +38,7 @@ function Avatar({ color, initial, icon, isSystem }: {
 function MessageRow({ msg, onPress }: { msg: Message; onPress: () => void }) {
   const isUnread = msg.unread > 0;
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="flex-row items-center px-5 py-3.5 border-b border-gray-50"
       activeOpacity={0.7}
       onPress={onPress}
@@ -73,7 +74,7 @@ function MessageRow({ msg, onPress }: { msg: Message; onPress: () => void }) {
       ) : (
         <Ionicons name="chevron-forward" size={16} color="#E5E7EB" />
       )}
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -119,7 +120,7 @@ export default function InboxScreen() {
       {/* Tab switcher */}
       <View className="flex-row mx-5 bg-gray-100 rounded-2xl p-1 mb-2">
         {TAB_LABELS.map(({ id, label }) => (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             key={id}
             className={`flex-1 py-2 rounded-xl items-center ${tab === id ? 'bg-white' : ''}`}
             activeOpacity={0.7}
@@ -129,7 +130,7 @@ export default function InboxScreen() {
             <Text className={`text-xs font-semibold ${tab === id ? 'text-gray-900' : 'text-gray-400'}`}>
               {label}
             </Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         ))}
       </View>
 

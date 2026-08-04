@@ -1,4 +1,5 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -56,7 +57,7 @@ export default function Step1Screen() {
           them for your next look.
         </Text>
 
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           onPress={() => router.push('/onboarding/step2')}
           className="w-full bg-primary rounded-full py-4 flex-row items-center justify-center gap-2"
           style={{
@@ -71,7 +72,7 @@ export default function Step1Screen() {
             Next
           </Text>
           <MaterialIcons name="arrow-forward" size={16} color="#ffffff" />
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     </View>
   );

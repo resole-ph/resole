@@ -3,16 +3,7 @@ import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getCharityById } from '@/features/charity/services/service';
 import { getShoeListingById } from '@/features/shoe/services/service';
 import { donateShoeListing } from '@/features/transaction/services/service';
-
-function parsePositiveInt(rawId: string) {
-  const id = Number.parseInt(rawId, 10);
-
-  if (!Number.isInteger(id) || id <= 0) {
-    return null;
-  }
-
-  return id;
-}
+import { parsePositiveInt } from '@/lib/id';
 
 function getDonationStatus(errorMessage: string) {
   if (errorMessage === 'Shoe listing not found') {
@@ -58,6 +49,9 @@ export async function POST(
   if (!shoeListing) {
     return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
   }
+  if (!shoeListing.isAvailable || shoeListing.archivedAt) {
+    return NextResponse.json({ error: 'This listing is no longer available' }, { status: 409 });
+  }
 
   if (shoeListing.seller.id !== currentUser.user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -70,7 +64,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 });
   }
 
-  const charityId = parsePositiveInt(String(body?.charityId ?? ''));
+  const charityId = parsePositiveInt(body?.charityId);
   if (!charityId) {
     return NextResponse.json({ error: 'Invalid charity id' }, { status: 400 });
   }

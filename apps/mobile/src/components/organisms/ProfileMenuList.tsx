@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { UserService } from '@/features/user/services/user.service';
@@ -29,13 +30,13 @@ function CardHeader({
   onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity className="flex-row items-center mb-3" activeOpacity={0.6} onPress={onPress}>
+    <GuardedTouchableOpacity className="flex-row items-center mb-3" activeOpacity={0.6} onPress={onPress}>
       <View className="w-9 h-9 rounded-xl bg-blue-50 items-center justify-center mr-3">
         <Ionicons name={icon} size={18} color="#2563EB" />
       </View>
       <Text className="flex-1 text-gray-900 font-semibold text-sm">{title}</Text>
       <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -79,7 +80,7 @@ function MyListingsCard({ onPress }: { onPress: () => void }) {
   const remaining = Math.max((summary?.active ?? activeListings.length) - previews.length, 0);
 
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="bg-white rounded-2xl mx-5 mb-3 p-4"
       style={CARD_SHADOW}
       activeOpacity={0.85}
@@ -104,7 +105,7 @@ function MyListingsCard({ onPress }: { onPress: () => void }) {
         <Text className="text-gray-300 mx-2">·</Text>
         <Text className="text-amber-500 text-xs">{summary?.unavailable ?? 0} unavailable</Text>
       </View>
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -128,7 +129,7 @@ function SavedItemsCard({ onPress }: { onPress: () => void }) {
 
 
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="bg-white rounded-2xl mx-5 mb-3 p-4"
       style={CARD_SHADOW}
       activeOpacity={0.85}
@@ -150,7 +151,7 @@ function SavedItemsCard({ onPress }: { onPress: () => void }) {
       <Text className="text-gray-400 text-xs">
         <Text className="text-gray-700 font-semibold">{favourites?.totalCount ?? 0} sneakers</Text> saved across all brands
       </Text>
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 
@@ -169,7 +170,7 @@ function QuickLink({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       className="flex-row items-center py-3.5 border-b border-gray-50"
       activeOpacity={0.7}
       onPress={onPress}
@@ -187,7 +188,7 @@ function QuickLink({
         </View>
       )}
       <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }
 

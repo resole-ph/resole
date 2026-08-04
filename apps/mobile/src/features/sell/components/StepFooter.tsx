@@ -1,5 +1,6 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 interface StepFooterProps {
   onCancel: () => void;
   cancelLabel?: string;
@@ -31,15 +32,15 @@ export default function StepFooter({
         </Text>
       ) : null}
       <View className="flex-row gap-3">
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           onPress={onCancel}
           disabled={primaryLoading}
           className="flex-1 rounded-full py-4 items-center border border-outline-variant"
         >
           <Text className="font-body-md text-body-md text-on-surface-variant">{cancelLabel}</Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
 
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           onPress={onPrimary}
           disabled={primaryDisabled || primaryLoading}
           className="flex-1 rounded-full py-4 items-center"
@@ -62,7 +63,7 @@ export default function StepFooter({
               {primaryLabel}
             </Text>
           )}
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     </View>
   );

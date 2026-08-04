@@ -15,7 +15,7 @@ import { ShoeListing } from '@/features/shoe/types/types';
 
 type InferTransaction = typeof transaction.$inferSelect;
 export type Transaction = Omit<InferTransaction, 'listingId' | 'recipientId' > & { listing: ShoeListing, recipient: User };
-export type CreateTransaction = typeof transaction.$inferInsert;
+export type CreateTransaction = Omit<typeof transaction.$inferInsert, 'listingId'> & { listingId: number };
 export type UpdateTransaction = Partial<InferTransaction>;
 
 export type TrackingEvent = typeof trackingEvent.$inferSelect;
@@ -43,7 +43,7 @@ export type UpdateRedemption = Partial<InferRedemption>;
 
 type InferSwapItem = typeof swapItem.$inferSelect;
 export type SwapItem = Omit<InferSwapItem, 'swapId' | 'itemId'> & { swap: Swap, item: ShoeListing };
-export type CreateSwapItem = typeof swapItem.$inferInsert;
+export type CreateSwapItem = Omit<typeof swapItem.$inferInsert, 'itemId'> & { itemId: number };
 export type UpdateSwapItem = Partial<InferSwapItem>;
 
 export type Voucher = typeof voucher.$inferSelect;

@@ -1,5 +1,5 @@
 import { Listing } from '@/components/molecules/ListingCard';
-import { FavItem } from '../types/listing.types';
+import { FavItem, type OwnedListingQuery } from '../types/listing.types';
 import { apiFetch } from '@/lib/api-client';
 
 export interface ListingFilters {
@@ -7,10 +7,14 @@ export interface ListingFilters {
   search?: string;
 }
 
-function buildListingQuery(params: Record<string, string | undefined>): string {
+function buildListingQuery(params: Record<string, string | string[] | undefined>): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value) query.set(key, value);
+    if (Array.isArray(value)) {
+      value.forEach((item) => query.append(key, item));
+    } else if (value) {
+      query.set(key, value);
+    }
   }
   const queryString = query.toString();
   return queryString ? `?${queryString}` : '';
@@ -50,8 +54,17 @@ export const ListingService = {
     return res.shoeListing;
   },
 
-  async getUserListings(): Promise<Listing[]> {
-    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/users/me/listings`, {
+  async getUserListings(filters?: OwnedListingQuery): Promise<Listing[]> {
+    const query = buildListingQuery({
+      size: filters?.sizes,
+      color: filters?.colors,
+      condition: filters?.conditions,
+      minRating: filters?.minRating?.toString(),
+      priceMin: filters?.priceMin,
+      priceMax: filters?.priceMax,
+      sort: filters?.sort,
+    });
+    const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/users/me/listings${query}`, {
       method: 'GET'
     });
 
@@ -112,14 +125,12 @@ export const ListingService = {
     });
   },
 
-  /** Permanent — the backend records this as a deletion and blocks re-listing afterward. */
   async deleteListing(id: number): Promise<undefined> {
     await apiFetch<undefined>(`/api/listings/${id}`, {
       method: 'DELETE'
     });
   },
 
-  /** Reversible — takes it off the market without the backend treating it as deleted, so it can still be re-listed. */
   async archiveListing(id: number): Promise<undefined> {
     await apiFetch<undefined>(`/api/listings/${id}`, {
       method: 'PATCH',

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchSuggestions } from '@/features/search/queries/search.queries';
@@ -80,7 +81,7 @@ export default function SearchBar({ onSearch, onFocus, onSelectSeller }: SearchB
         />
 
         {query.length > 0 && (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={() => {
               setQuery('');
               onSearch?.('');
@@ -88,7 +89,7 @@ export default function SearchBar({ onSearch, onFocus, onSelectSeller }: SearchB
             activeOpacity={0.6}
           >
             <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         )}
       </View>
 
@@ -119,7 +120,7 @@ export default function SearchBar({ onSearch, onFocus, onSelectSeller }: SearchB
                     Shoes
                   </Text>
                   {shoeSuggestions.map((shoeItem, index) => (
-                    <TouchableOpacity
+                    <GuardedTouchableOpacity
                       key={`${shoeItem.brand}-${shoeItem.model}-${index}`}
                       className="flex-row items-center px-2 py-2.5 rounded-xl"
                       activeOpacity={0.6}
@@ -138,7 +139,7 @@ export default function SearchBar({ onSearch, onFocus, onSelectSeller }: SearchB
                       <Text className="text-gray-800 text-[15px] flex-1" numberOfLines={1}>
                         <Text className="font-bold">{shoeItem.brand}</Text> {shoeItem.model}
                       </Text>
-                    </TouchableOpacity>
+                    </GuardedTouchableOpacity>
                   ))}
                 </View>
               )}
@@ -152,7 +153,7 @@ export default function SearchBar({ onSearch, onFocus, onSelectSeller }: SearchB
                     People
                   </Text>
                   {peopleSuggestions.map((person) => (
-                    <TouchableOpacity
+                    <GuardedTouchableOpacity
                       key={person.id}
                       className="flex-row items-center px-2 py-2.5 rounded-xl"
                       activeOpacity={0.6}
@@ -167,7 +168,7 @@ export default function SearchBar({ onSearch, onFocus, onSelectSeller }: SearchB
                       <Text className="text-gray-800 text-[15px] font-semibold flex-1" numberOfLines={1}>
                         {person.name}
                       </Text>
-                    </TouchableOpacity>
+                    </GuardedTouchableOpacity>
                   ))}
                 </View>
               )}
