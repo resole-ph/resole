@@ -3,12 +3,12 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   Modal,
 } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
@@ -29,7 +29,7 @@ function ComingSoon({ visible, method, onClose }: ComingSoonProps) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={onClose}
@@ -56,13 +56,13 @@ function ComingSoon({ visible, method, onClose }: ComingSoonProps) {
             Hang in there. Soon, we will let you connect via {method}!
           </Text>
 
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={onClose}
             activeOpacity={0.85}
             style={{ backgroundColor: '#2563EB', borderRadius: 18, paddingVertical: 14, paddingHorizontal: 32 }}
           >
             <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Got it</Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -97,6 +97,8 @@ export default function AuthScreen() {
   }
 
   const handleSubmit = async () => {
+    if (loading) return;
+
     setError(null);
     if (email.length === 0) {
       setError("Please enter a valid email.");
@@ -150,6 +152,8 @@ export default function AuthScreen() {
   };
 
   const handleForgotPasswordSubmit = async () => {
+    if (forgotLoading) return;
+
     setForgotError(null);
     if (forgotEmail.length === 0) {
       setForgotError('Please enter a valid email.');
@@ -199,7 +203,7 @@ export default function AuthScreen() {
               className="flex-row rounded-full bg-surface-container-low p-1"
               style={{ borderWidth: 1, borderColor: '#e0e2ec' }}
             >
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 onPress={() => {
                   setMode('signup');
                   resetFields();
@@ -213,8 +217,8 @@ export default function AuthScreen() {
                 >
                   Sign Up
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </GuardedTouchableOpacity>
+              <GuardedTouchableOpacity
                 onPress={() => {
                   setMode('login');
                   resetFields();
@@ -228,7 +232,7 @@ export default function AuthScreen() {
                 >
                   Log In
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             </View>
 
             {/* Email / password fields */}
@@ -255,7 +259,7 @@ export default function AuthScreen() {
                   secureTextEntry={!showPassword}
                   className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
                 />
-                <TouchableOpacity
+                <GuardedTouchableOpacity
                   onPress={() => setShowPassword((v) => !v)}
                   className="px-3"
                 >
@@ -264,7 +268,7 @@ export default function AuthScreen() {
                     size={20}
                     color="#727687"
                   />
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
               </View>
 
               {mode === 'signup' && (
@@ -277,7 +281,7 @@ export default function AuthScreen() {
                     secureTextEntry={!showConfirmPassword}
                     className="flex-1 py-3 px-4 font-body-md text-body-md text-on-surface"
                   />
-                  <TouchableOpacity
+                  <GuardedTouchableOpacity
                     onPress={() => setShowConfirmPassword((v) => !v)}
                     className="px-3"
                   >
@@ -286,16 +290,16 @@ export default function AuthScreen() {
                       size={20}
                       color="#727687"
                     />
-                  </TouchableOpacity>
+                  </GuardedTouchableOpacity>
                 </View>
               )}
 
               {mode === 'login' && (
-                <TouchableOpacity className="self-end" onPress={openForgotPassword}>
+                <GuardedTouchableOpacity className="self-end" onPress={openForgotPassword}>
                   <Text className="font-body-sm text-body-sm text-primary">
                     Forgot password?
                   </Text>
-                </TouchableOpacity>
+                </GuardedTouchableOpacity>
               )}
 
               {error && (
@@ -306,7 +310,7 @@ export default function AuthScreen() {
             </View>
 
             {/* Submit */}
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               onPress={handleSubmit}
               disabled={loading}
               className="bg-primary rounded-full py-3 items-center"
@@ -322,7 +326,7 @@ export default function AuthScreen() {
               <Text className="font-body-md text-body-md text-on-primary">
                 {loading ? 'Please wait…' : mode === 'signup' ? 'Create Account' : 'Log In'}
               </Text>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
 
             {/* Divider */}
             <View className="flex-row items-center gap-3">
@@ -333,7 +337,7 @@ export default function AuthScreen() {
 
             {/* Social auth buttons */}
             <View className="gap-2">
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full bg-surface-container-lowest border border-outline-variant"
                 style={{
                   shadowColor: '#000',
@@ -348,9 +352,9 @@ export default function AuthScreen() {
                 <Text className="font-body-md text-body-md text-on-surface">
                   Continue with Google
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
 
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
                 style={{
                   backgroundColor: '#131b2e',
@@ -366,9 +370,9 @@ export default function AuthScreen() {
                 <Text className="font-body-md text-body-md text-on-primary">
                   Continue with Apple ID
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
 
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 className="w-full flex-row items-center justify-center gap-2 py-3 px-5 rounded-full"
                 style={{
                   backgroundColor: '#1877F2',
@@ -384,7 +388,7 @@ export default function AuthScreen() {
                 <Text className="font-body-md text-body-md text-on-primary">
                   Continue with Facebook
                 </Text>
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             </View>
           </View>
         )}
@@ -429,7 +433,7 @@ export default function AuthScreen() {
               )}
             </View>
 
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               onPress={handleForgotPasswordSubmit}
               disabled={forgotLoading}
               className="bg-primary rounded-full py-3 items-center"
@@ -445,13 +449,13 @@ export default function AuthScreen() {
               <Text className="font-body-md text-body-md text-on-primary">
                 {forgotLoading ? 'Please wait…' : 'Send reset link'}
               </Text>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
 
-            <TouchableOpacity onPress={backToCredentials} className="items-center">
+            <GuardedTouchableOpacity onPress={backToCredentials} className="items-center">
               <Text className="font-body-sm text-body-sm text-on-surface-variant">
                 Back to log in
               </Text>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           </View>
         )}
 
@@ -464,7 +468,7 @@ export default function AuthScreen() {
               If an account exists for {forgotEmail}, we've sent a link to reset your password.
               Open it on this device to set a new password, then come back here to log in.
             </Text>
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               onPress={() => {
                 resetFields();
                 setMode('login');
@@ -475,7 +479,7 @@ export default function AuthScreen() {
               <Text className="font-body-sm text-body-sm text-primary">
                 I've reset my password — back to log in
               </Text>
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           </View>
         )}
       </ScrollView>

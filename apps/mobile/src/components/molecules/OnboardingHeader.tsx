@@ -1,4 +1,5 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,14 +17,14 @@ export default function OnboardingHeader({ showBack, onBack, onSkip, title, logo
   const { top } = useSafeAreaInsets();
   return (
     <View className="flex-row justify-between items-center w-full px-5 py-4" style={{ paddingTop: top + 16 }}>
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         onPress={onBack}
         className="w-10 h-10 items-center justify-center rounded-full bg-surface/50"
         style={{ opacity: showBack ? 1 : 0 }}
         disabled={!showBack}
       >
         <MaterialIcons name="arrow-back" size={24} color="#424655" />
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
 
       {logo ? (
         <Image source={resoleLogo} style={{ height: 44, width: 188, marginTop: 8 }} resizeMode="contain" />
@@ -36,11 +37,11 @@ export default function OnboardingHeader({ showBack, onBack, onSkip, title, logo
       )}
 
       {onSkip ? (
-        <TouchableOpacity onPress={onSkip}>
+        <GuardedTouchableOpacity onPress={onSkip}>
           <Text className="font-label-md text-label-md text-primary uppercase tracking-widest">
             Skip
           </Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       ) : (
         <View className="w-10" />
       )}

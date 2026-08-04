@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 
 interface FavoritesToggleProps {
@@ -11,7 +12,7 @@ interface FavoritesToggleProps {
 export default function FavoritesToggle({ active, onToggle, compact = false }: FavoritesToggleProps) {
   return (
     <View className={compact ? undefined : 'px-5 pb-4'}>
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         onPress={onToggle}
         activeOpacity={0.75}
         className={`flex-row items-center self-start rounded-full px-4 py-2 border ${
@@ -29,7 +30,7 @@ export default function FavoritesToggle({ active, onToggle, compact = false }: F
         <Text className={`ml-1.5 text-sm font-medium ${active ? 'text-white' : 'text-gray-700'}`}>
           Favorites only
         </Text>
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
     </View>
   );
 }

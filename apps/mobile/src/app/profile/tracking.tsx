@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import SubScreenHeader from '@/components/organisms/SubScreenHeader';
 
@@ -169,13 +170,13 @@ function TrackingCard({ order }: { order: Order }) {
       })}
 
       {/* Contact support */}
-      <TouchableOpacity
+      <GuardedTouchableOpacity
         className="flex-row items-center justify-center bg-gray-50 rounded-xl py-2.5 mt-2"
         activeOpacity={0.7}
       >
         <Ionicons name="chatbubble-outline" size={14} color="#6B7280" />
         <Text className="text-gray-600 font-semibold text-xs ml-1.5">Contact support</Text>
-      </TouchableOpacity>
+      </GuardedTouchableOpacity>
     </View>
   );
 }

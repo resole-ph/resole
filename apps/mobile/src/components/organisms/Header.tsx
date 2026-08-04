@@ -1,4 +1,5 @@
-import { View, Image, TouchableOpacity } from 'react-native';
+import { View, Image } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -42,7 +43,7 @@ export default function Header({
 
       {/* Inbox icon (home mode only) */}
       {showInbox && (
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           className="w-11 h-11 rounded-full bg-white items-center justify-center mr-2"
           activeOpacity={0.7}
           onPress={onInboxPress}
@@ -52,7 +53,7 @@ export default function Header({
           {hasMessages && (
             <View className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 border border-white" />
           )}
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       )}
 
     </View>

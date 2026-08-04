@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, Modal } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import { Charity } from '@/features/charity/types/charity.types';
 
@@ -12,7 +13,7 @@ export default function DonateSheet({ visible, charity, onClose }: DonateSheetPr
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={onClose}
@@ -39,13 +40,13 @@ export default function DonateSheet({ visible, charity, onClose }: DonateSheetPr
             We're still building donations. Soon you'll be able to send proceeds straight to {charity?.name ?? 'this charity'}.
           </Text>
 
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={onClose}
             activeOpacity={0.85}
             style={{ backgroundColor: '#2563EB', borderRadius: 18, paddingVertical: 14, paddingHorizontal: 32 }}
           >
             <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Got it</Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         </View>
       </View>
     </Modal>

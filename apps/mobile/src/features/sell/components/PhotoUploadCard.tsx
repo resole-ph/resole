@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, Image, Dimensions } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 import type { SellPhoto, PhotoAngle } from '../types/sell.types';
 
@@ -30,7 +31,7 @@ interface PhotoUploadCardProps {
 
 export default function PhotoUploadCard({ angle, photo, onPress }: PhotoUploadCardProps) {
   return (
-    <TouchableOpacity
+    <GuardedTouchableOpacity
       onPress={() => onPress(angle)}
       activeOpacity={0.75}
       style={{ width: CARD_SIZE, height: CARD_SIZE }}
@@ -82,6 +83,6 @@ export default function PhotoUploadCard({ angle, photo, onPress }: PhotoUploadCa
           </Text>
         </View>
       )}
-    </TouchableOpacity>
+    </GuardedTouchableOpacity>
   );
 }

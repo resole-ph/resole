@@ -3,13 +3,13 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   Modal,
   FlatList,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import OnboardingHeader from '@/components/molecules/OnboardingHeader';
@@ -42,6 +42,8 @@ export default function DetailsScreen() {
     : PHILIPPINE_CITIES;
 
   const handleGetStarted = async () => {
+    if (loading) return;
+
     setError(null);
     setLoading(true);
     try {
@@ -97,7 +99,7 @@ export default function DetailsScreen() {
               {INTENT_OPTIONS.map((option) => {
                 const selected = intent === option.id;
                 return (
-                  <TouchableOpacity
+                  <GuardedTouchableOpacity
                     key={option.id}
                     onPress={() => setIntent(option.id)}
                     className="flex-row items-center gap-3 p-3 rounded-3xl"
@@ -126,7 +128,7 @@ export default function DetailsScreen() {
                     {selected && (
                       <MaterialIcons name="check-circle" size={18} color="#0054d3" />
                     )}
-                  </TouchableOpacity>
+                  </GuardedTouchableOpacity>
                 );
               })}
             </View>
@@ -159,7 +161,7 @@ export default function DetailsScreen() {
             <Text className="font-body-md text-body-md text-on-surface text-center">
               Where are you located?
             </Text>
-            <TouchableOpacity
+            <GuardedTouchableOpacity
               onPress={() => { setCitySearch(''); setCityPickerOpen(true); }}
               className="flex-row items-center bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3"
             >
@@ -171,7 +173,7 @@ export default function DetailsScreen() {
                 {city || 'Select your city'}
               </Text>
               <MaterialIcons name="keyboard-arrow-down" size={20} color="#727687" />
-            </TouchableOpacity>
+            </GuardedTouchableOpacity>
           </View>
 
           {error && (
@@ -181,7 +183,7 @@ export default function DetailsScreen() {
           )}
 
           {/* Get Started CTA */}
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={handleGetStarted}
             disabled={loading}
             className="self-center bg-primary rounded-full py-3 px-12 items-center"
@@ -197,7 +199,7 @@ export default function DetailsScreen() {
             <Text className="font-body-md text-body-md text-on-primary">
               {loading ? 'Saving…' : 'Get Started'}
             </Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         </View>
       </ScrollView>
 
@@ -208,7 +210,7 @@ export default function DetailsScreen() {
         transparent
         onRequestClose={() => setCityPickerOpen(false)}
       >
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
           activeOpacity={1}
           onPress={() => setCityPickerOpen(false)}
@@ -236,9 +238,9 @@ export default function DetailsScreen() {
               className="flex-1 py-3 px-2 font-body-md text-body-md text-on-surface"
             />
             {citySearch.length > 0 && (
-              <TouchableOpacity onPress={() => setCitySearch('')}>
+              <GuardedTouchableOpacity onPress={() => setCitySearch('')}>
                 <MaterialIcons name="close" size={18} color="#727687" />
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             )}
           </View>
 
@@ -248,7 +250,7 @@ export default function DetailsScreen() {
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingBottom: 32 }}
             renderItem={({ item }) => (
-              <TouchableOpacity
+              <GuardedTouchableOpacity
                 onPress={() => { setCity(item); setCityPickerOpen(false); }}
                 className="flex-row items-center px-5 py-3"
                 style={{ backgroundColor: city === item ? '#f2f3ff' : 'transparent' }}
@@ -261,7 +263,7 @@ export default function DetailsScreen() {
                   {item}
                 </Text>
                 {city === item && <MaterialIcons name="check" size={16} color="#0054d3" />}
-              </TouchableOpacity>
+              </GuardedTouchableOpacity>
             )}
             ItemSeparatorComponent={() => (
               <View style={{ height: 1, backgroundColor: '#f0f0f0', marginHorizontal: 20 }} />

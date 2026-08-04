@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { Ionicons } from '@expo/vector-icons';
 
 interface SearchBarProps {
@@ -38,7 +39,7 @@ export default function SearchBar({ onSearch, onFocus }: SearchBarProps) {
         />
 
         {query.length > 0 && (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={() => {
               setQuery('');
               onSearch?.('');
@@ -46,7 +47,7 @@ export default function SearchBar({ onSearch, onFocus }: SearchBarProps) {
             activeOpacity={0.6}
           >
             <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         )}
       </View>
     </View>

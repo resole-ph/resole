@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,7 +90,7 @@ export default function ConfirmationContainer() {
       {/* CTAs */}
       <View className="w-full gap-3">
         {publishedListing?.listingId && (
-          <TouchableOpacity
+          <GuardedTouchableOpacity
             onPress={handleViewListing}
             className="bg-primary rounded-full py-4 items-center"
             style={{
@@ -101,17 +102,17 @@ export default function ConfirmationContainer() {
             }}
           >
             <Text className="font-body-md text-body-md text-on-primary">View Listing</Text>
-          </TouchableOpacity>
+          </GuardedTouchableOpacity>
         )}
 
-        <TouchableOpacity
+        <GuardedTouchableOpacity
           onPress={handleGoHome}
           className="rounded-full py-4 items-center border border-outline-variant"
         >
           <Text className="font-body-md text-body-md text-on-surface-variant">
             Go Home ({secondsLeft}s)
           </Text>
-        </TouchableOpacity>
+        </GuardedTouchableOpacity>
       </View>
     </View>
   );
