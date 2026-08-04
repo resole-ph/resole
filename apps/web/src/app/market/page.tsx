@@ -101,10 +101,12 @@ export default function MarketPage() {
   const filterListings = (list: SerializedShoeListing[]) => {
     return list.filter((item) => {
       const matchesBrand = selectedBrand === "All" || item.brand.toLowerCase() === selectedBrand.toLowerCase();
-      const matchesSearch = !searchQuery || 
-        item.model.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        item.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.colorway && item.colorway.toLowerCase().includes(searchQuery.toLowerCase()));
+      const term = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery ||
+        item.model.toLowerCase().includes(term) ||
+        item.brand.toLowerCase().includes(term) ||
+        `${item.brand} ${item.model}`.toLowerCase().includes(term) ||
+        (item.colorway && item.colorway.toLowerCase().includes(term));
       return matchesBrand && matchesSearch;
     });
   };

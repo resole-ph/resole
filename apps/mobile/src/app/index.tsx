@@ -74,7 +74,7 @@ export default function HomeScreen() {
       <Header
         onInboxPress={() => router.push('/inbox' as any)}
       />
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View className="px-5 pt-3 pb-1">
           <Text className="text-2xl font-bold text-gray-900">{greeting}, {user.name}</Text>
           <Text className="text-sm text-gray-400 mt-0.5">Find your next pair today</Text>
@@ -86,7 +86,10 @@ export default function HomeScreen() {
         >
           <Text className="text-xs text-gray-600">Preview Onboarding</Text>
         </TouchableOpacity>
-        <SearchBar onSearch={setSearchQuery} />
+        <SearchBar
+          onSearch={setSearchQuery}
+          onSelectSeller={(personId) => router.push(`/profile/${personId}` as any)}
+        />
         <HeroBanner onPress={() => router.push('/sell' as any)} />
         <BrowseFeed
           title="Your Listings"

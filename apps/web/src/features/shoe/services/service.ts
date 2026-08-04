@@ -183,7 +183,10 @@ function buildShoeListingFilters(filters?: ShoeListingFilters) {
       or(
         ilike(shoe.brand, term),
         ilike(shoe.model, term),
-        ilike(shoeListing.colorway, term)
+        ilike(shoeListing.colorway, term),
+        // Suggestion picks fill the box with "brand model" combined (e.g. "Nike Air
+        // Max"), which won't match either column alone — also match the two joined.
+        ilike(sql`${shoe.brand} || ' ' || ${shoe.model}`, term)
       )!
     );
   }
