@@ -373,6 +373,18 @@ export default function MyListingsView() {
                     onClick={() => handlePickCharity(charity)}
                     className="flex items-center justify-between rounded-xl px-4 py-3 bg-surface-container hover:bg-surface-container-high transition-colors text-left"
                   >
+                    {charity.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={charity.image}
+                        alt={`${charity.name} logo`}
+                        className="w-12 h-12 rounded-xl object-contain bg-surface-container-lowest mr-3 shrink-0"
+                      />
+                    ) : (
+                      <span className="material-symbols-outlined w-12 h-12 rounded-xl bg-surface-container-lowest text-outline flex items-center justify-center mr-3 shrink-0">
+                        volunteer_activism
+                      </span>
+                    )}
                     <div className="flex-1 min-w-0 mr-3">
                       <p className="text-on-surface font-semibold text-[14px] truncate">{charity.name}</p>
                       <p className="text-on-surface-variant text-[11px] mt-0.5 truncate">{charity.cause}</p>

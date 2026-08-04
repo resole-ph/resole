@@ -11,7 +11,8 @@ export const CharityService = {
       return {
         id: item.id,
         name: item.name,
-        cause: item.cause
+        cause: item.cause,
+        image: typeof item.image === 'string' ? item.image : null,
       }
     })
   }

@@ -183,6 +183,13 @@
       "when": 1785836910164,
       "tag": "0025_breezy_lucky_pierre",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1785842096514,
+      "tag": "0026_naive_wendigo",
+      "breakpoints": true
     }
   ]
 }
