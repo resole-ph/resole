@@ -609,9 +609,17 @@ export async function acceptOffer(id: number) {
         completedAt: new Date() 
       })
       .where(eq(transaction.id, id))
-      .returning({ id: transaction.id });
+      .returning();
+    
+    if (!result) return
+    
+    await db
+      .update(shoeListing)
+      .set({ isAvailable: false })
+      .where(eq(shoeListing.id, result[0].listingId));
 
-    return getTransactionById(result[0].id) ?? null;
+
+    return result[0];
   } catch (error) {
     console.error("Error accepting offer.", error);
     return null

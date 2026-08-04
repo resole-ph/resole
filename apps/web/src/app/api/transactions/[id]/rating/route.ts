@@ -57,7 +57,8 @@ export async function POST(
       raterId: currentUser.user.id,
       rateeId: transaction.listing.userId,
       transactionId: transactionId,
-      comment: body.comment ?? null
+      comment: body.comment ?? null,
+      raterRole: body.raterRole ?? null
     })
 
     return NextResponse.json({ rating: rating });

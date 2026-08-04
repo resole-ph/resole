@@ -1,5 +1,5 @@
 {
-  "id": "6920fb2f-64ee-44ad-b2d2-462cdfa1de88",
+  "id": "8dcb4390-1d72-465e-a43d-5320277538c5"
   "prevId": "8e131f69-87d7-42bf-86cb-b5bcd8a59c55",
   "version": "7",
   "dialect": "postgresql",
@@ -1173,6 +1173,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -2244,6 +2250,14 @@
           "primaryKey": false,
           "notNull": false
         },
+        "raterRole": {
+          "name": "raterRole",
+          "type": "referal_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'recipient'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -2266,11 +2280,17 @@
         }
       },
       "indexes": {
-        "rating_transaction_id_idx": {
-          "name": "rating_transaction_id_idx",
+        "rating_rater_idx": {
+          "name": "rating_rater_idx",
           "columns": [
             {
               "expression": "transaction_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "raterRole",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2333,7 +2353,7 @@
         },
         "rating_check": {
           "name": "rating_check",
-          "value": "\"rating\".\"rating\" BETWEEN 0 AND 5"
+          "value": "\"rating\".\"rating\" BETWEEN 1 AND 5"
         }
       },
       "isRLSEnabled": false
@@ -3119,7 +3139,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "no action",
           "onUpdate": "no action"
         },
         "listing_view_viewer_id_user_id_fk": {
