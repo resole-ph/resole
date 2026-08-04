@@ -21,6 +21,7 @@ export const charity = pgTable('charity', {
   name: text('name').notNull(),
   address: text('address').notNull(),
   description: text('description').notNull(),
+  image: text('image'),
   cause: causeEnum('cause').default('Other').notNull(),
   coordinator: text('coordinator').notNull(),
   email: text('email').notNull(),
