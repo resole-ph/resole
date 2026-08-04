@@ -10,6 +10,12 @@
     "preview": {
       "distribution": "internal"
     },
+    "dev": {
+      "extends": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://resole-git-dev-rdgonzaga-projects.vercel.app"
+      }
+    },
     "production": {}
   },
   "submit": {

@@ -37,20 +37,24 @@ export async function POST(request: Request) {
 
   try {
     const formData = await request.formData();
-    const top = formData.get('top') as File;
-    const leftSide = (formData.get('leftSide') || formData.get('side')) as File;
-    const rightSide = (formData.get('rightSide') || formData.get('side')) as File;
-    const sole = formData.get('sole') as File;
-    const insoleRight = (formData.get('insoleRight') || formData.get('insole')) as File;
-    const insoleLeft = (formData.get('insoleLeft') || formData.get('insole')) as File;
+    const candidates = {
+      top: formData.get('top') as File | null,
+      leftSide: (formData.get('leftSide') || formData.get('side')) as File | null,
+      rightSide: (formData.get('rightSide') || formData.get('side')) as File | null,
+      sole: formData.get('sole') as File | null,
+      insoleRight: (formData.get('insoleRight') || formData.get('insole')) as File | null,
+      insoleLeft: (formData.get('insoleLeft') || formData.get('insole')) as File | null,
+    };
 
-    if (!top || !leftSide || !rightSide || !sole || !insoleRight || !insoleLeft) {
-      return NextResponse.json({ error: 'Missing one or more required photos (top, leftSide, rightSide, sole, insoleRight, insoleLeft)' }, { status: 400 });
+    const files = Object.fromEntries(
+      Object.entries(candidates).filter(([, file]) => file != null)
+    ) as Record<keyof typeof candidates, File>;
+
+    if (Object.keys(files).length === 0) {
+      return NextResponse.json({ error: 'No photos provided' }, { status: 400 });
     }
 
-    const files = { top, leftSide, rightSide, sole, insoleRight, insoleLeft };
-
-    const oversizedEntries = Object.entries(files).filter(([, file]) => file?.size > MAX_PHOTO_SIZE_BYTES);
+    const oversizedEntries = Object.entries(files).filter(([, file]) => file.size > MAX_PHOTO_SIZE_BYTES);
     if (oversizedEntries.length > 0) {
       const details = oversizedEntries
         .map(([key, file]) => `${key} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`)
