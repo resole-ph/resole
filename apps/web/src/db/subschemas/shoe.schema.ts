@@ -97,8 +97,7 @@ export const shoeListing = pgTable('shoe_listing', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  deletedAt: timestamp('deleted_at')
+    .notNull()
 }, (table) => [
   check('value_check', sql`${table.value} > 0`),
   // Sizes are stored as US Men's; bounds match the conversion chart in

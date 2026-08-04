@@ -154,7 +154,7 @@ export async function getUserStatsById(userId: string) {
     const listings = await db
       .select({ value: count(shoeListing.id) })
       .from(shoeListing)
-      .where(and(eq(shoeListing.userId, userId), isNull(shoeListing.deletedAt)));
+      .where(eq(shoeListing.userId, userId));
 
     const sales = await db
       .select({ value: count(transaction.id) })

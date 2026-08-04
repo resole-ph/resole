@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { SortOption } from '@/features/listing/types/listing.types';
 
-export type SortOption = 'newest' | 'oldest' | 'price_low' | 'price_high';
+export type { SortOption } from '@/features/listing/types/listing.types';
 
 const SORT_OPTIONS: { id: SortOption; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'newest', label: 'Newest First', icon: 'time-outline' },

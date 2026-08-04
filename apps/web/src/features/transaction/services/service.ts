@@ -756,10 +756,6 @@ export async function donateShoeListing(userId: string, listingId: number, chari
       throw new Error('Shoe listing not found');
     }
 
-    if (listing.deletedAt) {
-      throw new Error('Shoe listing is deleted');
-    }
-
     const charities = await tx
       .select({ id: charity.id })
       .from(charity)
@@ -833,10 +829,6 @@ export async function scheduleDonationPickup(userId: string, data: DonationPicku
     const listing = listings[0];
     if (!listing) {
       throw new Error('Shoe listing not found');
-    }
-
-    if (listing.deletedAt) {
-      throw new Error('Shoe listing is deleted');
     }
 
     if (!listing.isAvailable) {

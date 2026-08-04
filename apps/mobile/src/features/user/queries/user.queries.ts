@@ -3,6 +3,19 @@ import { UserService } from '../services/user.service';
 import { ListingService } from '@/features/listing/services/listing.service';
 import { TransactionService } from '@/features/transaction/services/transaction.service';
 import type { SizeSystem } from '@/features/shoe/utils/size-conversion';
+import type { OwnedListingQuery } from '@/features/listing/types/listing.types';
+
+function hasOwnedListingCriteria(filters?: OwnedListingQuery) {
+  return !!filters && (
+    filters.sizes.length > 0 ||
+    filters.colors.length > 0 ||
+    filters.conditions.length > 0 ||
+    filters.minRating !== null ||
+    !!filters.priceMin ||
+    !!filters.priceMax ||
+    filters.sort !== 'newest'
+  );
+}
 
 /**
  * Query keys for everything the profile tab reads.
@@ -17,7 +30,21 @@ export const userKeys = {
   me: () => [...userKeys.all, 'me'] as const,
   card: (userId?: string) => [...userKeys.all, 'card', userId ?? 'me'] as const,
   settings: () => [...userKeys.all, 'settings'] as const,
-  myListings: () => [...userKeys.all, 'me', 'listings'] as const,
+  myListings: (filters?: OwnedListingQuery) => {
+    const criteria = hasOwnedListingCriteria(filters) && filters
+      ? [
+          JSON.stringify([...filters.sizes].sort()),
+          JSON.stringify([...filters.colors].sort()),
+          JSON.stringify([...filters.conditions].sort()),
+          filters.minRating ?? 'any-rating',
+          filters.priceMin,
+          filters.priceMax,
+          filters.sort,
+        ]
+      : [];
+
+    return [...userKeys.all, 'me', 'listings', ...criteria] as const;
+  },
   favourites: () => [...userKeys.all, 'me', 'favourites'] as const,
   transactions: () => [...userKeys.all, 'me', 'transactions'] as const,
   coinBalance: () => [...userKeys.all, 'me', 'coins'] as const,
@@ -73,10 +100,10 @@ export function useUpdateSizeSystem() {
   });
 }
 
-export function useMyListings(enabled = true) {
+export function useMyListings(enabled = true, filters?: OwnedListingQuery) {
   return useQuery({
-    queryKey: userKeys.myListings(),
-    queryFn: () => ListingService.getUserListings(),
+    queryKey: userKeys.myListings(filters),
+    queryFn: () => ListingService.getUserListings(filters),
     enabled,
   });
 }

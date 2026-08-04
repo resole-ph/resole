@@ -15,7 +15,7 @@ export const listingView = pgTable('listing_view', {
   id: serial('id').primaryKey(),
   listingId: integer('listing_id')
     .notNull()
-    .references(() => shoeListing.id),
+    .references(() => shoeListing.id, { onDelete: 'cascade' }),
   viewerId: text('viewer_id')
     .notNull()
     .references(() => user.id),
