@@ -4,9 +4,14 @@ import type { ReactNode } from 'react';
 import StepHeader from './StepHeader';
 import type { ListingFormData, ShoeCategory, ListingMode } from '../types/sell.types';
 import { getConditionLabel } from '../utils/condition';
+import { getConditionTone, getDeviationLabel } from '../utils/condition-tone';
+import ConditionSlider from './ConditionSlider';
 import { validateListingForm } from '../utils/validation';
 
 const CATEGORIES: ShoeCategory[] = ['running', 'basketball', 'football', 'casual', 'other'];
+
+const CONDITION_MIN = 1;
+const CONDITION_MAX = 10;
 
 const LISTING_MODES: { value: ListingMode; label: string; hint: string }[] = [
   { value: 'sale', label: 'Sell', hint: 'Fixed price' },
@@ -23,6 +28,11 @@ function fieldInputClass(hasError?: string) {
 
 interface EditListingStepProps {
   form: ListingFormData;
+  /**
+   * The rating this listing is measured against: the AI's estimate in the
+   * create flow, and the rating the listing was loaded with when editing.
+   */
+  aiConditionScore: number;
   onChange: <K extends keyof ListingFormData>(key: K, value: ListingFormData[K]) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -58,9 +68,22 @@ function CardLabel({ children }: { children: string }) {
   return <p className="text-[12px] font-bold text-on-surface-variant tracking-wide mb-3">{children}</p>;
 }
 
-export default function EditListingStep({ form, onChange, onBack, onContinue }: EditListingStepProps) {
+export default function EditListingStep({
+  form,
+  aiConditionScore,
+  onChange,
+  onBack,
+  onContinue,
+}: EditListingStepProps) {
   const errors = validateListingForm(form);
   const canContinue = Object.keys(errors).length === 0;
+  const conditionLabel = getConditionLabel(form.conditionScore);
+  const conditionTone = getConditionTone(
+    form.conditionScore,
+    aiConditionScore,
+    CONDITION_MIN,
+    CONDITION_MAX
+  );
 
   return (
     <div>
@@ -123,27 +146,59 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
             </div>
           </Card>
 
-          <Card>
-            <div className="flex items-center justify-between mb-3">
-              <CardLabel>Condition</CardLabel>
-              <span className="bg-secondary-container/30 text-primary text-[12px] font-semibold rounded-full px-3 py-1">
-                {getConditionLabel(form.conditionScore)}
+          {/* Condition — the whole card is tinted by how the rating compares to
+              the AI's estimate, so the feedback reads at a glance, not just from
+              the number/label. Kept subtle (low-alpha wash + border) so it stays
+              a hint, not an error state. */}
+          <div
+            className="rounded-2xl p-4 md:p-6 mb-4"
+            style={{
+              backgroundColor: `${conditionTone.color}12`,
+              border: `1.5px solid ${conditionTone.color}45`,
+            }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <CardLabel>CONDITION</CardLabel>
+              <span
+                className="text-[12px] font-bold rounded-full px-3 py-1"
+                style={{ backgroundColor: `${conditionTone.color}1F`, color: conditionTone.color }}
+              >
+                {conditionLabel}
               </span>
             </div>
-            <div className="flex items-center gap-4">
-              <input
-                type="range"
-                min={1}
-                max={10}
-                step={1}
-                value={form.conditionScore}
-                onChange={(e) => onChange('conditionScore', Number(e.target.value))}
-                className="flex-1 accent-primary"
-              />
-              <span className="bg-secondary-container/30 text-primary text-[13px] font-semibold rounded-full px-3 py-1">
-                {form.conditionScore} / 10
-              </span>
+
+            <div className="flex flex-col items-center mb-5 mt-3">
+              <div
+                className="flex items-center justify-center rounded-full"
+                style={{
+                  width: 116,
+                  height: 116,
+                  border: `6px solid ${conditionTone.color}`,
+                  backgroundColor: `${conditionTone.color}14`,
+                  boxShadow: `0px 4px 10px ${conditionTone.color}40`,
+                }}
+              >
+                <span
+                  className="text-[30px] font-extrabold leading-[34px]"
+                  style={{ color: conditionTone.color }}
+                >
+                  {form.conditionScore}
+                  <span className="text-[15px] font-bold">/10</span>
+                </span>
+              </div>
+              <p className="text-[16px] font-bold mt-2.5" style={{ color: conditionTone.color }}>
+                {getDeviationLabel(conditionTone.tone)}
+              </p>
             </div>
+
+            <ConditionSlider
+              value={form.conditionScore}
+              min={CONDITION_MIN}
+              max={CONDITION_MAX}
+              aiValue={aiConditionScore}
+              conditionLabel={conditionLabel}
+              onChange={(v) => onChange('conditionScore', v)}
+            />
 
             <label className="flex items-center gap-2 mt-4">
               <input
@@ -154,7 +209,7 @@ export default function EditListingStep({ form, onChange, onBack, onContinue }: 
               />
               <span className="text-[13px] text-on-surface">This pair has been refurbished/restored</span>
             </label>
-          </Card>
+          </div>
         </div>
 
         <div>

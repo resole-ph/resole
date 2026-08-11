@@ -66,6 +66,13 @@ export default function SellWizard() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedListingId, setPublishedListingId] = useState<number | string | null>(null);
 
+  // What the condition dial measures disagreement against. The edit flow has no
+  // fresh analysis, so the reference there has to be the rating the listing was
+  // loaded with, captured once — comparing the live value against itself would
+  // pin the deviation at zero and leave the dial green and reading "Accurate"
+  // no matter where it was dragged.
+  const [baselineConditionScore, setBaselineConditionScore] = useState<number | null>(null);
+
   // Edit flow states
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -87,6 +94,7 @@ export default function SellWizard() {
       setFlowMode('create');
       setEditingListingId(null);
       setPhotosDirty(false);
+      setBaselineConditionScore(null);
       return;
     }
 
@@ -99,6 +107,7 @@ export default function SellWizard() {
           const { photos: mappedPhotos, form: mappedForm } = listingToEditState(listing);
           setPhotos(mappedPhotos);
           setForm(mappedForm);
+          setBaselineConditionScore(mappedForm.conditionScore);
           setFlowMode('edit');
           setEditingListingId(Number(editId));
           setPhotosDirty(false);
@@ -171,7 +180,12 @@ export default function SellWizard() {
 
   function handleResultsContinue() {
     if (!aiResult) return;
-    setForm(initFormFromAiResult(aiResult));
+    const initialForm = initFormFromAiResult(aiResult);
+    setForm(initialForm);
+    // The seller was shown the AI's score rounded on the results step, and the
+    // form starts from that same rounded value — so the dial opens on
+    // "Accurate" rather than flagging a gap the seller never introduced.
+    setBaselineConditionScore(initialForm.conditionScore);
     setStep('editListing');
   }
 
@@ -220,6 +234,7 @@ export default function SellWizard() {
     setAnalysisError(null);
     setAiResult(null);
     setForm(null);
+    setBaselineConditionScore(null);
     setIsPublishing(false);
     setPublishError(null);
     setPublishedListingId(null);
@@ -277,6 +292,7 @@ export default function SellWizard() {
       {step === 'editListing' && form && (
         <EditListingStep
           form={form}
+          aiConditionScore={baselineConditionScore ?? form.conditionScore}
           onChange={updateFormField}
           onBack={goBack}
           onContinue={() => setStep('review')}
