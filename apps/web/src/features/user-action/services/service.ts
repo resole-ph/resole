@@ -389,7 +389,14 @@ export async function getFavouriteListingsByUserId(userId: string) {
       .innerJoin(shoeListing, eq(save.listingId, shoeListing.id))
       .innerJoin(shoe, eq(shoeListing.shoeId, shoe.id))
       .innerJoin(user, eq(shoeListing.userId, user.id))
-      .where(and(eq(save.userId, userId), isNull(save.removedAt)));
+      .where(
+        and(
+          eq(save.userId, userId), 
+          isNull(save.removedAt),
+          eq(shoeListing.isAvailable, true), 
+          isNull(shoeListing.archivedAt)
+        )
+      );
 
     return rows;
   } catch (error) {
