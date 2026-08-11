@@ -17,14 +17,8 @@ import { UserService } from '@/features/user/services/user.service';
 import { useSellStore } from '@/store/sell';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
+import { CONDITION_COLORS } from '@/features/sell/utils/condition';
 
-export const CONDITION_COLORS: Record<Listing['condition'], string> = {
-  'Like New':  '#10B981',
-  'Excellent': '#3B82F6',
-  'Good':      '#F59E0B',
-  'Fair':      '#9CA3AF',
-  'Poor':      '#EF4444',
-};
 
 const BTN_SHADOW = (color: string) => ({
   shadowColor: color,

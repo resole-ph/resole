@@ -7,6 +7,7 @@ import DownloadAppModal from "@/components/DownloadAppModal";
 import { useListings } from "@/features/shoe/queries/listing.queries";
 import { useSearchSuggestions } from "@/features/search/queries/search.queries";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useAuth } from "@/providers/AuthProvider";
 import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
 
 const COLORS = {
@@ -24,6 +25,9 @@ const BRANDS = ["All", "Nike", "Adidas", "Jordan", "New Balance", "Yeezy", "Asic
 export default function MarketPage() {
   const router = useRouter();
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  // Null when signed out, which is a valid way to browse the boards — every
+  // card then reads as someone else's.
+  const { user } = useAuth();
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -349,7 +353,7 @@ export default function MarketPage() {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 20 }}>
               {filteredSaleListings.map((item) => (
-                <ListingCard key={item.id} item={item} onRequireApp={() => triggerAppModal()} />
+                <ListingCard key={item.id} item={item} currentUserId={user?.id} onRequireApp={() => triggerAppModal()} />
               ))}
             </div>
           )}
@@ -372,7 +376,7 @@ export default function MarketPage() {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 20 }}>
               {filteredSwapListings.map((item) => (
-                <ListingCard key={item.id} item={item} onRequireApp={() => triggerAppModal("Propose Swap", "Swapping shoes is processed securely in the Resole Mobile App.")} />
+                <ListingCard key={item.id} item={item} currentUserId={user?.id} onRequireApp={() => triggerAppModal("Propose Swap", "Swapping shoes is processed securely in the Resole Mobile App.")} />
               ))}
             </div>
           )}

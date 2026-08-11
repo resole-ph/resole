@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
 import { formatSizeShort } from "@/features/shoe/utils/size-conversion";
+import { CONDITION_COLORS } from "@/features/sell/utils/condition";
 
 const COLORS = {
   primary: "#2563EB",
@@ -19,21 +20,56 @@ const COLORS = {
   border: "#E5E7EB",
 } as const;
 
-const CONDITION_COLORS: Record<string, string> = {
-  'Brand New': '#10B981',
-  'Like New': '#10B981',
-  'Excellent': '#3B82F6',
-  'Good': '#F59E0B',
-  'Fair': '#9CA3AF',
-  'Poor': '#EF4444',
-};
-
 const BADGE_STYLES: Record<string, { bg: string; text: string; icon: string; label?: string }> = {
   Swap: { bg: '#2563EB', text: '#fff', icon: 'swap_horiz' },
   Sale: { bg: '#10B981', text: '#fff', icon: 'sell' },
   Both: { bg: '#8B5CF6', text: '#fff', icon: 'published_with_changes', label: 'Swap & Sell' },
   'Flash Deal': { bg: '#F59E0B', text: '#fff', icon: 'bolt' },
 };
+
+/**
+ * The footer's single call to action. Owning the pair swaps the blue
+ * offer/swap prompt for the neutral edit affordance — a seller can neither bid
+ * on nor swap for their own shoe, so the blue button was never actionable.
+ */
+function FooterAction({
+  isOwnListing,
+  icon,
+  label,
+  onClick,
+}: {
+  isOwnListing: boolean;
+  icon: string;
+  label: string;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        background: isOwnListing ? "#F3F4F6" : "#EFF6FF",
+        border: `1px solid ${isOwnListing ? COLORS.border : "#BFDBFE"}`,
+        color: isOwnListing ? COLORS.textMuted : COLORS.primary,
+        borderRadius: 12,
+        padding: "10px 0",
+        fontSize: 13,
+        fontWeight: 700,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        transition: "background 0.15s ease",
+      }}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+        {isOwnListing ? "edit" : icon}
+      </span>
+      {isOwnListing ? "Edit Listing" : label}
+    </button>
+  );
+}
 
 export interface ListingCardProps {
   item: SerializedShoeListing & {
@@ -45,6 +81,12 @@ export interface ListingCardProps {
   isSaved?: boolean;
   onFavorite?: (id: string) => void;
   onRequireApp?: () => void;
+  /**
+   * Signed-in user, when there is one. A card for your own pair offers you
+   * nothing to buy or swap — it offers you an edit, the same way the mobile
+   * ListingCard does.
+   */
+  currentUserId?: string;
 }
 
 /** Calculates remaining days dynamically from createdAt if daysLeft is missing */
@@ -63,13 +105,15 @@ export default function ListingCard({
   isSaved = false,
   onFavorite,
   onRequireApp,
+  currentUserId,
 }: ListingCardProps) {
   const router = useRouter();
 
   const title = item.colorway ? `${item.model} '${item.colorway}'` : item.model;
   const isSwap = item.listingMode === "Swap";
+  const isOwnListing = !!currentUserId && item.seller?.id === currentUserId;
   const badge = item.listingMode && BADGE_STYLES[item.listingMode];
-  const conditionColor = CONDITION_COLORS[item.condition] || COLORS.green;
+  const conditionColor = CONDITION_COLORS[item.condition] ?? COLORS.gray;
 
   const daysLeft = getDaysLeft(item.createdAt, item.daysLeft);
   // Sizes are stored as US Men's; the DTO stringifies unconditionally, so a
@@ -85,6 +129,11 @@ export default function ListingCard({
     if (onRequireApp) {
       onRequireApp();
     }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/sell?edit=${item.id}`);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -230,7 +279,8 @@ export default function ListingCard({
           )}
         </div>
 
-        {/* Favorite Button */}
+        {/* Favorite Button — hidden on your own pairs; there is nothing to save. */}
+        {!isOwnListing && (
         <button
           onClick={handleFavoriteClick}
           aria-label="Save listing"
@@ -262,6 +312,7 @@ export default function ListingCard({
             favorite
           </span>
         </button>
+        )}
       </div>
 
       {/* CARD BODY */}
@@ -323,28 +374,12 @@ export default function ListingCard({
               >
                 {item.swapFor || "Open to offers"}
               </div>
-              <button
-                onClick={handleActionClick}
-                style={{
-                  width: "100%",
-                  background: "#EFF6FF",
-                  border: "1px solid #BFDBFE",
-                  color: COLORS.primary,
-                  borderRadius: 12,
-                  padding: "10px 0",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  transition: "background 0.15s ease",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>swap_horiz</span>
-                Propose Swap
-              </button>
+              <FooterAction
+                isOwnListing={isOwnListing}
+                icon="swap_horiz"
+                label="Propose Swap"
+                onClick={isOwnListing ? handleEditClick : handleActionClick}
+              />
             </div>
           ) : (
             <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: 12 }}>
@@ -401,28 +436,12 @@ export default function ListingCard({
                 </div>
               )}
 
-              <button
-                onClick={handleActionClick}
-                style={{
-                  width: "100%",
-                  background: "#EFF6FF",
-                  border: "1px solid #BFDBFE",
-                  color: COLORS.primary,
-                  borderRadius: 12,
-                  padding: "10px 0",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  transition: "background 0.15s ease",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>sell</span>
-                Make Offer
-              </button>
+              <FooterAction
+                isOwnListing={isOwnListing}
+                icon="sell"
+                label="Make Offer"
+                onClick={isOwnListing ? handleEditClick : handleActionClick}
+              />
             </div>
           )}
         </div>

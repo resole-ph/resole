@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { ProfileListing } from '../types/profile.types';
+import { CONDITION_COLORS } from '@/features/sell/utils/condition';
 
 /**
  * Web port of the mobile home-feed listing card. The seller row is dropped on
@@ -12,14 +13,6 @@ const BADGE_STYLES: Record<string, { className: string; icon: string; label?: st
   Swap: { className: 'bg-primary text-white', icon: 'swap_horiz' },
   Sale: { className: 'bg-secondary text-white', icon: 'sell' },
   Both: { className: 'bg-[#8B5CF6] text-white', icon: 'swap_horiz', label: 'Swap & Sell' },
-};
-
-const CONDITION_COLORS: Record<string, string> = {
-  'Like New': '#10B981',
-  Excellent: '#3B82F6',
-  Good: '#F59E0B',
-  Fair: '#9CA3AF',
-  Poor: '#EF4444',
 };
 
 const LISTING_DURATION_DAYS = 30;

@@ -6,6 +6,8 @@ import { ListingService } from '@/features/listing/services/listing.service';
 import { useSellStore } from '@/store/sell';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
+import { CONDITION_COLORS } from '@/features/sell/utils/condition';
+import type { ConditionLabel } from '@/features/sell/types/sell.types';
 
 export interface Listing {
   id: string;
@@ -13,7 +15,7 @@ export interface Listing {
   brand: string;
   price: number;
   originalPrice?: number;
-  condition: 'Like New' | 'Excellent' | 'Good' | 'Fair' | 'Poor';
+  condition: ConditionLabel;
   imageUrl?: string;
   imageUrlLeftSide: string;
   imageUrlRightSide: string;
@@ -52,14 +54,6 @@ interface ListingCardProps {
   isSaved?: boolean;
   currentUserId?: string;
 }
-
-const CONDITION_COLORS: Record<Listing['condition'], string> = {
-  'Like New': '#10B981',
-  'Excellent': '#3B82F6',
-  'Good':     '#F59E0B',
-  'Fair':     '#9CA3AF',
-  'Poor':     '#EF4444',
-};
 
 const BADGE_STYLES: Record<
   NonNullable<Exclude<Listing['listingMode'], 'Hot'>>,

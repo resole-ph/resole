@@ -189,7 +189,7 @@ export const MY_LISTINGS: Listing[] = [
     name: 'Adidas Forum Low Cloud White',
     brand: 'Adidas',
     price: 4200,
-    condition: 'Excellent',
+    condition: 'Good',
     imageUrl: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=800&q=80',
     aiScore: 85,
     badgeType: 'Swap',
