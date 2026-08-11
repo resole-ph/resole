@@ -26,4 +26,5 @@ export interface MarketFilters {
 
 export type OwnedListingQuery = MarketFilters & {
   sort: SortOption;
+  includeArchived?: boolean;
 };

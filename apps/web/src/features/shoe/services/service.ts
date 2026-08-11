@@ -767,14 +767,15 @@ export async function deleteUserShoeListing(userId: string, id: number) {
       .update(shoeListing)
       .set({
         isAvailable: false,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        archivedAt: new Date()
       })
       .where(and(eq(shoeListing.id, id), eq(shoeListing.userId, userId)))
       .returning({ id: shoeListing.id });
 
-    return result[0] ? "Shoe listing successfully deleted." : null;
+    return result[0] ? "Shoe listing successfully archived." : null;
   } catch (error) {
-    console.error("Error deleting user shoe listing.", error);
+    console.error("Error archiving user shoe listing.", error);
     return null;
   }
 }

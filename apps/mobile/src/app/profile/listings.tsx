@@ -225,7 +225,7 @@ export default function ListingsScreen() {
   // Shared with the home screen's "Your Listings" row, so arriving here from
   // "View all" renders from cache instead of refetching the same list.
   const listingQuery = useMemo(
-    () => ({ ...filters, sort: sortOption }),
+    () => ({ ...filters, sort: sortOption, includeArchived: true }),
     [filters, sortOption],
   );
   const { data } = useMyListings(true, listingQuery);

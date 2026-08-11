@@ -27,6 +27,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const requestedConditions = searchParams.getAll('condition');
   const requestedSort = searchParams.get('sort');
+  const includeArchived = searchParams.get('includeArchived') === 'true'
   const filters = {
     sizes: searchParams
       .getAll('size')
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
     sort: SORT_OPTIONS.find((option) => option === requestedSort) ?? 'newest',
   };
 
-  const shoeListings = await getShoeListingsByUserId(currentUser.user.id, filters, true);
+  const shoeListings = await getShoeListingsByUserId(currentUser.user.id, filters, includeArchived);
   if (!shoeListings) {
     return NextResponse.json({ error: 'Failed to fetch shoe listings' }, { status: 500 });
   }

@@ -63,6 +63,7 @@ export const ListingService = {
       priceMin: filters?.priceMin,
       priceMax: filters?.priceMax,
       sort: filters?.sort,
+      includeArchived: String(filters?.includeArchived)
     });
     const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/users/me/listings${query}`, {
       method: 'GET'
@@ -132,9 +133,8 @@ export const ListingService = {
   },
 
   async archiveListing(id: number): Promise<undefined> {
-    await apiFetch<undefined>(`/api/listings/${id}`, {
-      method: 'PATCH',
-      body: { isAvailable: false },
+    await apiFetch<undefined>(`/api/listings/${id}/archive`, {
+      method: 'POST'
     });
   },
 
