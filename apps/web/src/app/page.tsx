@@ -65,7 +65,9 @@ function favouriteToListing(row: any) {
     condition: getConditionLabel(Number(row.listing?.conditionScore ?? 0)),
     category: row.shoe?.category ?? '',
     imageUrl: row.listing?.imageUrlTop ?? null,
-    seller: { name: row.user?.name },
+    // The id is what tells the card whether the pair is yours — a favourite of
+    // your own listing must read as owned here too, not as one to bid on.
+    seller: { id: row.user?.id ?? row.listing?.userId, name: row.user?.name },
   };
 }
 
@@ -764,6 +766,7 @@ export default function ResoleHome() {
               <ListingCard
                 key={l.id}
                 item={l}
+                currentUserId={user?.id}
                 isSaved={savedIds.has(String(l.id))}
                 onFavorite={(id) => {
                   requireAuth(() => handleSaveListing(id), 'Log in to save listings to your favourites.');

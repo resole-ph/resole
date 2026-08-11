@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { getShoeListingsByUserId } from '@/features/shoe/services/service';
 import { serializeShoeListing } from '@/features/shoe/utils/listing-dto';
+import { CONDITION_LABELS } from '@/features/sell/utils/condition';
 
-const CONDITION_OPTIONS = ['Like New', 'Excellent', 'Good', 'Fair', 'Poor'] as const;
+const CONDITION_OPTIONS = CONDITION_LABELS;
 const SORT_OPTIONS = ['newest', 'oldest', 'price_low', 'price_high'] as const;
 
 function parseOptionalNumber(value: string | null, maximum?: number) {

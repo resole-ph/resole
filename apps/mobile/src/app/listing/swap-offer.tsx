@@ -12,14 +12,7 @@ import { ListingService } from '@/features/listing/services/listing.service';
 import { OfferService } from '@/features/offer/services/offer.service';
 import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
-
-const CONDITION_COLORS: Record<string, string> = {
-  'Like New':  '#10B981',
-  'Excellent': '#3B82F6',
-  'Good':      '#F59E0B',
-  'Fair':      '#9CA3AF',
-  'Poor':      '#EF4444',
-};
+import { CONDITION_COLORS } from '@/features/sell/utils/condition';
 
 export default function SwapOfferScreen() {
   const insets = useSafeAreaInsets();

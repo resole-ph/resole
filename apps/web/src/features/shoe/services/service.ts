@@ -16,6 +16,7 @@ import {
   ShoeAnalysisResult
 } from '@/features/shoe/types/types';
 import { MIN_US_MENS, MAX_US_MENS } from '@/features/shoe/utils/size-conversion';
+import type { ConditionLabel } from '@/features/sell/utils/condition';
 import { GoogleGenAI } from "@google/genai";
 
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-001";
@@ -174,7 +175,7 @@ export type ShoeListingFilters = {
 export type OwnedShoeListingFilters = {
   sizes?: string[];
   colors?: string[];
-  conditions?: Array<'Like New' | 'Excellent' | 'Good' | 'Fair' | 'Poor'>;
+  conditions?: ConditionLabel[];
   minRating?: number;
   priceMin?: number;
   priceMax?: number;
@@ -205,15 +206,16 @@ function buildShoeListingFilters(filters?: ShoeListingFilters) {
   return conditions;
 }
 
-function getConditionFilter(condition: NonNullable<OwnedShoeListingFilters['conditions']>[number]): SQL {
+/** The score band behind each label — the inverse of `getConditionLabel`. */
+function getConditionFilter(condition: ConditionLabel): SQL {
   switch (condition) {
     case 'Like New':
       return gte(shoeListing.conditionScore, '9');
-    case 'Excellent':
-      return and(gte(shoeListing.conditionScore, '8'), lt(shoeListing.conditionScore, '9'))!;
     case 'Good':
-      return and(gte(shoeListing.conditionScore, '6.5'), lt(shoeListing.conditionScore, '8'))!;
+      return and(gte(shoeListing.conditionScore, '8'), lt(shoeListing.conditionScore, '9'))!;
     case 'Fair':
+      return and(gte(shoeListing.conditionScore, '6.5'), lt(shoeListing.conditionScore, '8'))!;
+    case 'Worn':
       return and(gte(shoeListing.conditionScore, '4'), lt(shoeListing.conditionScore, '6.5'))!;
     case 'Poor':
       return lt(shoeListing.conditionScore, '4');

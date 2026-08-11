@@ -4,6 +4,7 @@ import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpac
 import { Ionicons } from '@expo/vector-icons';
 import type { Listing } from '@/components/molecules/ListingCard';
 import type { MarketFilters } from '@/features/listing/types/listing.types';
+import { CONDITION_LABELS } from '@/features/sell/utils/condition';
 
 export type { MarketFilters } from '@/features/listing/types/listing.types';
 
@@ -16,7 +17,7 @@ export const EMPTY_FILTERS: MarketFilters = {
   priceMax: '',
 };
 
-const CONDITIONS: Listing['condition'][] = ['Like New', 'Excellent', 'Good', 'Fair', 'Poor'];
+const CONDITIONS: readonly Listing['condition'][] = CONDITION_LABELS;
 const RATINGS = [4.5, 4, 3];
 
 interface FilterSheetProps {
