@@ -381,7 +381,7 @@ export default function EditListingContainer() {
           <SectionLabel>Description (optional)</SectionLabel>
           <StyledInput
             value={form.description}
-            onChangeText={(v) => updateFormField('description', v)}
+            onChangeText={(v) => v.length <= 1000 ? updateFormField('description', v) : form.description ? '' : updateFormField('description', v.slice(0, 1000))}
             placeholder="Add any extra details about your shoes..."
             multiline
           />
