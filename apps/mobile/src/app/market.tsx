@@ -17,6 +17,7 @@ export default function MarketScreen() {
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
@@ -29,8 +30,8 @@ export default function MarketScreen() {
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
   const listingFilters = useMemo(
-    () => ({ brand: selectedBrand ?? undefined, search: debouncedSearch }),
-    [selectedBrand, debouncedSearch]
+    () => ({ category: selectedCat ?? undefined, brand: selectedBrand ?? undefined, search: debouncedSearch }),
+    [selectedCat, selectedBrand, debouncedSearch]
   );
 
   const { data: saleData } = useSaleListings(listingFilters);
@@ -88,7 +89,7 @@ export default function MarketScreen() {
           onSearch={setSearchQuery}
           onSelectSeller={(personId) => router.push(`/profile/${personId}` as any)}
         />
-        <CategoriesRow onBrandPress={setSelectedBrand} />
+        <CategoriesRow onCategoryPress={setSelectedCat} onBrandPress={setSelectedBrand} />
         <BrowseFeed
           title=""
           subtitle="Grab your pair at the best price"

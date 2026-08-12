@@ -18,6 +18,7 @@ export interface AiAnalysisResult {
   model: string;
   colorway: string;
   size: string;
+  category: string;
   year: number;
   conditionLabel: ConditionLabel;
   conditionRating: number;
@@ -34,6 +35,7 @@ export interface ListingFormData {
   model: string;
   colorway: string;
   size: string;
+  category?: string;
   year: string;
   conditionRating: number;
   conditionLabel: ConditionLabel;

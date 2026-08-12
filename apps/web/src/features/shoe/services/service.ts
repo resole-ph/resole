@@ -122,6 +122,7 @@ export async function createShoeAnalysis(data: ShoeAnalysisResult) {
       model: data.model,
       colorway: data.colorway,
       size: data.size,
+      category: data.category,
       year: data.year,
       conditionScore: data.conditionScore.toString(),
       description: data.description,
@@ -168,6 +169,7 @@ export async function getAllShoePrice() {
 }
 
 export type ShoeListingFilters = {
+  category?: string;
   brand?: string;
   search?: string;
 };
@@ -184,6 +186,10 @@ export type OwnedShoeListingFilters = {
 
 function buildShoeListingFilters(filters?: ShoeListingFilters) {
   const conditions = [];
+
+  if (filters?.category) {
+    conditions.push(ilike(shoe.brand, filters.category));
+  }
 
   if (filters?.brand) {
     conditions.push(ilike(shoe.brand, filters.brand));
@@ -861,6 +867,7 @@ export async function analyzeShoePhotos(photoUrls: {
     '',
     'ANALYSIS & VALUATION RULES:',
     '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size must be a plain US MEN\'S size number string like "10" or "10.5" — if the tag only shows a women\'s or EU size, convert it to US Men\'s first. Never return a bare women\'s size.',
+    '• Category: Can only be any of the following: running, basketball, football, casual, lifestyle, skate, training, other. Category is based on the classification of the shoe, and must be in small characters.',
     '• Condition & Defects: Set conditionScore (0-10, where 10 = brand new/unworn) based on the worse shoe of the pair. Prefix each defect entry with "Left: ", "Right: ", or "Both: ".',
     '• Estimated Price: Estimate typical brand-new retail price in PHP for this shoe model.',
     '• Year: Provide a valid Gregorian calendar year (e.g., 2026, 2016, 2006) of the release of the model.',
@@ -881,6 +888,7 @@ export async function analyzeShoePhotos(photoUrls: {
           model: { type: 'STRING' },
           colorway: { type: 'STRING' },
           size: { type: 'STRING' },
+          category: { type: 'STRING' },
           year: { type: 'NUMBER' },
           conditionScore: { type: 'NUMBER' },
           description: { type: 'STRING' },

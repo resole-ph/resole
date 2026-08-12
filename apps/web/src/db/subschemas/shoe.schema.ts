@@ -21,6 +21,9 @@ export const categoryEnum = pgEnum('caetgory_enum', [
   'basketball',
   'football',
   'casual',
+  'lifestyle',
+  'skate',
+  'training',
   'other'
 ]);
 
@@ -128,6 +131,7 @@ export const shoeAnalysis = pgTable('shoe_analysis', {
   model: text('model').notNull(),
   colorway: text('colorway').notNull(),
   size: text('size').notNull(),
+  category: categoryEnum('category').default('other').notNull(),
   year: integer('year').notNull(),
   conditionScore: numeric('condition_score').notNull(),
   description: text('description').notNull(),

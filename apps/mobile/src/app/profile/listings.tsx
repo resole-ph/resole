@@ -95,14 +95,14 @@ function ActiveCard({
         <GuardedTouchableOpacity
           className="w-9 h-9 rounded-xl bg-gray-50 items-center justify-center"
           activeOpacity={0.7}
-          onPress={(e) => { e.stopPropagation(); onEdit(); }}
+          onPress={(e) => { e.persist(); e.stopPropagation(); onEdit(); }}
         >
           <Ionicons name="create-outline" size={18} color="#6B7280" />
         </GuardedTouchableOpacity>
         <GuardedTouchableOpacity
           className="w-9 h-9 rounded-xl bg-gray-50 items-center justify-center"
           activeOpacity={0.7}
-          onPress={(e) => { e.stopPropagation(); onArchive(); }}
+          onPress={(e) => { e.persist(); e.stopPropagation(); onArchive(); }}
         >
           <Ionicons name="archive-outline" size={18} color="#6B7280" />
         </GuardedTouchableOpacity>

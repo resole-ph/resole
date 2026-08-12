@@ -178,8 +178,8 @@ export default function ListingDetailScreen() {
     listing.imageUrlLeftSide,
     listing.imageUrlRightSide,
     listing.imageUrlSole,
-    (listing as any).imageUrlInsoleRight || listing.imageUrlInsole,
-    (listing as any).imageUrlInsoleLeft || listing.imageUrlInsole,
+    listing.imageUrlInsoleRight,
+    listing.imageUrlInsoleLeft,
   ].filter((url): url is string => Boolean(url));
 
   const similarItems = similarListings?.filter(

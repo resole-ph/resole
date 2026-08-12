@@ -163,13 +163,13 @@ export default function EditListingContainer() {
           <View className="gap-2">
             <StyledInput
               value={form.brand}
-              onChangeText={(v) => updateFormField('brand', v)}
+              onChangeText={(v) => v.length <= 50 ? updateFormField('brand', v) : form.brand ? '' : updateFormField('brand', v.slice(0, 50))}
               placeholder="Brand"
               error={errors.brand}
             />
             <StyledInput
               value={form.model}
-              onChangeText={(v) => updateFormField('model', v)}
+              onChangeText={(v) => v.length <= 100 ? updateFormField('model', v) : form.model ? '' : updateFormField('model', v.slice(0, 100))}
               placeholder="Model"
               error={errors.model}
             />

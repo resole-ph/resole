@@ -27,6 +27,7 @@ export interface Listing {
   listingMode?: 'Swap' | 'Sale' | 'Both' | 'Hot' | 'Flash Deal';
   description?: string;
   size?: string;
+  category?: string;
   year?: string | number;
   colorway?: string;
   sold?: string;
@@ -82,8 +83,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
     });
   };
 
-  const handleEdit = (e: { stopPropagation: () => void }) => {
-    e.stopPropagation();
+  const handleEdit = () => {
     resetSell();
     router.push({ pathname: '/profile/edit-listing', params: { id: listing.id } });
   };
@@ -162,7 +162,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
           <GuardedTouchableOpacity
             className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white items-center justify-center"
             style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 }}
-            onPress={(e) => { e.stopPropagation(); onSave?.(listing); }}
+            onPress={(e) => { e.persist(); e.stopPropagation(); onSave?.(listing); }}
             activeOpacity={0.7}
           >
             <Ionicons
@@ -227,6 +227,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
                 activeOpacity={0.75}
                 onPress={(e) => {
+                  e.persist();
                   e.stopPropagation();
                   router.push({ pathname: '/listing/[id]', params: { id: listing.id, action: 'swap' } });
                 }}
@@ -261,6 +262,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
               activeOpacity={isOwnListing || !listing.seller.id ? 1 : 0.7}
               disabled={isOwnListing || !listing.seller.id}
               onPress={(e) => {
+                e.persist();
                 e.stopPropagation();
                 router.push(`/profile/${listing.seller.id}` as any);
               }}
@@ -308,6 +310,7 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
                 style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' }}
                 activeOpacity={0.75}
                 onPress={(e) => {
+                  e.persist();
                   e.stopPropagation();
                   router.push({ pathname: '/listing/[id]', params: { id: listing.id, action: 'offer' } });
                 }}

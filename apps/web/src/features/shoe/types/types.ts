@@ -28,6 +28,7 @@ export interface ShoeAnalysis {
   /** US size as read from the shoe (e.g. "10" or "10.5"). */
   size: string;
   /** Estimated release/production year. Not persisted — display only. */
+  category: 'running' | 'basketball' | 'football' | 'casual' | 'lifestyle' | 'skate' | 'training' | 'other';
   year: number;
   /** Condition on a 0–10 scale (10 = brand new). */
   conditionScore: number;

@@ -19,6 +19,8 @@ export function serializeShoeListing(row: ShoeListing) {
     imageUrlRightSide: row.imageUrlRightSide,
     imageUrlSole: row.imageUrlSole,
     imageUrlInsole: row.imageUrlInsole,
+    imageUrlInsoleLeft: row.imageUrlInsoleLeft || row.imageUrlInsole,
+    imageUrlInsoleRight: row.imageUrlInsoleRight || row.imageUrlInsole,
     listingMode: row.listingMode,
     isAvailable: row.isAvailable,
     archivedAt: row.archivedAt ? new Date(row.archivedAt).toISOString() : null,

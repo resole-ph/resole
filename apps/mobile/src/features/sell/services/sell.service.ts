@@ -47,6 +47,17 @@ const LISTING_MODE_TO_MODE: Record<'Sale' | 'Swap' | 'Both', ListingFormData['mo
   Both: 'both',
 };
 
+const CATEGORIES = [
+  'running',
+  'basketball',
+  'football',
+  'casual',
+  'lifestyle',
+  'skate',
+  'training',
+  'other'
+]
+
 /** Shape of the `analysis` payload returned by POST /api/listings/analyze. */
 interface AnalyzeResponse {
   analysisId: number,
@@ -55,6 +66,7 @@ interface AnalyzeResponse {
     model: string;
     colorway: string;
     size: string;
+    category: string;
     year: number;
     conditionScore: number;
     description: string;
@@ -181,6 +193,9 @@ export const sellService: SellService = {
       model: analysis.model,
       colorway: analysis.colorway,
       size: analysis.size,
+      category: CATEGORIES.includes(analysis.category ?? 'other')
+        ? (analysis.category ?? 'other')
+        : 'other', 
       year: analysis.year,
       conditionRating: analysis.conditionScore,
       conditionLabel: ratingToLabel(analysis.conditionScore),
@@ -211,6 +226,9 @@ export const sellService: SellService = {
         description: form.description,
         colorway: form.colorway,
         size: form.size,
+        category: CATEGORIES.includes(form.category ?? 'other')
+          ? (form.category ?? 'other')
+          : 'other', 
         conditionScore: form.conditionRating,
         listingMode: MODE_TO_LISTING_MODE[form.mode],
         imageUrlTop: remoteUrlByAngle.top,
