@@ -190,6 +190,13 @@
       "when": 1785842096514,
       "tag": "0026_naive_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1786552314715,
+      "tag": "0027_yellow_doctor_octopus",
+      "breakpoints": true
     }
   ]
 }
