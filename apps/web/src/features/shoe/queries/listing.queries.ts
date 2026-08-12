@@ -7,6 +7,7 @@ export type ListingSection = 'sale-board' | 'swap-board';
 
 export type ListingFilters = {
   section: ListingSection;
+  category?: string;
   brand?: string;
   search?: string;
 };
@@ -14,11 +15,12 @@ export type ListingFilters = {
 export const listingKeys = {
   all: ['listings'] as const,
   list: (filters: ListingFilters) =>
-    [...listingKeys.all, filters.section, filters.brand ?? 'all', filters.search ?? ''] as const,
+    [...listingKeys.all, filters.section, filters.category ?? 'all', filters.brand ?? 'all', filters.search ?? ''] as const,
 };
 
-function buildQuery({ section, brand, search }: ListingFilters) {
+function buildQuery({ section, category, brand, search }: ListingFilters) {
   const params = new URLSearchParams({ section });
+  if (category && category !== 'All') params.set('category', category);
   if (brand && brand !== 'All') params.set('brand', brand);
   if (search) params.set('search', search);
   return `/api/listings?${params.toString()}`;
@@ -36,7 +38,7 @@ async function fetchListings(filters: ListingFilters): Promise<SerializedShoeLis
 }
 
 /**
- * Each (section, brand, search) combination gets its own cache entry, so
+ * Each (section, category, brand, search) combination gets its own cache entry, so
  * clearing a filter or going back to a previous search is instant — the market
  * page used to refetch both boards on every filter change.
  */

@@ -17,7 +17,7 @@ const CATEGORIES: Category[] = [
 ];
 
 interface CategoriesRowProps {
-  onCategoryPress?: (categoryId: string) => void;
+  onCategoryPress?: (categoryId: string | null) => void;
   onBrandPress?: (brandId: string | null) => void;
 }
 
@@ -40,8 +40,9 @@ export default function CategoriesRow({ onCategoryPress, onBrandPress }: Categor
   }, [])
 
   const handleCatPress = (id: string) => {
-    setActiveCatId(prev => (prev === id ? null : id));
-    onCategoryPress?.(id);
+    const next = activeCatId === id ? null : id;
+    setActiveCatId(next);
+    onCategoryPress?.(next);
   };
 
   const handleBrandPress = (id: string) => {

@@ -43,6 +43,10 @@ export function GuardedTouchableOpacity({
   const handlePress = useCallback((event: GestureResponderEvent) => {
     if (disabled || lockedRef.current || !onPress) return;
 
+    // Guarded callbacks run in a promise chain so they can support async
+    // handlers. Persist first, before any nested handler calls
+    // `stopPropagation`, to prevent React Native from releasing the event.
+    event.persist();
     lockedRef.current = true;
     setIsLocked(true);
 

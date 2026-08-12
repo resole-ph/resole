@@ -31,7 +31,7 @@ export const ListingService = {
   },
 
   async getListings(filters?: ListingFilters): Promise<Listing[]> {
-    const query = buildListingQuery({ brand: filters?.brand, search: filters?.search });
+    const query = buildListingQuery({ category: filters?.category, brand: filters?.brand, search: filters?.search });
     const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings${query}`, {
       method: 'GET'
     });
@@ -102,7 +102,7 @@ export const ListingService = {
   },
 
   async getSaleListings(filters?: ListingFilters): Promise<Listing[]> {
-    const query = buildListingQuery({ section: 'sale-board', brand: filters?.brand, search: filters?.search });
+    const query = buildListingQuery({ section: 'sale-board', category: filters?.category, brand: filters?.brand, search: filters?.search });
     const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings${query}`, {
       method: 'GET'
     });

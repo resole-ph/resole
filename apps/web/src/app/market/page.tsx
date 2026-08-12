@@ -21,6 +21,16 @@ const COLORS = {
 } as const;
 
 const BRANDS = ["All", "Nike", "Adidas", "Jordan", "New Balance", "Yeezy", "Asics"];
+const CATEGORIES = [
+  { id: 'running', label: 'Running' },
+  { id: 'basketball', label: 'Basketball' },
+  { id: 'football', label: 'Football' },
+  { id: 'lifestyle', label: 'Lifestyle' },
+  { id: 'skate', label: 'Skate' },
+  { id: 'training', label: 'Training' },
+  { id: 'casual', label: 'Casual' },
+  { id: 'other', label: 'Other' },
+] as const;
 
 export default function MarketPage() {
   const router = useRouter();
@@ -31,6 +41,7 @@ export default function MarketPage() {
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<string>("All");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -89,12 +100,14 @@ export default function MarketPage() {
   // renders the grid with no request at all.
   const { data: saleListings = [], isPending: loadingSale } = useListings({
     section: "sale-board",
+    category: selectedCategory ?? undefined,
     brand: selectedBrand,
     search: debouncedSearch,
   });
 
   const { data: swapListings = [], isPending: loadingSwap } = useListings({
     section: "swap-board",
+    category: selectedCategory ?? undefined,
     brand: selectedBrand,
     search: debouncedSearch,
   });
@@ -105,13 +118,14 @@ export default function MarketPage() {
   const filterListings = (list: SerializedShoeListing[]) => {
     return list.filter((item) => {
       const matchesBrand = selectedBrand === "All" || item.brand.toLowerCase() === selectedBrand.toLowerCase();
+      const matchesCategory = !selectedCategory || item.category?.toLowerCase() === selectedCategory;
       const term = searchQuery.toLowerCase();
       const matchesSearch = !searchQuery ||
         item.model.toLowerCase().includes(term) ||
         item.brand.toLowerCase().includes(term) ||
         `${item.brand} ${item.model}`.toLowerCase().includes(term) ||
         (item.colorway && item.colorway.toLowerCase().includes(term));
-      return matchesBrand && matchesSearch;
+      return matchesBrand && matchesCategory && matchesSearch;
     });
   };
 
@@ -305,6 +319,33 @@ export default function MarketPage() {
             <span className="material-symbols-outlined" style={{ fontSize: 16, color: favoritesOnly ? "#DC2626" : COLORS.textFaint }}>favorite</span>
             Saved Kicks
           </button>
+
+          <div style={{ height: 20, width: 1, background: COLORS.border }} />
+
+          {/* Category Filter */}
+          {CATEGORIES.map((category) => {
+            const active = selectedCategory === category.id;
+            return (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(active ? null : category.id)}
+                style={{
+                  borderRadius: 9999,
+                  padding: "8px 18px",
+                  background: active ? "#111827" : COLORS.surface,
+                  color: active ? "#FFFFFF" : COLORS.textMain,
+                  border: `1px solid ${active ? "#111827" : COLORS.border}`,
+                  fontSize: 13,
+                  fontWeight: active ? 700 : 500,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {category.label}
+              </button>
+            );
+          })}
 
           <div style={{ height: 20, width: 1, background: COLORS.border }} />
 
