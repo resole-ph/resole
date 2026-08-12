@@ -188,7 +188,7 @@ function buildShoeListingFilters(filters?: ShoeListingFilters) {
   const conditions = [];
 
   if (filters?.category) {
-    conditions.push(ilike(shoe.brand, filters.category));
+    conditions.push(ilike(shoe.category, filters.category));
   }
 
   if (filters?.brand) {
