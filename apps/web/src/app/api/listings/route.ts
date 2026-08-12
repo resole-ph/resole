@@ -18,6 +18,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section');
   const filters = {
+    category: searchParams.get('category') ?? undefined,
     brand: searchParams.get('brand') ?? undefined,
     search: searchParams.get('search') ?? undefined,
   };

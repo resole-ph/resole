@@ -8,10 +8,12 @@ import { ShoeService } from '@/features/shoe/services/shoe.service';
 const CATEGORIES: Category[] = [
   { id: 'running',    label: 'Running',    icon: 'walk',         iconColor: '#F59E0B' },
   { id: 'basketball', label: 'Basketball', icon: 'basketball',   iconColor: '#EF4444' },
+  { id: 'football',   label: 'Football',   icon: 'football',     iconColor: '#eb924a' },
   { id: 'lifestyle',  label: 'Lifestyle',  icon: 'sunny',        iconColor: '#8B5CF6' },
   { id: 'skate',      label: 'Skate',      icon: 'trending-up',  iconColor: '#10B981' },
   { id: 'training',   label: 'Training',   icon: 'barbell',      iconColor: '#3B82F6' },
   { id: 'casual',     label: 'Casual',     icon: 'shirt',        iconColor: '#EC4899' },
+  { id: 'other',      label: 'Other',      icon: 'ellipsis-horizontal',        iconColor: '#9CA3AF' },
 ];
 
 interface CategoriesRowProps {

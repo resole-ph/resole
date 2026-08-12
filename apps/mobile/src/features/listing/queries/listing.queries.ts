@@ -4,11 +4,11 @@ import { ListingService, type ListingFilters } from '../services/listing.service
 export const listingKeys = {
   all: ['listings'] as const,
   browse: (filters?: ListingFilters) =>
-    [...listingKeys.all, 'browse', filters?.brand ?? 'all', filters?.search ?? ''] as const,
+    [...listingKeys.all, 'browse', filters?.category ?? 'all', filters?.brand ?? 'all', filters?.search ?? ''] as const,
   sale: (filters?: ListingFilters) =>
-    [...listingKeys.all, 'sale', filters?.brand ?? 'all', filters?.search ?? ''] as const,
+    [...listingKeys.all, 'sale', filters?.category ?? 'all', filters?.brand ?? 'all', filters?.search ?? ''] as const,
   swap: (filters?: ListingFilters) =>
-    [...listingKeys.all, 'swap', filters?.brand ?? 'all', filters?.search ?? ''] as const,
+    [...listingKeys.all, 'swap', filters?.category ?? 'all', filters?.brand ?? 'all', filters?.search ?? ''] as const,
   favouriteIds: () => [...listingKeys.all, 'favourite-ids'] as const,
 };
 

@@ -3,6 +3,7 @@ import { FavItem, type OwnedListingQuery } from '../types/listing.types';
 import { apiFetch } from '@/lib/api-client';
 
 export interface ListingFilters {
+  category?: string;
   brand?: string;
   search?: string;
 }
@@ -92,7 +93,7 @@ export const ListingService = {
   },
 
   async getSwapListings(filters?: ListingFilters): Promise<Listing[]> {
-    const query = buildListingQuery({ section: 'swap-board', brand: filters?.brand, search: filters?.search });
+    const query = buildListingQuery({ section: 'swap-board', category: filters?.category, brand: filters?.brand, search: filters?.search });
     const res = await apiFetch<{ shoeListings: Listing[] }>(`/api/listings${query}`, {
       method: 'GET'
     });
