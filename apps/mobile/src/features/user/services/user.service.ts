@@ -151,7 +151,7 @@ export const UserService = {
       return {
         label: labels[index],
         value: item.total,
-        delta: `${Math.round((item.lastWeek > 0 ? (item.thisWeek - item.lastWeek) / item.lastWeek : item.thisWeek > 0 ? 100 : 0) * 100) / 100}%`,
+        delta: `${Math.round((item.lastWeek > 0 ? (item.thisWeek - item.lastWeek) / item.lastWeek * 100 : item.thisWeek > 0 ? 100 : 0) * 100) / 100}%`,
         up: item.thisWeek >= item.lastWeek
       };
     });

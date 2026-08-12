@@ -124,6 +124,9 @@ export default function AiResultsCard({ result }: AiResultsCardProps) {
 
         <DetailRow label="Year" value={String(result.year)} />
 
+        <DetailRow label="Category" value={String(result.category.charAt(0).toUpperCase() + result.category.slice(1))} />
+
+
         <View className="flex-row items-center justify-between pt-2">
           <Text className="font-label-md text-label-md text-on-surface-variant">Condition</Text>
           <View className="flex-row items-center gap-2">
