@@ -6,6 +6,27 @@ export type ExistingListingOffer = {
   conversationId: number;
 };
 
+/** One offer received on your own listing, with the buyer behind it. */
+export type ReceivedListingOffer = {
+  transactionId: number;
+  /** The thread this offer was made in — what "Open chat" jumps to. */
+  conversationId: number;
+  type: 'sale' | 'swap' | 'donate';
+  /** null while pending, true accepted, false declined. */
+  isAccepted: boolean | null;
+  isCompleted: boolean;
+  createdAt: string;
+  /** Sale offers only; a swap's value is the items put up instead. */
+  price: number | null;
+  swapItemCount: number;
+  buyer: {
+    id: string;
+    name: string;
+    location: string | null;
+    rating: number | null;
+  };
+};
+
 export const OfferService = {
   async getExistingForListing(id: number): Promise<ExistingListingOffer | null> {
     const { offer } = await apiFetch<{ offer: ExistingListingOffer | null }>(
@@ -14,6 +35,19 @@ export const OfferService = {
     );
 
     return offer;
+  },
+
+  /**
+   * Offers received on a listing you own. The API rejects this with a 403 for
+   * anyone else, so only call it once the listing is known to be yours.
+   */
+  async getReceivedForListing(id: number): Promise<ReceivedListingOffer[]> {
+    const { offers } = await apiFetch<{ offers: ReceivedListingOffer[] }>(
+      `api/listings/${id}/offers`,
+      { method: 'GET' },
+    );
+
+    return offers ?? [];
   },
 
   async createSwap(id: number, listings: number[], message: string) {

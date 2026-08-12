@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, Image, ScrollView,
   Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -7,12 +7,13 @@ import {
 
 import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 const SCREEN_WIDTH = Dimensions.get('window').width;
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Listing } from '@/components/molecules/ListingCard';
 import { ListingService } from '@/features/listing/services/listing.service';
-import { OfferService, type ExistingListingOffer } from '@/features/offer/services/offer.service';
+import { OfferService, type ExistingListingOffer, type ReceivedListingOffer } from '@/features/offer/services/offer.service';
+import ListingOffersSection from '@/components/organisms/ListingOffersSection';
 import { UserService } from '@/features/user/services/user.service';
 import { useSellStore } from '@/store/sell';
 import { usePreferencesStore } from '@/store/preferences';
@@ -68,6 +69,8 @@ export default function ListingDetailScreen() {
   const [activePhoto, setActivePhoto]             = useState(0);
   const [currentUserId, setCurrentUserId]         = useState<string | null>(null);
   const [existingOffer, setExistingOffer]         = useState<ExistingListingOffer | null>(null);
+  const [receivedOffers, setReceivedOffers]       = useState<ReceivedListingOffer[]>([]);
+  const [isLoadingReceived, setIsLoadingReceived] = useState(false);
   const [isSaved, setIsSaved]                     = useState(false);
   const [isUpdatingSave, setIsUpdatingSave]       = useState(false);
 
@@ -113,6 +116,31 @@ export default function ListingDetailScreen() {
       .then((ids) => setIsSaved(ids.includes(id)))
       .catch((error) => console.error('Failed to load saved listings:', error));
   }, [id]);
+
+  /**
+   * Offers on your own listing, refreshed whenever the screen regains focus —
+   * accepting or declining one happens over in the thread, so a fetch tied only
+   * to mount would show a stale status when you navigate back here.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      if (!listing || !currentUserId || listing.seller.id !== currentUserId) return;
+
+      let cancelled = false;
+      setIsLoadingReceived(true);
+
+      OfferService.getReceivedForListing(id)
+        .then((offers) => {
+          if (!cancelled) setReceivedOffers(offers);
+        })
+        .catch((error) => console.error('Failed to load offers for listing:', error))
+        .finally(() => {
+          if (!cancelled) setIsLoadingReceived(false);
+        });
+
+      return () => { cancelled = true; };
+    }, [id, listing, currentUserId]),
+  );
 
   useEffect(() => {
     if (autoActionHandled || !listing || !action) return;
@@ -409,6 +437,16 @@ export default function ListingDetailScreen() {
                 )}
                 <Text className="text-gray-500 text-xs">{listing.seller.totalSales ?? 0} sales</Text>
               </View>
+              {/* Where the handover would happen. Hidden rather than shown as a
+                  placeholder when the seller has not filled in a city. */}
+              {listing.seller.location && (
+                <View className="flex-row items-center mt-1">
+                  <Ionicons name="location-outline" size={12} color="#9CA3AF" />
+                  <Text className="text-gray-500 text-xs ml-1 flex-1" numberOfLines={1}>
+                    {listing.seller.location}
+                  </Text>
+                </View>
+              )}
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </GuardedTouchableOpacity>
@@ -416,6 +454,11 @@ export default function ListingDetailScreen() {
           {/* Description */}
           <Text className="text-gray-900 font-bold text-base mb-3">Description</Text>
           <Text className="text-gray-600 text-sm leading-relaxed mb-6">{listing.description ?? 'No description provided.'}</Text>
+
+          {/* Offers received — only ever rendered for the seller. */}
+          {isOwnListing && (
+            <ListingOffersSection offers={receivedOffers} isLoading={isLoadingReceived} />
+          )}
 
           {/* Similar items */}
           {similarItems.length > 0 && (
