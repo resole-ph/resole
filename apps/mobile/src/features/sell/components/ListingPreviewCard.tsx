@@ -69,7 +69,6 @@ export default function ListingPreviewCard({ photos, form }: ListingPreviewCardP
         <FieldRow label="Model" value={form.model} />
         <FieldRow label="Colorway" value={form.colorway} />
         <FieldRow label={`Size (${SIZE_SYSTEM_LABELS[sizeSystem]})`} value={form.size} />
-        <FieldRow label="Year" value={form.year} />
         <FieldRow label="Condition" value={`${form.conditionLabel} (${form.conditionRating}/10)`} />
         <FieldRow
           label="Price"
