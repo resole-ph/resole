@@ -41,6 +41,7 @@ export default function InboxView({
 
   const [isLoadingThread, setIsLoadingThread] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [isRespondingToOffer, setIsRespondingToOffer] = useState(false);
   const [threadError, setThreadError] = useState<string | null>(null);
 
@@ -97,6 +98,7 @@ export default function InboxView({
     setOffersById({});
     setOfferExtrasById({});
     setThreadError(null);
+    setSendError(null);
 
     const item = conversations.find((c) => c.id === id);
     if (!item) return;
@@ -123,6 +125,7 @@ export default function InboxView({
     if (!selected || selected.isSystem) return;
 
     setIsSending(true);
+    setSendError(null);
     try {
       const { message } = await InboxClient.sendMessage(selected.numericId, text);
       setMessages((prev) => [...prev, message]);
@@ -133,6 +136,28 @@ export default function InboxView({
       );
     } catch (error) {
       console.error('Failed to send message:', error);
+      setSendError(error instanceof Error ? error.message : 'Message not sent. Please try again.');
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  async function handleSendPhoto(photo: File) {
+    if (!selected || selected.isSystem) return;
+
+    setIsSending(true);
+    setSendError(null);
+    try {
+      const { message } = await InboxClient.sendPhoto(selected.numericId, photo);
+      setMessages((prev) => [...prev, message]);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selected.id ? { ...c, preview: 'Photo', rawTime: new Date().toISOString() } : c
+        )
+      );
+    } catch (error) {
+      console.error('Failed to send photo:', error);
+      setSendError(error instanceof Error ? error.message : 'Photo not sent. Please try again.');
     } finally {
       setIsSending(false);
     }
@@ -232,8 +257,10 @@ export default function InboxView({
             isSending={isSending}
             isRespondingToOffer={isRespondingToOffer}
             error={threadError}
+            sendError={sendError}
             onBack={() => setSelectedId(null)}
             onSend={handleSend}
+            onSendPhoto={handleSendPhoto}
             onAccept={(id) => handleOfferResponse(id, true)}
             onDecline={(id) => handleOfferResponse(id, false)}
             onEdit={handleOpenEditOffer}

@@ -16,9 +16,14 @@ import type { SerializedShoeListing } from '@/features/shoe/utils/listing-dto';
  */
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (init?.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   const response = await fetch(path, {
     ...init,
-    headers: init?.body ? { 'Content-Type': 'application/json', ...init?.headers } : init?.headers,
+    headers,
   });
 
   const data = await response.json().catch(() => null);
@@ -58,6 +63,16 @@ export const InboxClient = {
     return request<{ message: ThreadMessage }>(`/api/conversations/${conversationId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ content }),
+    });
+  },
+
+  sendPhoto(conversationId: number, photo: File) {
+    const formData = new FormData();
+    formData.append('photo', photo);
+
+    return request<{ message: ThreadMessage }>(`/api/conversations/${conversationId}/photos`, {
+      method: 'POST',
+      body: formData,
     });
   },
 

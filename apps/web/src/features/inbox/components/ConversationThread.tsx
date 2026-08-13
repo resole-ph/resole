@@ -23,8 +23,10 @@ interface ConversationThreadProps {
   isSending: boolean;
   isRespondingToOffer: boolean;
   error: string | null;
+  sendError: string | null;
   onBack: () => void;
   onSend: (text: string) => void;
+  onSendPhoto: (photo: File) => void;
   onAccept: (transactionId: number) => void;
   onDecline: (transactionId: number) => void;
   onEdit: (transactionId: number) => void;
@@ -287,12 +289,30 @@ function OfferCard({
   );
 }
 
-function InputBar({ onSend, disabled }: { onSend: (text: string) => void; disabled: boolean }) {
+const MAX_PHOTO_SIZE_BYTES = 20 * 1024 * 1024;
+const ACCEPTED_PHOTO_TYPES = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
+
+function InputBar({
+  onSend,
+  onSendPhoto,
+  disabled,
+  isSending,
+  sendError,
+}: {
+  onSend: (text: string) => void;
+  onSendPhoto: (photo: File) => void;
+  disabled: boolean;
+  isSending: boolean;
+  sendError: string | null;
+}) {
   const [text, setText] = useState('');
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   function handleSend() {
     const trimmed = text.trim();
     if (!trimmed || disabled) return;
+    setPickerError(null);
     onSend(trimmed);
     setText('');
   }
@@ -300,6 +320,38 @@ function InputBar({ onSend, disabled }: { onSend: (text: string) => void; disabl
   return (
     <div className="border-t border-outline-variant px-4 py-3 shrink-0">
       <div className="flex items-end gap-2">
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept={ACCEPTED_PHOTO_TYPES}
+          className="hidden"
+          tabIndex={-1}
+          onChange={(event) => {
+            const photo = event.target.files?.[0];
+            event.target.value = '';
+            if (!photo) return;
+
+            setPickerError(null);
+            if (photo.size <= 0 || photo.size > MAX_PHOTO_SIZE_BYTES) {
+              setPickerError('Choose a photo smaller than 20MB.');
+              return;
+            }
+
+            onSendPhoto(photo);
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => photoInputRef.current?.click()}
+          disabled={disabled}
+          aria-label={isSending ? 'Sending' : 'Attach photo'}
+          title={isSending ? 'Sending' : 'Attach photo'}
+          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-surface-container text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className={`material-symbols-outlined text-[20px] ${isSending ? 'animate-spin' : ''}`}>
+            {isSending ? 'progress_activity' : 'add_photo_alternate'}
+          </span>
+        </button>
         <div className="flex-1 bg-surface-container rounded-2xl px-4 py-2.5 max-h-28">
           <textarea
             value={text}
@@ -326,6 +378,11 @@ function InputBar({ onSend, disabled }: { onSend: (text: string) => void; disabl
           <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
         </button>
       </div>
+      {(pickerError || sendError) && (
+        <p role="alert" className="text-error text-[12px] mt-2 ml-[52px]">
+          {pickerError ?? sendError}
+        </p>
+      )}
     </div>
   );
 }
@@ -340,8 +397,10 @@ export default function ConversationThread({
   isSending,
   isRespondingToOffer,
   error,
+  sendError,
   onBack,
   onSend,
+  onSendPhoto,
   onAccept,
   onDecline,
   onEdit,
@@ -417,7 +476,13 @@ export default function ConversationThread({
           <p className="text-outline text-[12px]">This is a system notification — replies are not supported</p>
         </div>
       ) : (
-        <InputBar onSend={onSend} disabled={isSending || isLoading} />
+        <InputBar
+          onSend={onSend}
+          onSendPhoto={onSendPhoto}
+          disabled={isSending || isLoading}
+          isSending={isSending}
+          sendError={sendError}
+        />
       )}
     </div>
   );
