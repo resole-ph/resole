@@ -615,7 +615,7 @@ export default function ResoleHome() {
             {activeTab === 'inventory' ? 'of your pairs' : 'saved shoes'}
           </p>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 15, flexWrap: 'wrap' }}>
             {activeCategory && (
               <ActiveFilterChip label={activeCategory} onRemove={() => setActiveCategory(null)} />
             )}
