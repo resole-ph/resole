@@ -13,7 +13,7 @@ function toDelta(metric: AnalyticsMetric | undefined) {
     return { delta: '—', up: true };
   }
 
-  const change = ((metric.thisWeek - metric.lastWeek) / metric.lastWeek) * 100;
+  const change = Math.round((metric.lastWeek > 0 ? (metric.thisWeek - metric.lastWeek) / metric.lastWeek * 100 : metric.thisWeek > 0 ? 100 : 0) * 100) / 100;
   const rounded = Math.round(change);
 
   return { delta: `${rounded >= 0 ? '+' : ''}${rounded}%`, up: rounded >= 0 };
