@@ -186,13 +186,6 @@ export default function EditListingContainer() {
               onChange={(v) => updateFormField('size', v)}
               error={errors.size}
             />
-            <StyledInput
-              value={form.year}
-              onChangeText={(v) => updateFormField('year', v.replace(/[^0-9]/g, ''))}
-              placeholder="Year"
-              keyboardType="numeric"
-              error={errors.year}
-            />
           </View>
         </View>
 

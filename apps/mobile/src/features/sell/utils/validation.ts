@@ -22,7 +22,11 @@ export function validateListingForm(form: ListingFormData): ListingFormErrors {
   const currentYear = new Date().getFullYear();
 
   if (!form.brand.trim()) errors.brand = 'Brand is required.';
+  else if (form.brand.trim().length < 3) errors.brand = 'Brand must have at least 3 characters.';
+
   if (!form.model.trim()) errors.model = 'Model is required.';
+  else if (form.model.trim().length < 3) errors.model = 'Model must have at least 3 characters.';
+  
   if (!form.colorway.trim()) errors.colorway = 'Colorway is required.';
 
   const size = Number(form.size);
@@ -30,15 +34,6 @@ export function validateListingForm(form: ListingFormData): ListingFormErrors {
     errors.size = 'Size is required.';
   } else if (!Number.isFinite(size) || size < MIN_SIZE || size > MAX_SIZE) {
     errors.size = `Enter a valid size between ${MIN_SIZE} and ${MAX_SIZE}.`;
-  }
-
-  // Year is only known when the AI has analyzed photos this session — existing
-  // published listings don't store one, so it's optional when editing them.
-  if (form.year.trim()) {
-    const year = Number(form.year);
-    if (!Number.isInteger(year) || year < MIN_YEAR || year > currentYear) {
-      errors.year = `Enter a valid year (${MIN_YEAR}–${currentYear}).`;
-    }
   }
 
   const price = Number(form.price);
