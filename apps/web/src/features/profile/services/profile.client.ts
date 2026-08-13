@@ -45,9 +45,13 @@ export function initialsOf(name: string | null | undefined): string {
 }
 
 export type UpdateProfileInput = {
-  name: string;
-  location: string;
-  image: string | null;
+  name?: string;
+  location?: string;
+  image?: string;
+  email?: string;
+  contactNo?: string;
+  unit?: string;
+  classification?: string;
 };
 
 export const ProfileClient = {
@@ -60,13 +64,19 @@ export const ProfileClient = {
   },
 
   updateMyProfile(input: UpdateProfileInput) {
+    const body = {
+      name: input.name ?? undefined,
+      city: input.location ?? undefined,
+      image: input.image ?? '',
+      email: input.email ?? undefined,
+      contactNo: input.contactNo ?? undefined,
+      unit: input.unit ?? undefined,
+      classification: input.classification ?? undefined
+    }
+
     return request<{ user: MyProfile }>('/api/users/me', {
       method: 'PATCH',
-      body: JSON.stringify({
-        name: input.name,
-        city: input.location,
-        image: input.image ?? '',
-      }),
+      body: JSON.stringify(body),
     }).then((data) => data.user);
   },
 
@@ -125,4 +135,11 @@ export const ProfileClient = {
       (data) => data.shoeListings ?? []
     );
   },
+
+  updatePassword(body: {currentPassword: string, newPassword: string}) {
+    return request(`/api/auth/change-password`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
 };

@@ -1,9 +1,11 @@
-import crypto from 'node:crypto';
+import crypto from 'crypto';
 
 const PASSWORD_HASH_ITERATIONS = 310000;
 const PASSWORD_HASH_LENGTH = 32;
 const PASSWORD_SALT_BYTES = 16;
 const SESSION_TOKEN_BYTES = 32;
+
+export const PASSWORD_REQUIREMENT_MESSAGE = "Password must be at least 8 characters and include uppercase, lowercase, and a number.";
 
 export function normalizeEmail(email: unknown): string | null {
   if (typeof email !== 'string') {

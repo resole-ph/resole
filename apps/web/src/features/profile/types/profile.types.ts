@@ -15,6 +15,8 @@ export type MyProfile = {
   overallRating: number;
   reviewCount: number;
   joinedYear: number;
+  unit: string | null;
+  classification: string | null;
 };
 
 export type UserStats = {

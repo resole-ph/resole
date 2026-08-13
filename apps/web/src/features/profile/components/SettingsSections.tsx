@@ -1,23 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { useMyProfile } from '../queries/profile.queries';
+import { useMyProfile, useUpdateMyProfile } from '../queries/profile.queries';
 import type { MyProfile } from '../types/profile.types';
+import { isStrongPassword, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth';
+import { ProfileClient } from '../services/profile.client';
 
 type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
 
-/**
- * Labels and icons only — the values come from the signed-in user. This list
- * used to carry hardcoded details ("Marc Andre Santos", "marc@example.com"),
- * so every account saw the same fictional person on its own settings page.
- */
-const ACCOUNT_FIELDS: { id: keyof MyProfile; label: string; icon: string }[] = [
-  { id: 'name', label: 'Full name', icon: 'person' },
-  { id: 'email', label: 'Email', icon: 'mail' },
-  { id: 'contactNo', label: 'Phone', icon: 'call' },
-  { id: 'location', label: 'Location', icon: 'location_on' },
+const ACCOUNT_FIELDS: { id: keyof MyProfile; label: string; value: string, icon: string }[] = [
+  { id: 'name',           label: 'Full name',       value: '', icon: 'person' },
+  { id: 'email',          label: 'Email',           value: '', icon: 'mail' },
+  { id: 'contactNo',      label: 'Phone',           value: '', icon: 'call' },
+  { id: 'location',       label: 'Location',        value: '', icon: 'location_on' },
+  { id: 'unit',           label: 'Unit',            value: '', icon: 'deployed_code' },
+  { id: 'classification', label: 'Classification',  value: '', icon: 'wc' },
 ];
 
 const NOTIF_ROWS: { key: NotifKey; label: string; sub: string }[] = [
@@ -33,6 +32,15 @@ const MORE_ROWS = [
   { label: 'Help & support', icon: 'help' },
   { label: 'About Resole', icon: 'info' },
 ];
+
+const UNIT_OPTIONS = ['us', 'uk', 'eu', 'cm'];
+const CLASSIFICATION_OPTIONS = ["men", "women"];
+
+function fieldOptions(fieldId: string): string[] | null {
+  if (fieldId === 'unit') return UNIT_OPTIONS;
+  if (fieldId === 'classification') return CLASSIFICATION_OPTIONS;
+  return null;
+}
 
 function SectionTitle({ title }: { title: string }) {
   return (
@@ -58,16 +66,301 @@ function IconTile({ icon }: { icon: string }) {
   );
 }
 
-function AccountRow({ label, value, icon }: { label: string; value: string; icon: string }) {
+function AccountRow({ label, value, icon, onClick }: { label: string; value: string; icon: string, onClick: () => void }) {
   return (
-    <Row>
-      <IconTile icon={icon} />
-      <div className="flex-1">
-        <p className="text-on-surface-variant text-[12px]">{label}</p>
-        <p className="text-on-surface font-medium text-[14px] mt-0.5">{value}</p>
+    <div className="cursor-pointer" onClick={onClick}>
+      <Row>
+        <IconTile icon={icon} />
+        <div className="flex-1">
+          <p className="text-on-surface-variant text-[12px]">{label}</p>
+          <p className="text-on-surface font-medium text-[14px] mt-0.5">{value}</p>
+        </div>
+        <span className="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
+      </Row>
+    </div>
+  );
+}
+
+function DialogShell({
+  title,
+  onClose,
+  children,
+  footer,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  footer: ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-[0px_8px_32px_rgba(0,0,0,0.15)] p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-[20px] font-bold text-on-surface">{title}</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+ 
+        {children}
+ 
+        <div className="flex gap-3 mt-6">{footer}</div>
       </div>
-      <span className="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
-    </Row>
+    </div>
+  );
+}
+ 
+function FooterButtons({
+  onCancel,
+  onConfirm,
+  confirmLabel,
+  confirmDisabled,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+  confirmLabel: string;
+  confirmDisabled: boolean;
+}) {
+  return (
+    <>
+      <button
+        onClick={onCancel}
+        className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-on-surface-variant bg-surface-container hover:bg-surface-container-high transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        onClick={onConfirm}
+        disabled={confirmDisabled}
+        className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-white bg-primary hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+      >
+        {confirmLabel}
+      </button>
+    </>
+  );
+}
+ 
+function EditFieldModal({
+  visible,
+  field,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  field: (typeof ACCOUNT_FIELDS)[number] | null;
+  onClose: () => void;
+  onSave: (id: string, value: string) => Promise<void>;
+}) {
+  const [value, setValue] = useState('');
+  const [saving, setSaving] = useState(false);
+ 
+  useEffect(() => {
+    if (field) setValue(field.value);
+  }, [field]);
+ 
+  if (!visible || !field) return null;
+ 
+  const options = fieldOptions(field.id);
+ 
+  const handleSave = async (nextValue: string) => {
+    setSaving(true);
+    try {
+      await onSave(field.id, nextValue);
+      onClose();
+      window.alert(`Success!\n\nSuccessfully saved changes to ${field.label.toLowerCase()}.`);
+    } catch {
+      // Parent already surfaces an alert on failure — keep the sheet open
+      // so the user can retry instead of losing what they typed.
+    } finally {
+      setSaving(false);
+    }
+  };
+ 
+  return (
+    <DialogShell
+      title={`Edit ${field.label}`}
+      onClose={onClose}
+      footer={
+        options ? (
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-on-surface-variant bg-surface-container hover:bg-surface-container-high transition-colors"
+          >
+            Close
+          </button>
+        ) : (
+          <FooterButtons
+            onCancel={onClose}
+            onConfirm={() => handleSave(value)}
+            confirmLabel={saving ? 'Saving...' : 'Save changes'}
+            confirmDisabled={saving || !value.trim()}
+          />
+        )
+      }
+    >
+      {options ? (
+        <div className="flex flex-col gap-1">
+          {options.map((option) => {
+            const selected = option === value;
+            return (
+              <button
+                key={option}
+                onClick={() => handleSave(option)}
+                disabled={saving}
+                className={`flex items-center justify-between rounded-lg px-3.5 py-2.5 text-[14px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  selected
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-on-surface hover:bg-surface-container'
+                }`}
+              >
+                <span>{option}</span>
+                {selected && <span className="material-symbols-outlined text-[18px]">check</span>}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <label className="flex flex-col gap-1.5">
+          <span className="text-on-surface-variant text-[13px] font-semibold">{field.label}</span>
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={field.label}
+            autoFocus
+            className="rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+          />
+        </label>
+      )}
+    </DialogShell>
+  );
+}
+ 
+function PasswordEditModal({
+  visible,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSave: (currentPassword: string, newPassword: string) => Promise<void>;
+}) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+ 
+  const resetAndClose = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setError(null);
+    onClose();
+  };
+ 
+  const handleSubmit = async () => {
+    if (!currentPassword) {
+      setError('Enter your current password.');
+      return;
+    }
+    if (!isStrongPassword(newPassword)) {
+      setError(PASSWORD_REQUIREMENT_MESSAGE);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New password and confirmation do not match.');
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setError('New password must be different from your current password.');
+      return;
+    }
+ 
+    setError(null);
+    setSaving(true);
+    try {
+      await onSave(currentPassword, newPassword);
+      resetAndClose();
+      window.alert('Success!\n\nSuccessfully changed password.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update password. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+ 
+  if (!visible) return null;
+ 
+  const isValid = !!currentPassword && newPassword.length >= 8 && newPassword === confirmPassword;
+  const inputClassName =
+    'rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors';
+ 
+  return (
+    <DialogShell
+      title="Change password"
+      onClose={resetAndClose}
+      footer={
+        <FooterButtons
+          onCancel={resetAndClose}
+          onConfirm={handleSubmit}
+          confirmLabel={saving ? 'Saving...' : 'Update password'}
+          confirmDisabled={saving || !isValid}
+        />
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-on-surface-variant text-[13px] font-semibold">Current password</span>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => { setCurrentPassword(e.target.value); setError(null); }}
+            placeholder="Current password"
+            autoComplete="current-password"
+            className={inputClassName}
+          />
+        </label>
+ 
+        <label className="flex flex-col gap-1.5">
+          <span className="text-on-surface-variant text-[13px] font-semibold">New password</span>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => { setNewPassword(e.target.value); setError(null); }}
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+            className={inputClassName}
+          />
+        </label>
+ 
+        <label className="flex flex-col gap-1.5">
+          <span className="text-on-surface-variant text-[13px] font-semibold">Confirm new password</span>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
+            placeholder="Re-enter new password"
+            autoComplete="new-password"
+            className={inputClassName}
+          />
+        </label>
+ 
+        {error && <p className="text-error text-[13px]">{error}</p>}
+      </div>
+    </DialogShell>
   );
 }
 
@@ -100,7 +393,7 @@ function ToggleRow({
         <span
           className={[
             'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-            checked ? 'translate-x-[18px]' : 'translate-x-0.5',
+            checked ? 'translate-x-[-2px]' : 'translate-x-[-18px]',
           ].join(' ')}
         />
       </button>
@@ -138,6 +431,9 @@ export default function SettingsSections() {
   const { signOut } = useAuth();
   // Shared with the profile header, so this page usually needs no request.
   const { data: profile } = useMyProfile();
+  const updateProfile = useUpdateMyProfile();
+  const [editingField, setEditingField] = useState<(typeof ACCOUNT_FIELDS)[number] | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
     messages: true,
     offers: false,
@@ -145,8 +441,37 @@ export default function SettingsSections() {
     recycleReminders: true,
   });
 
+  
+  const accountFields = useMemo(
+    () =>
+      ACCOUNT_FIELDS.map((field) => ({
+        ...field,
+        value: profile ? String(profile[field.id]) ?? '—' : '—',
+      })),
+      [profile]
+  );  
+    
   const toggle = (key: NotifKey) => () =>
     setNotifs((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  async function handleSaveField(id: string, value: string) {
+    try {
+      const field = { [id]: value };
+      await updateProfile.mutateAsync(field);
+    } catch (error) {
+      alert(
+        `Could not update. ${error instanceof Error ? error.message : "Please try again."}`,
+      );
+      throw error;
+    }
+  }
+
+  async function handleChangePassword(currentPassword: string, newPassword: string) {
+    // Surfacing the error message inline in the sheet (via the thrown error)
+    // rather than an Alert here, since "wrong current password" etc. reads
+    // better right next to the field than in a popup.
+    await ProfileClient.updatePassword({ currentPassword, newPassword })
+  }
 
   const handleLogout = async () => {
     if (window.confirm('Log out? You will need to sign in again.')) {
@@ -162,45 +487,61 @@ export default function SettingsSections() {
   };
 
   return (
-    <div>
-      <SectionTitle title="Account" />
-      <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
-        {ACCOUNT_FIELDS.map((f) => (
-          <AccountRow
-            key={f.id}
-            label={f.label}
-            value={profile ? String(profile[f.id] ?? '—') : '—'}
-            icon={f.icon}
-          />
-        ))}
-        <AccountRow label="Password" value="••••••••" icon="lock" />
+    <>
+      <div>
+        <SectionTitle title="Account" />
+        <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
+          {accountFields.map((f) => (
+            <AccountRow
+              key={f.id}
+              label={f.label}
+              value={f.value}
+              icon={f.icon}
+              onClick={() => setEditingField(f)}
+            />
+          ))}
+          <AccountRow label="Password" value="••••••••" icon="lock" onClick={() => setShowPasswordModal(true)} />
+        </div> 
+
+        <SectionTitle title="Notifications" />
+        <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
+          {NOTIF_ROWS.map((n) => (
+            <ToggleRow
+              key={n.key}
+              label={n.label}
+              sub={n.sub}
+              checked={notifs[n.key]}
+              onChange={toggle(n.key)}
+            />
+          ))}
+        </div>
+
+        <SectionTitle title="More" />
+        <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
+          {MORE_ROWS.map((m) => (
+            <ActionRow key={m.label} label={m.label} icon={m.icon} />
+          ))}
+        </div>
+
+        <SectionTitle title="Account actions" />
+        <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
+          <ActionRow label="Log out" icon="logout" tone="warning" onClick={handleLogout} />
+          <ActionRow label="Delete account" icon="delete" tone="danger" onClick={handleDeleteAccount} />
+        </div>
       </div>
 
-      <SectionTitle title="Notifications" />
-      <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
-        {NOTIF_ROWS.map((n) => (
-          <ToggleRow
-            key={n.key}
-            label={n.label}
-            sub={n.sub}
-            checked={notifs[n.key]}
-            onChange={toggle(n.key)}
-          />
-        ))}
-      </div>
+      <EditFieldModal
+        visible={!!editingField}
+        field={editingField}
+        onClose={() => setEditingField(null)}
+        onSave={handleSaveField}
+      />
 
-      <SectionTitle title="More" />
-      <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
-        {MORE_ROWS.map((m) => (
-          <ActionRow key={m.label} label={m.label} icon={m.icon} />
-        ))}
-      </div>
-
-      <SectionTitle title="Account actions" />
-      <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
-        <ActionRow label="Log out" icon="logout" tone="warning" onClick={handleLogout} />
-        <ActionRow label="Delete account" icon="delete" tone="danger" onClick={handleDeleteAccount} />
-      </div>
-    </div>
+      <PasswordEditModal
+        visible={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSave={handleChangePassword}
+      />
+    </>
   );
 }
