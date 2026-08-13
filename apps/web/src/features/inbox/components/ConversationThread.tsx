@@ -123,35 +123,91 @@ function TextBubble({ msg, isMe }: { msg: ThreadMessage; isMe: boolean }) {
 }
 
 function PhotoBubble({ msg, isMe }: { msg: ThreadMessage; isMe: boolean }) {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isPreviewOpen) return;
+
+    const previouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsPreviewOpen(false);
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [isPreviewOpen]);
+
   return (
-    <div className={`flex mb-1 px-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
-      <div>
-        {msg.attachment?.url ? (
-          <a
-            href={msg.attachment.url}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open photo attachment"
-            className="block w-64 max-w-[70vw] max-h-80 overflow-hidden rounded-2xl bg-surface-container border border-outline-variant"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs cannot use the static host allowlist */}
-            <img
-              src={msg.attachment.url}
-              alt="Photo attachment"
-              className="w-full max-h-80 object-contain"
-            />
-          </a>
-        ) : (
-          <div className="w-64 h-40 rounded-2xl bg-surface-container border border-outline-variant flex flex-col items-center justify-center text-outline">
-            <span className="material-symbols-outlined text-[28px]">image</span>
-            <span className="text-[12px] mt-1">Photo unavailable</span>
+    <>
+      <div className={`flex mb-1 px-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div>
+          {msg.attachment?.url ? (
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(true)}
+              aria-label="Open photo attachment"
+              className="block w-64 max-w-[70vw] max-h-80 overflow-hidden rounded-2xl bg-surface-container border border-outline-variant cursor-zoom-in"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs cannot use the static host allowlist */}
+              <img
+                src={msg.attachment.url}
+                alt="Photo attachment"
+                className="w-full max-h-80 object-contain"
+              />
+            </button>
+          ) : (
+            <div className="w-64 h-40 rounded-2xl bg-surface-container border border-outline-variant flex flex-col items-center justify-center text-outline">
+              <span className="material-symbols-outlined text-[28px]">image</span>
+              <span className="text-[12px] mt-1">Photo unavailable</span>
+            </div>
+          )}
+          <div className={`mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+            <span className="text-outline text-[11px]">{formatMessageTime(msg.createdAt)}</span>
           </div>
-        )}
-        <div className={`mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
-          <span className="text-outline text-[11px]">{formatMessageTime(msg.createdAt)}</span>
         </div>
       </div>
-    </div>
+
+      {isPreviewOpen && msg.attachment?.url && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo attachment preview"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsPreviewOpen(false);
+          }}
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 sm:p-8"
+        >
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={() => setIsPreviewOpen(false)}
+            aria-label="Close photo preview"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 w-11 h-11 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-[28px]">close</span>
+          </button>
+
+          {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs cannot use the static host allowlist */}
+          <img
+            src={msg.attachment.url}
+            alt="Photo attachment preview"
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      )}
+    </>
   );
 }
 
