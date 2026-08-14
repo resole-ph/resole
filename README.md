@@ -114,6 +114,46 @@ Additional root scripts are available:
 - `npm run ios:mobile`
 - `npm run web:mobile`
 
+## Testing
+
+Unit tests run on [Vitest](https://vitest.dev/) in both apps. From the repo root:
+
+```powershell
+npm test              # both apps
+npm run test:web
+npm run test:mobile
+```
+
+Inside either app, `npm run test:watch` re-runs on save and `npm run test:coverage` prints a
+coverage table for `src/lib/` and the feature `utils/` folders.
+
+### Conventions
+
+- **Location.** Tests live in `src/tests/`, mirroring the path of the file under test —
+  `src/lib/id.ts` is covered by `src/tests/lib/id.test.ts`. Tests are never co-located with
+  source.
+- **Naming.** `describe('functionName')` around `it('returns X when Y')`. Test names state
+  behaviour, not implementation.
+- **Shape.** Arrange / Act / Assert, one behaviour per `it`. Where a function has thresholds or a
+  lookup table, probe both sides of every boundary.
+- **Isolation.** No network, no database, no real clock. Mock at the module boundary with
+  `vi.mock` and use `vi.useFakeTimers()` for anything time-dependent. A test that needs a live
+  connection is an integration test and does not belong in `src/tests/`.
+- **Fixtures.** Build objects inline. Only extract a factory into `src/tests/fixtures/` once three
+  or more tests share it.
+- **Parity.** Logic duplicated across web and mobile (the size chart, the condition ladder, the
+  password rule) is asserted against the *same* expectation table in both apps' suites, so
+  whichever copy drifts fails its own tests.
+
+This pass covers pure logic: authentication helpers, id parsing, size conversion, condition
+grading, listing validation, the listing DTO, the inbox list builder, and the mobile request
+cache. Component rendering, API route handlers, and DB-backed services are not yet covered.
+
+Note that `apps/web/scripts/listing-retention.contract.test.mjs` is a separate `node:test` file
+that pattern-matches migration SQL. It is run on its own with
+`node --test apps/web/scripts/listing-retention.contract.test.mjs` and is deliberately excluded
+from the Vitest run.
+
 ## Environment Variables
 
 Env files are gitignored except for the `.env.example` templates. There are three example files:

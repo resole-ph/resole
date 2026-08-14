@@ -241,6 +241,7 @@ function OfferCard({
   const status = getOfferStatus(offer);
   const listing = extras?.listing ?? null;
   const swapItem = extras?.swapItem ?? null;
+  const cashTopUp = Number(offer.details?.topUp ?? 0);
 
   return (
     <div className={`px-4 mb-1 flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
@@ -276,6 +277,14 @@ function OfferCard({
             <p className="text-on-surface-variant text-[12px] mb-3">
               {listing?.size ? `Size ${formatSize(Number(listing.size), sizeSystem)} · Item swap` : 'Size — · Item swap'}
             </p>
+            {cashTopUp > 0 && (
+              <div className="mb-3 rounded-xl bg-secondary-container/30 px-3 py-2 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-primary text-[16px]">payments</span>
+                <span className="text-primary text-[12px] font-semibold">
+                  Cash top-up: ₱{cashTopUp.toLocaleString()}
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <div className="mb-3">

@@ -9,8 +9,11 @@ export type ExistingListingOffer = {
 /** One offer received on your own listing, with the buyer behind it. */
 export type ReceivedListingOffer = {
   transactionId: number;
-  /** The thread this offer was made in — what "Open chat" jumps to. */
-  conversationId: number;
+  /**
+   * The seller's thread with this buyer — what "Open chat" jumps to. Null when
+   * the pair has no thread yet, which is the case for every offer made from web.
+   */
+  conversationId: number | null;
   type: 'sale' | 'swap' | 'donate';
   /** null while pending, true accepted, false declined. */
   isAccepted: boolean | null;

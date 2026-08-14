@@ -17,6 +17,8 @@ interface SellState {
   photos: Record<PhotoAngle, SellPhoto | null>;
   /** True once any photo differs from what the edited listing originally had. */
   photosDirty: boolean;
+  /** True when the current create/edit session contains work that has not been saved. */
+  hasUnsavedChanges: boolean;
   /** True when the AI-results step was intentionally skipped (edit, photos unchanged). */
   analysisSkipped: boolean;
   isAnalyzing: boolean;
@@ -26,6 +28,7 @@ interface SellState {
   aiAnalysisId: number | null;
   form: ListingFormData | null;
   publishedListing: PublishListingResult | null;
+  originalCondition: number | null; 
 
   setStep: (step: SellStep) => void;
   loadListingForEdit: (
@@ -61,6 +64,7 @@ const INITIAL_STATE = {
   editingListingId: null,
   photos: INITIAL_PHOTOS,
   photosDirty: false,
+  hasUnsavedChanges: false,
   analysisSkipped: false,
   isAnalyzing: false,
   isAnalyzed: false,
@@ -69,6 +73,7 @@ const INITIAL_STATE = {
   aiAnalysisId: null,
   form: null,
   publishedListing: null,
+  originalCondition: null
 };
 
 export const useSellStore = create<SellState>()((set) => ({
@@ -83,6 +88,7 @@ export const useSellStore = create<SellState>()((set) => ({
       editingListingId: listingId,
       photos,
       photosDirty: false,
+      hasUnsavedChanges: false,
       analysisSkipped: false,
       isAnalyzing: false,
       isAnalyzed: true,
@@ -91,12 +97,14 @@ export const useSellStore = create<SellState>()((set) => ({
       aiAnalysisId: null,
       form,
       publishedListing: null,
+      originalCondition: form.conditionRating
     }),
 
   setPhoto: (angle, photo) =>
     set((s) => ({
       photos: { ...s.photos, [angle]: photo },
       photosDirty: true,
+      hasUnsavedChanges: true,
       aiResult: null,
       aiAnalysisId: null,
       analysisError: null,
@@ -106,6 +114,7 @@ export const useSellStore = create<SellState>()((set) => ({
     set((s) => ({
       photos: { ...s.photos, [angle]: null },
       photosDirty: true,
+      hasUnsavedChanges: true,
       aiResult: null,
       aiAnalysisId: null,
       analysisError: null,
@@ -125,7 +134,13 @@ export const useSellStore = create<SellState>()((set) => ({
   setForm: (form) => set({ form }),
 
   updateFormField: (key, value) =>
-    set((s) => s.form ? { form: { ...s.form, [key]: value } } : {}),
+    set((s) => {
+      if (!s.form || s.form[key] === value) return {};
+      return {
+        form: { ...s.form, [key]: value },
+        hasUnsavedChanges: true,
+      };
+    }),
 
   setPublishedListing: (result) => set({ publishedListing: result }),
 

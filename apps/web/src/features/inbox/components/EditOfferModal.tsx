@@ -6,6 +6,17 @@ import type { SerializedShoeListing } from '@/features/shoe/utils/listing-dto';
 import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
 
+const MAX_CASH_TOP_UP = 1_000_000;
+
+function parseCashTopUp(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(trimmed)) return null;
+
+  const amount = Number(trimmed);
+  return Number.isFinite(amount) && amount >= 0 && amount <= MAX_CASH_TOP_UP ? amount : null;
+}
+
 type EditOfferModalProps = {
   offer: ThreadOffer;
   extras: OfferExtras | undefined;
@@ -31,18 +42,20 @@ export default function EditOfferModal({
   const [selectedListingId, setSelectedListingId] = useState<number | null>(
     extras?.swapItem ? Number(extras.swapItem.id) : null
   );
+  const [cashTopUp, setCashTopUp] = useState(offer.details?.topUp ?? '');
 
   const priceValue = Number.parseFloat(price);
+  const topUp = parseCashTopUp(cashTopUp);
   const isSaleValid = !isSwap && Number.isFinite(priceValue) && priceValue > 0;
-  const isSwapValid = isSwap && selectedListingId != null;
+  const isSwapValid = isSwap && selectedListingId != null && topUp !== null;
   const canSave = (isSaleValid || isSwapValid) && !isSaving;
 
   function handleSave() {
     if (!canSave) return;
 
     if (isSwap) {
-      if (selectedListingId == null) return;
-      onSave({ listings: [selectedListingId] });
+      if (selectedListingId == null || topUp === null) return;
+      onSave({ listings: [selectedListingId], topUp });
     } else {
       onSave({ price: priceValue });
     }
@@ -137,9 +150,25 @@ export default function EditOfferModal({
                   );
                 })}
               </div>
-            )}
-          </div>
-        ) : (
+              )}
+              <label className="flex flex-col gap-1.5 mt-4">
+                <span className="text-on-surface-variant text-[13px] font-semibold">Cash top-up (optional)</span>
+                <div className={`flex items-center gap-2 rounded-lg border bg-surface px-3.5 py-2.5 transition-colors ${topUp === null ? 'border-error' : 'border-outline-variant focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary'}`}>
+                  <span className="text-on-surface-variant text-[14px]">₱</span>
+                  <input
+                    inputMode="decimal"
+                    value={cashTopUp}
+                    onChange={(event) => setCashTopUp(event.target.value.replace(/[^0-9.]/g, ''))}
+                    className="flex-1 bg-transparent text-[14px] text-on-surface outline-none"
+                    placeholder="0"
+                  />
+                </div>
+                {topUp === null && (
+                  <span className="text-error text-[12px]">Enter an amount from ₱0 to ₱1,000,000 with up to two decimal places.</span>
+                )}
+              </label>
+            </div>
+          ) : (
           <label className="flex flex-col gap-1.5 mb-6">
             <span className="text-on-surface-variant text-[13px] font-semibold">Offer price</span>
             <div className="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-colors">

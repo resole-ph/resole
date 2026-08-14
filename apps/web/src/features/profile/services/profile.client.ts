@@ -95,6 +95,10 @@ export const ProfileClient = {
     }).then((data) => data.user);
   },
 
+  deleteAccount() {
+    return request<{ message: string }>('/api/users/me', { method: 'DELETE' });
+  },
+
   getMyListings(filters?: any) {
     const query = buildListingQuery(filters ?? undefined)
     return request<{ shoeListings: ProfileListing[] }>(`/api/users/me/listings${query}`).then(

@@ -8,10 +8,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "scrape": "tsx src/features/shoe/services/scraper.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/config/migrate.ts",
-    "charity:images": "tsx scripts/upload-charity-images.ts"
+    "db:migrate": "tsx src/config/migrate.ts"
   },
   "dependencies": {
     "@google/genai": "^2.8.0",
@@ -35,12 +37,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.10",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "supabase": "^2.111.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

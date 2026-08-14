@@ -87,6 +87,8 @@ function RemovedCard({
   onDonate: () => void;
 }) {
   const sizeSystem = usePreferredSizeSystem();
+  const isArchived = Boolean(item.archivedAt);
+
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3">
       <div className="flex items-center gap-3">
@@ -100,11 +102,20 @@ function RemovedCard({
           <p className="text-primary font-bold text-[14px] mt-1">₱{Number(item.price || 0).toLocaleString()}</p>
           <div className="flex items-center gap-1.5 mt-1">
             <span className="w-1.5 h-1.5 rounded-full bg-outline-variant" />
-            <span className="text-on-surface-variant text-[12px]">Removed from market</span>
+            <span className="text-on-surface-variant text-[12px]">
+              {isArchived ? 'Archived' : 'Removed from market'}
+            </span>
           </div>
         </div>
       </div>
 
+      {isArchived ? (
+        <div className="rounded-xl bg-surface-container px-3 py-2.5">
+          <p className="text-on-surface-variant text-[12px] text-center">
+            Hidden from the marketplace until automatic deletion.
+          </p>
+        </div>
+      ) : (
       <div className="flex gap-2">
         <button
           onClick={onRelist}
@@ -121,37 +132,115 @@ function RemovedCard({
           Donate
         </button>
       </div>
+      )}
     </div>
   );
 }
 
-function DonateComingSoon({ charityName, onClose }: { charityName: string; onClose: () => void }) {
+function PickupModal({
+  charityName,
+  onSubmit,
+  onSkip,
+}: {
+  charityName: string;
+  onSubmit: (details: { pickupAddress: string; pickupDate: string; contactNo: string; notes: string }) => Promise<void>;
+  onSkip: () => void;
+}) {
+  const [pickupAddress, setPickupAddress] = useState('');
+  const [pickupDate, setPickupDate] = useState('');
+  const [contactNo, setContactNo] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const minDate = useMemo(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().slice(0, 10);
+  }, []);
+
+  const canSubmit = pickupAddress.trim() !== '' && pickupDate !== '' && !saving;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSubmit({ pickupAddress, pickupDate, contactNo, notes });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not schedule the pickup');
+      setSaving(false);
+    }
+  };
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Donations coming soon"
-        className="w-full max-w-sm bg-surface-container-lowest rounded-xl shadow-[0px_8px_32px_rgba(0,0,0,0.15)] p-6 flex flex-col items-center text-center"
-        onClick={(e) => e.stopPropagation()}
+        aria-label="Schedule a donation pickup"
+        className="w-full max-w-sm bg-surface-container-lowest rounded-xl shadow-[0px_8px_32px_rgba(0,0,0,0.15)] p-6"
       >
-        <div className="w-14 h-14 rounded-full bg-secondary-container/30 flex items-center justify-center mb-4">
-          <span className="material-symbols-outlined text-secondary text-[26px]">favorite</span>
-        </div>
-        <p className="text-secondary text-[12px] font-bold tracking-wide mb-1">COMING SOON</p>
-        <h3 className="text-on-surface font-bold text-[18px] mb-1.5">Donate to {charityName}</h3>
-        <p className="text-on-surface-variant text-[13px] leading-relaxed mb-6">
-          We&apos;re still building donations. Soon you&apos;ll be able to send proceeds straight to {charityName}.
+        <h3 className="text-on-surface font-bold text-[18px] mb-1">Schedule a pickup</h3>
+        <p className="text-on-surface-variant text-[13px] mb-5">
+          Donated to {charityName}. Arrange a pickup, or skip and do it later.
         </p>
-        <button
-          onClick={onClose}
-          className="w-full py-2.5 rounded-full text-[14px] font-semibold text-white bg-primary hover:opacity-90 transition-opacity"
-        >
-          Got it
-        </button>
+
+        <label className="block text-on-surface text-[13px] font-semibold mb-1.5">Pickup address</label>
+        <textarea
+          value={pickupAddress}
+          onChange={(e) => setPickupAddress(e.target.value)}
+          rows={2}
+          placeholder="Where should the courier collect the pair?"
+          className="w-full rounded-xl bg-surface-container px-3 py-2 text-[14px] text-on-surface outline-none resize-none mb-4"
+        />
+
+        <label className="block text-on-surface text-[13px] font-semibold mb-1.5">Pickup date</label>
+        <input
+          type="date"
+          value={pickupDate}
+          min={minDate}
+          onChange={(e) => setPickupDate(e.target.value)}
+          className="w-full rounded-xl bg-surface-container px-3 py-2 text-[14px] text-on-surface outline-none mb-4"
+        />
+
+        <label className="block text-on-surface text-[13px] font-semibold mb-1.5">
+          Contact number <span className="text-on-surface-variant font-normal">(optional)</span>
+        </label>
+        <input
+          value={contactNo}
+          onChange={(e) => setContactNo(e.target.value)}
+          className="w-full rounded-xl bg-surface-container px-3 py-2 text-[14px] text-on-surface outline-none mb-4"
+        />
+
+        <label className="block text-on-surface text-[13px] font-semibold mb-1.5">
+          Notes <span className="text-on-surface-variant font-normal">(optional)</span>
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          className="w-full rounded-xl bg-surface-container px-3 py-2 text-[14px] text-on-surface outline-none resize-none mb-4"
+        />
+
+        {error && <p className="text-error text-[13px] mb-3">{error}</p>}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onSkip}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-on-surface-variant bg-surface-container hover:bg-surface-container-high transition-colors disabled:opacity-50"
+          >
+            Skip
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-white bg-primary hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Scheduling…' : 'Schedule'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -177,9 +266,8 @@ export default function MyListingsView() {
   const [donateListingId, setDonateListingId] = useState<string | null>(null);
   const [charities, setCharities] = useState<any[]>([]);
   const [charitiesLoading, setCharitiesLoading] = useState(false);
-  // Donations aren't wired up to actually transfer proceeds yet — picking a
-  // charity shows a "coming soon" notice instead of hitting the donate API.
-  const [comingSoonCharity, setComingSoonCharity] = useState<{ name: string } | null>(null);
+  const [donating, setDonating] = useState(false);
+  const [pickupFor, setPickupFor] = useState<{ listingId: string; charityId: number; charityName: string } | null>(null);
 
   // Same cache entry MyListingsPreviewCard fills on /profile, so arriving here
   // via "View all" renders instantly instead of refetching a list we just had.
@@ -217,10 +305,12 @@ export default function MyListingsView() {
     }
     try {
       const response = await fetch(`/api/listings/${id}`, {
-        method: 'DELETE',
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAvailable: false }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete listing');
+      if (!response.ok) throw new Error(data.error || 'Failed to remove listing');
 
       // Flipping the flag is enough — the active/removed split is derived.
       patchCache((items) =>
@@ -267,9 +357,54 @@ export default function MyListingsView() {
     }
   };
 
-  const handlePickCharity = (charity: { name: string }) => {
-    setDonateListingId(null);
-    setComingSoonCharity(charity);
+  const handlePickCharity = async (charity: { id: number; name: string }) => {
+    if (!donateListingId || donating) return;
+    const listingId = donateListingId;
+    setDonating(true);
+
+    try {
+      const response = await fetch(`/api/listings/${listingId}/donate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ charityId: charity.id }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to donate listing');
+
+      patchCache((items) => items.filter((l) => l.id !== listingId));
+      setDonateListingId(null);
+      setPickupFor({ listingId, charityId: charity.id, charityName: charity.name });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not donate listing');
+    } finally {
+      setDonating(false);
+    }
+  };
+
+  const handleSchedulePickup = async (details: {
+    pickupAddress: string;
+    pickupDate: string;
+    contactNo: string;
+    notes: string;
+  }) => {
+    if (!pickupFor) return;
+
+    const response = await fetch('/api/donations/pickups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        listingId: Number(pickupFor.listingId),
+        charityId: pickupFor.charityId,
+        pickupAddress: details.pickupAddress,
+        pickupDate: new Date(`${details.pickupDate}T23:59:00`).toISOString(),
+        contactNo: details.contactNo || undefined,
+        notes: details.notes || undefined,
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Failed to schedule pickup');
+
+    setPickupFor(null);
   };
 
   const handleEdit = (id: string) => {
@@ -379,7 +514,8 @@ export default function MyListingsView() {
                   <button
                     key={charity.id}
                     onClick={() => handlePickCharity(charity)}
-                    className="flex items-center justify-between rounded-xl px-4 py-3 bg-surface-container hover:bg-surface-container-high transition-colors text-left"
+                    disabled={donating}
+                    className="flex items-center justify-between rounded-xl px-4 py-3 bg-surface-container hover:bg-surface-container-high transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {charity.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -406,10 +542,11 @@ export default function MyListingsView() {
         </div>
       )}
 
-      {comingSoonCharity && (
-        <DonateComingSoon
-          charityName={comingSoonCharity.name}
-          onClose={() => setComingSoonCharity(null)}
+      {pickupFor && (
+        <PickupModal
+          charityName={pickupFor.charityName}
+          onSubmit={handleSchedulePickup}
+          onSkip={() => setPickupFor(null)}
         />
       )}
     </>

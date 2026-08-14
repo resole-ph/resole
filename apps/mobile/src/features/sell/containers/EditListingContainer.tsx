@@ -92,23 +92,10 @@ function StyledInput({
 
 export default function EditListingContainer() {
   const router = useRouter();
-  const { form, aiResult, updateFormField, priceAllowedRange, ratingToLabel, setStep, goBack } = useSellFlow();
+  const { form, aiResult, isAnalyzed, photosDirty, originalCondition, updateFormField, priceAllowedRange, ratingToLabel, setStep, goBack, confirmDiscard } = useSellFlow();
+  const isAnalysisUnchanged = isAnalyzed && !photosDirty;
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  // Reference point the condition slider measures deviation against. The edit
-  // flow has no fresh analysis, so aiResult is null here and the reference has
-  // to be the rating the listing was loaded with — captured once. Comparing the
-  // live value against itself pins the deviation at zero forever, which is why
-  // the dial stayed green and always read "Accurate" no matter where it was
-  // dragged.
-  const [baselineConditionRating, setBaselineConditionRating] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (form && baselineConditionRating === null) {
-      setBaselineConditionRating(form.conditionRating);
-    }
-  }, [form, baselineConditionRating]);
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -124,7 +111,7 @@ export default function EditListingContainer() {
 
   const priceRange = priceAllowedRange();
   const aiConditionRating =
-    aiResult?.conditionRating ?? baselineConditionRating ?? form.conditionRating;
+    aiResult?.conditionRating ?? originalCondition ?? form.conditionRating;
   const conditionTone = getConditionTone(form.conditionRating, aiConditionRating, 1, 10);
   const errors = validateListingForm(form);
   const canContinue = Object.keys(errors).length === 0;
@@ -266,6 +253,7 @@ export default function EditListingContainer() {
             max={10}
             aiValue={aiConditionRating}
             conditionLabel={form.conditionLabel}
+            isEditing={isAnalysisUnchanged}
             onChange={handleConditionChange}
           />
         </View>
@@ -382,7 +370,7 @@ export default function EditListingContainer() {
       </ScrollView>
 
       <StepFooter
-        onCancel={() => router.back()}
+        onCancel={() => confirmDiscard(() => router.back())}
         onPrimary={() => canContinue && setStep('review')}
         primaryLabel="Next"
         primaryDisabled={!canContinue}

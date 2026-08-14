@@ -31,11 +31,9 @@ function formatOfferDate(value: string) {
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/** "₱4,500" for a sale, "2 items" for a swap — whatever the buyer actually put up. */
+/** Swaps are listed without what was put up — those specifics live in the thread. */
 function formatOfferValue(offer: ReceivedListingOffer) {
-  if (offer.type === 'swap') {
-    return offer.swapItemCount === 1 ? '1 item offered' : `${offer.swapItemCount} items offered`;
-  }
+  if (offer.type === 'swap') return 'Swap offer';
   return offer.price != null ? `₱${offer.price.toLocaleString()}` : 'No amount';
 }
 
@@ -44,12 +42,17 @@ function OfferRow({ offer }: { offer: ReceivedListingOffer }) {
   const initial = offer.buyer.name.charAt(0).toUpperCase() || '?';
 
   /**
-   * Straight into the thread this offer was made in. The inbox prefixes
+   * Straight into the seller's thread with this buyer. The inbox prefixes
    * conversation ids with "o", and the header details are passed along so the
    * thread can paint before its own fetch lands — the same params the inbox
-   * list sends.
+   * list sends. Offers with no thread yet fall back to the inbox list.
    */
   const openConversation = () => {
+    if (offer.conversationId == null) {
+      router.push('/inbox');
+      return;
+    }
+
     router.push({
       pathname: '/inbox/[id]',
       params: {
@@ -156,9 +159,7 @@ export default function ListingOffersSection({
       ) : (
         <View className="mb-6">
           {offers.map((offer) => (
-            // Keyed on the conversation, not the transaction: one offer showing
-            // up in two threads would collide on a transaction-id key.
-            <OfferRow key={offer.conversationId} offer={offer} />
+            <OfferRow key={offer.transactionId} offer={offer} />
           ))}
         </View>
       )}

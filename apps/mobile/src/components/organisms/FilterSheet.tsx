@@ -5,6 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import type { Listing } from '@/components/molecules/ListingCard';
 import type { MarketFilters } from '@/features/listing/types/listing.types';
 import { CONDITION_LABELS } from '@/features/sell/utils/condition';
+import {
+  convertFromUSMens,
+  formatSizeValue,
+  SIZE_SYSTEM_LABELS,
+  type SizeSystem,
+} from '@/features/shoe/utils/size-conversion';
 
 export type { MarketFilters } from '@/features/listing/types/listing.types';
 
@@ -25,6 +31,8 @@ interface FilterSheetProps {
   value: MarketFilters;
   sizeOptions: string[];
   colorOptions: string[];
+  /** Listings and filters retain US Men's anchor sizes; labels use this preference. */
+  userSizeSystem: SizeSystem;
   onApply: (filters: MarketFilters) => void;
   onClose: () => void;
 }
@@ -45,7 +53,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <Text className="text-gray-900 font-bold text-sm mb-2.5 mt-5">{children}</Text>;
 }
 
-export default function FilterSheet({ visible, value, sizeOptions, colorOptions, onApply, onClose }: FilterSheetProps) {
+function displaySizeOption(anchorSize: string, system: SizeSystem): string {
+  const parsedSize = Number(anchorSize);
+  if (!Number.isFinite(parsedSize)) return anchorSize;
+
+  const value = formatSizeValue(convertFromUSMens(parsedSize, system));
+  return system === 'jp_cm' ? `${value} cm` : value;
+}
+
+export default function FilterSheet({ visible, value, sizeOptions, colorOptions, userSizeSystem, onApply, onClose }: FilterSheetProps) {
   const [draft, setDraft] = useState<MarketFilters>(value);
 
   useEffect(() => {
@@ -88,13 +104,18 @@ export default function FilterSheet({ visible, value, sizeOptions, colorOptions,
 
           <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
             {/* Size preference */}
-            <SectionLabel>Size preference</SectionLabel>
+            <SectionLabel>Size preference ({SIZE_SYSTEM_LABELS[userSizeSystem]})</SectionLabel>
             {sizeOptions.length === 0 ? (
               <Text className="text-gray-400 text-xs">No sizes available</Text>
             ) : (
               <View className="flex-row flex-wrap">
                 {sizeOptions.map((size) => (
-                  <Chip key={size} label={size} active={draft.sizes.includes(size)} onPress={() => toggle('sizes', size)} />
+                  <Chip
+                    key={size}
+                    label={displaySizeOption(size, userSizeSystem)}
+                    active={draft.sizes.includes(size)}
+                    onPress={() => toggle('sizes', size)}
+                  />
                 ))}
               </View>
             )}

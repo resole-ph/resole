@@ -16,6 +16,15 @@ import {
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 
+type PricingData = {
+  baselinePrice: number | null;
+  matchedShoeId: number | null;
+  similarity: number | null;
+  conditionScore: number;
+  suggestedPrice: number;
+  priceSource: 'catalog' | 'ai-estimate';
+};
+
 export const categoryEnum = pgEnum('caetgory_enum', [
   'running',
   'basketball',
@@ -116,15 +125,6 @@ export const shoeListing = pgTable('shoe_listing', {
     .where(sql`${table.archivedAt} IS NOT NULL`),
 ]);
 
-type PricingData = {
-  baselinePrice: number | null;
-  matchedShoeId: number | null;
-  similarity: number | null;
-  conditionScore: number;
-  suggestedPrice: number;
-  priceSource: 'catalog' | 'ai-estimate';
-};
-
 export const shoeAnalysis = pgTable('shoe_analysis', {
   id: serial('id').primaryKey(),
   brand: text('brand').notNull(),
@@ -140,3 +140,12 @@ export const shoeAnalysis = pgTable('shoe_analysis', {
   pricing: jsonb('pricing').$type<PricingData>().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+export const relist = pgTable('relist', {
+  id: serial('id').primaryKey(),
+  listingId: integer('listing_id')
+    .notNull()
+    .references(() => shoeListing.id, { onDelete: 'cascade' }),
+  archivedAt: timestamp('archived_at').notNull(),
+  relistedAt: timestamp('created_at').defaultNow().notNull(),
+})

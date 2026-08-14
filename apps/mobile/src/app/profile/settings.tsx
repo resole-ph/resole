@@ -33,8 +33,6 @@ const ACCOUNT_FIELDS = [
   { id: 'email',    label: 'Email',         value: '', icon: 'mail-outline' as const },
   { id: 'phone',    label: 'Phone',         value: '', icon: 'call-outline' as const },
   { id: 'location', label: 'Location',      value: '', icon: 'location-outline' as const },
-  { id: 'unit',     label: 'Unit',          value: '', icon: 'cube' as const },
-  { id: 'classification', label: 'Classification',  value: '', icon: 'male-female-outline' as const },
 ];
 
 const UNIT_OPTIONS = ['us', 'uk', 'eu', 'cm'];
@@ -421,17 +419,20 @@ function ActionRow({
   icon,
   color = '#6B7280',
   onPress,
+  disabled = false,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   color?: string;
   onPress?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <GuardedTouchableOpacity
       className="flex-row items-center px-4 py-3.5 border-b border-gray-50"
       activeOpacity={0.7}
       onPress={onPress}
+      disabled={disabled}
     >
       <Ionicons name={icon} size={18} color={color} style={{ marginRight: 12 }} />
       <Text className="flex-1 font-medium text-sm" style={{ color }}>
@@ -452,6 +453,8 @@ export default function SettingsScreen() {
   });
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
   const setSizeSystem = usePreferencesStore((s) => s.setSizeSystem);
+  const resetPreferences = usePreferencesStore((s) => s.reset);
+  const resetOnboarding = useOnboardingStore((s) => s.reset);
   const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
   const { mutateAsync: updateSizeSystem } = useUpdateSizeSystem();
 
@@ -459,6 +462,7 @@ export default function SettingsScreen() {
 
   const [editingField, setEditingField] = useState<(typeof ACCOUNT_FIELDS)[number] | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (!accountData) return;
@@ -475,6 +479,7 @@ export default function SettingsScreen() {
 
     try {
       await updateSizeSystem(nextSystem);
+      await refetchAccount();
     } catch (error) {
       setSizeSystem(previousSystem);
       Alert.alert(
@@ -533,19 +538,36 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleResetOnboarding = () => {
-    useOnboardingStore.persist.clearStorage();
-    useOnboardingStore.setState({ hasSeenOnboarding: false, intent: 'buy', location: '' });
-    router.replace('/onboarding/splash' as any);
-  };
-
   const handleDeleteAccount = () => {
+    if (isDeletingAccount) return;
+
     Alert.alert(
       'Delete account?',
-      'All your data will be permanently removed. This cannot be undone.',
+      'Your account will be deleted and you will be signed out. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => {} },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (isDeletingAccount) return;
+
+            setIsDeletingAccount(true);
+            try {
+              await authService.deleteAccount();
+              resetOnboarding();
+              resetPreferences();
+              router.replace('/onboarding/splash' as any);
+            } catch (error) {
+              Alert.alert(
+                'Could not delete account',
+                error instanceof Error ? error.message : 'Please try again.',
+              );
+            } finally {
+              setIsDeletingAccount(false);
+            }
+          },
+        },
       ]
     );
   };
@@ -635,16 +657,11 @@ export default function SettingsScreen() {
             onPress={handleLogout}
           />
           <ActionRow
-            label="Reset Onboarding (Dev)"
-            icon="refresh-outline"
-            color="#8B5CF6"
-            onPress={handleResetOnboarding}
-          />
-          <ActionRow
-            label="Delete account"
+            label={isDeletingAccount ? 'Deleting account...' : 'Delete account'}
             icon="trash-outline"
             color="#EF4444"
             onPress={handleDeleteAccount}
+            disabled={isDeletingAccount}
           />
         </View>
 

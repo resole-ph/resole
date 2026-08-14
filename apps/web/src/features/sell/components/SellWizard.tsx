@@ -182,7 +182,11 @@ export default function SellWizard() {
       setAiResult(analysis);
       setUploadedPhotoUrls(uploadedUrls);
     } catch (err) {
-      setAnalysisError(err instanceof Error ? err.message : 'Analysis failed');
+      setAnalysisError(
+        err instanceof Error
+          ? err.message
+          : "We couldn't analyze your photos just now. Please go back and try again in a moment."
+      );
     } finally {
       setIsAnalyzing(false);
     }

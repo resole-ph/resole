@@ -106,7 +106,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Unable to update profile' }, { status: 500 });
   }
 
-  return NextResponse.json({ user: updatedUser });
+  return NextResponse.json({ 
+    user: {
+      ...updatedUser,
+      location: updatedUser.city || updatedUser.address || null
+    } 
+  });
 }
 
 export async function DELETE(request: Request) {

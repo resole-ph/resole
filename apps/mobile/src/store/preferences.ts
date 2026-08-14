@@ -6,6 +6,7 @@ import { type SizeSystem } from '@/features/shoe/utils/size-conversion';
 interface PreferencesState {
   sizeSystem: SizeSystem;
   setSizeSystem: (sizeSystem: SizeSystem) => void;
+  reset: () => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -14,6 +15,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       // US Men matches both the storage anchor and how the PH market sizes shoes.
       sizeSystem: 'us_m',
       setSizeSystem: (sizeSystem) => set({ sizeSystem }),
+      reset: () => set({ sizeSystem: 'us_m' }),
     }),
     {
       name: 'preferences',

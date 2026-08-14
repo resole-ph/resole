@@ -193,27 +193,28 @@ export async function createSale(transactionId: number, price: number) {
   }
 }
 
-export async function createSwap(transactionId: number, listings: number[]) {
+export async function createSwap(transactionId: number, listings: number[], topUp: number = 0) {
   try {
     const result = await db
       .insert(swap)
       .values({
         transactionId: transactionId,
+        topUp: topUp.toString()
       })
-      .returning({ id: sale.id });
-    
+      .returning({ id: swap.id });
+
     for (const listing of listings) {
       await db
         .insert(swapItem)
         .values({
           swapId: result[0].id,
           itemId: listing
-        })
+        });
     }
 
     return getSwapById(result[0].id) ?? null;
   } catch (error) {
-    console.error("Error creating sale.", error);
+    console.error("Error creating swap.", error);
     return null;
   }
 }
@@ -406,6 +407,7 @@ export async function getUserTransactionHistory(userId: string) {
         saleId: sale.id,
         salePrice: sale.price,
         swapId: swap.id,
+        swapTopUp: swap.topUp ?? 0,
         donationId: donation.id,
         charityId: charity.id,
         charityName: charity.name,
@@ -478,7 +480,7 @@ export async function getUserTransactionHistory(userId: string) {
           },
       details: {
         sale: row.saleId ? { id: row.saleId, price: row.salePrice } : null,
-        swap: row.swapId ? { id: row.swapId } : null,
+        swap: row.swapId ? { id: row.swapId, topUp: row.swapTopUp } : null,
         donation: row.donationId
           ? {
               id: row.donationId,
@@ -663,7 +665,7 @@ export async function updateSaleByTransactionId(transactionId: number, price: nu
   }
 }
 
-export async function updateSwapItemsByTransactionId(transactionId: number, listings: number[]) {
+export async function updateSwapItemsByTransactionId(transactionId: number, listings: number[], topUp?: number) {
   try {
     const swapRows = await db
       .select({ id: swap.id })
@@ -683,6 +685,16 @@ export async function updateSwapItemsByTransactionId(transactionId: number, list
           swapId: swapId,
           itemId: listing
         })
+    }
+
+    // `0` is a valid edit: it explicitly removes a previous cash top-up.
+    if (topUp !== undefined) {
+      await db
+        .update(swap)
+        .set({
+          topUp: String(topUp)
+        })
+        .where(eq(swap.id, swapId))
     }
 
     return getSwapById(swapId) ?? null;
@@ -898,7 +910,7 @@ export async function scheduleDonationPickup(userId: string, data: DonationPicku
       throw new Error('Shoe listing not found');
     }
 
-    if (!listing.isAvailable) {
+    if (listing.archivedAt) {
       throw new Error('Shoe listing is not eligible for donation pickup');
     }
 

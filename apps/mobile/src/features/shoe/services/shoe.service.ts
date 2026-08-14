@@ -7,12 +7,15 @@ export const ShoeService = {
       method: 'GET'
     });
 
-    return res.brands.map((item: string) => {
-      return {
-        id: item,
-        label: item
-      }
-    });
-  }
+    const uniqueBrandNames = new Set(
+      res.brands.map((item: string) => 
+        item.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase())
+      )
+    );
 
+    return Array.from(uniqueBrandNames).map((brand) => ({
+      id: brand,
+      label: brand
+    }));
+  }
 }

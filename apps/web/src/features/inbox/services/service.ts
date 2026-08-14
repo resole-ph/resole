@@ -93,6 +93,20 @@ export async function getConversationBetweenUsers(userAId: string, userBId: stri
   }
 }
 
+/**
+ * The seller's thread with this buyer, created if the two have never spoken.
+ *
+ * Called when an offer is made so the seller has somewhere to open from their
+ * listing page whichever client it came from. Mobile still posts its own message
+ * afterwards; that reuses this thread rather than opening a second one.
+ */
+export async function ensureOfferConversation(data: CreateConversation) {
+  const existing = await getConversationBetweenUsers(data.listerId, data.recipientId);
+  if (existing) return existing;
+
+  return createConversation(data);
+}
+
 export async function getOfferConversationForListing(userId: string, listingId: number) {
   try {
     const result = await db
@@ -180,16 +194,39 @@ export async function getListingOffers(listingId: number) {
         },
       })
       .from(transaction)
-      .innerJoin(conversation, eq(conversation.transactionId, transaction.id))
+      .innerJoin(shoeListing, eq(shoeListing.id, transaction.listingId))
       .innerJoin(user, eq(transaction.recipientId, user.id))
+      // Matched on the seller-buyer pair, not on `conversation.transactionId`:
+      // one thread is kept per pair and that column is stamped from whichever
+      // offer opened it, so joining on it dropped every repeat offer. Left, since
+      // the thread only powers the "open chat" link.
+      .leftJoin(
+        conversation,
+        or(
+          and(
+            eq(conversation.listerId, shoeListing.userId),
+            eq(conversation.recipientId, transaction.recipientId),
+          ),
+          and(
+            eq(conversation.listerId, transaction.recipientId),
+            eq(conversation.recipientId, shoeListing.userId),
+          ),
+        ),
+      )
       .leftJoin(sale, eq(sale.transactionId, transaction.id))
       .leftJoin(buyerRating, eq(buyerRating.rateeId, user.id))
       .where(eq(transaction.listingId, listingId))
       .orderBy(desc(transaction.createdAt));
 
+    // A pair should only ever hold one thread, but two offers racing could open a
+    // second and the join would then list the offer twice.
+    const offerRows = Array.from(
+      new Map(rows.map((row) => [row.transactionId, row])).values()
+    );
+
     // What a swapper put up in exchange. Fetched in one grouped pass rather than
     // per offer, and left out entirely when no swap offers came back.
-    const swapTransactionIds = rows
+    const swapTransactionIds = offerRows
       .filter((row) => row.type === 'swap')
       .map((row) => row.transactionId);
 
@@ -209,7 +246,7 @@ export async function getListingOffers(listingId: number) {
       swapItemCounts.map((row) => [row.transactionId, Number(row.itemCount)])
     );
 
-    return rows.map((row) => ({
+    return offerRows.map((row) => ({
       transactionId: row.transactionId,
       conversationId: row.conversationId,
       type: row.type,

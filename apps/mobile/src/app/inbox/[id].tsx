@@ -18,6 +18,7 @@ import { Listing } from '@/components/molecules/ListingCard';
 import RatingModal from '@/components/organisms/RatingModal';
 import OfferCard from '@/components/organisms/OfferCard';
 import EditOfferModal from '@/components/organisms/EditOfferModal';
+import { haptic } from '@/lib/haptics';
 
 const CARD_SHADOW = {
   shadowColor: '#000',
@@ -459,8 +460,10 @@ export default function ConversationScreen() {
               setPendingOffer({ id: transactionId, action: 'accept' });
               await OfferService.acceptOffer(transactionId);
               setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: true } }));
+              haptic.success();
             } catch (error) {
               console.error('Failed to accept offer:', error);
+              haptic.error();
             } finally {
               setPendingOffer(null);
             }
@@ -486,8 +489,11 @@ export default function ConversationScreen() {
               setPendingOffer({ id: transactionId, action: 'decline' });
               await OfferService.declineOffer(transactionId);
               setOffersById((prev) => ({ ...prev, [transactionId]: { ...prev[transactionId], isAccepted: false } }));
+              // Warning, not success: it went through, but it's the negative branch.
+              haptic.warning();
             } catch (error) {
               console.error('Failed to decline offer:', error);
+              haptic.error();
             } finally {
               setPendingOffer(null);
             }
@@ -547,8 +553,10 @@ export default function ConversationScreen() {
         [ratingTarget.transactionId]: { ...prev[ratingTarget.transactionId], isRated: true },
       }));
       setRatingTarget(null);
+      haptic.success();
     } catch (error) {
       console.error('Failed to submit rating:', error);
+      haptic.error();
     } finally {
       setIsSubmittingRating(false);
     }
