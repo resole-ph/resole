@@ -4,8 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthGate } from '@/providers/AuthGateProvider';
+import { useAuth } from '@/providers/AuthProvider';
 import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
+import ListingOffersSection, {
+  type ReceivedListingOffer,
+} from '@/features/shoe/components/ListingOffersSection';
 
 const COLORS = {
   primary: '#2563EB',
@@ -27,6 +31,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { requireAuth } = useAuthGate();
+  const { user } = useAuth();
   const sizeSystem = usePreferredSizeSystem();
 
   // Safely extract the ID from the URL parameter
@@ -39,6 +44,8 @@ export default function ProductDetailPage() {
   const [saved, setSaved] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
+  const [receivedOffers, setReceivedOffers] = useState<ReceivedListingOffer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
 
   // Modals & offers
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -51,6 +58,9 @@ export default function ProductDetailPage() {
   const [offerSent, setOfferSent] = useState(false);
   const [offerSubmitting, setOfferSubmitting] = useState(false);
   const [offerError, setOfferError] = useState<string | null>(null);
+
+  // Up here rather than with the other derived flags, because the offers fetch needs it.
+  const isOwnListing = !!user && !!listing?.seller?.id && user.id === listing.seller.id;
 
   useEffect(() => {
     if (!productId) return;
@@ -107,6 +117,33 @@ export default function ProductDetailPage() {
     loadRelated();
   }, [listing, productId]);
 
+  // Gated on ownership rather than letting it fail — the route 403s anyone else.
+  useEffect(() => {
+    if (!productId || !isOwnListing) return;
+
+    let cancelled = false;
+    setLoadingOffers(true);
+
+    async function loadOffers() {
+      try {
+        const res = await fetch(`/api/listings/${productId}/offers`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load offers');
+        if (!cancelled) setReceivedOffers(data.offers ?? []);
+      } catch (e) {
+        console.error('Failed to load offers for listing:', e);
+      } finally {
+        if (!cancelled) setLoadingOffers(false);
+      }
+    }
+
+    loadOffers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [productId, isOwnListing]);
+
   const handleToggleSave = async () => {
     if (!listing) return;
     const isSaved = saved;
@@ -135,10 +172,11 @@ export default function ProductDetailPage() {
     ].filter(Boolean);
   }, [listing]);
 
+  // Hidden from the seller: both offer routes 400 on a self-offer anyway.
   const isSwappable = listing?.listingMode === 'Swap' || listing?.listingMode === 'Both';
-  const showBuyButton = listing?.listingMode === 'Sale' || listing?.listingMode === 'Both';
-  const showSwapButton = listing?.listingMode === 'Swap' || listing?.listingMode === 'Both';
-  const showOfferButton = listing?.listingMode === 'Sale' || listing?.listingMode === 'Both';
+  const showBuyButton = !isOwnListing && (listing?.listingMode === 'Sale' || listing?.listingMode === 'Both');
+  const showSwapButton = !isOwnListing && (listing?.listingMode === 'Swap' || listing?.listingMode === 'Both');
+  const showOfferButton = !isOwnListing && (listing?.listingMode === 'Sale' || listing?.listingMode === 'Both');
 
   async function handleConfirmPurchase() {
     if (buySubmitting) return;
@@ -391,6 +429,11 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Offers received — only ever rendered for the seller. */}
+        {isOwnListing && (
+          <ListingOffersSection offers={receivedOffers} isLoading={loadingOffers} />
+        )}
 
         {/* Related sneakers */}
         {relatedItems.length > 0 && (
