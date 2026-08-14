@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
 import { useMyProfile, useUpdateMyProfile } from '../queries/profile.queries';
 import type { MyProfile } from '../types/profile.types';
-import { isStrongPassword, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth';
+import { isStrongPassword, isValidEmail, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth';
 import { ProfileClient } from '../services/profile.client';
 
 type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
@@ -172,8 +172,11 @@ function EditFieldModal({
   }, [field]);
  
   if (!visible || !field) return null;
- 
+
   const options = fieldOptions(field.id);
+  const isEmailField = field.id === 'email';
+  const trimmedValue = value.trim();
+  const emailInvalid = isEmailField && trimmedValue !== '' && !isValidEmail(trimmedValue);
  
   const handleSave = async (nextValue: string) => {
     setSaving(true);
@@ -206,7 +209,7 @@ function EditFieldModal({
             onCancel={onClose}
             onConfirm={() => handleSave(value)}
             confirmLabel={saving ? 'Saving...' : 'Save changes'}
-            confirmDisabled={saving || !value.trim()}
+            confirmDisabled={saving || !value.trim() || emailInvalid}
           />
         )
       }
@@ -236,12 +239,15 @@ function EditFieldModal({
         <label className="flex flex-col gap-1.5">
           <span className="text-on-surface-variant text-[13px] font-semibold">{field.label}</span>
           <input
+            type={isEmailField ? 'email' : 'text'}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={field.label}
             autoFocus
+            autoComplete={isEmailField ? 'email' : undefined}
             className="rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           />
+          {emailInvalid && <p className="text-error text-[13px]">Enter a valid email address.</p>}
         </label>
       )}
     </DialogShell>
