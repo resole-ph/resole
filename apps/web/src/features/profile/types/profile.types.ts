@@ -103,6 +103,8 @@ export type RedeemOptionRow = {
   amount: number;
   voucherType: string;
   expiresAt: string;
+  /** Coins actually deducted on redemption; null when the voucher has no coin price. */
+  coinCost: number | null;
 };
 
 /** Each metric carries a running total plus the two most recent 7-day windows. */

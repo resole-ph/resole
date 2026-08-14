@@ -8,7 +8,9 @@ import type { MyProfile } from '../types/profile.types';
 import { isStrongPassword, isValidEmail, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth';
 import { ProfileClient } from '../services/profile.client';
 
-type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
+// These are the four categories the API actually stores; the labels below name
+// them as the server does rather than inventing a mapping.
+type NotifKey = 'listing' | 'offer' | 'promotion' | 'system';
 
 const ACCOUNT_FIELDS: { id: keyof MyProfile; label: string; value: string, icon: string }[] = [
   { id: 'name',           label: 'Full name',       value: '', icon: 'person' },
@@ -20,10 +22,10 @@ const ACCOUNT_FIELDS: { id: keyof MyProfile; label: string; value: string, icon:
 ];
 
 const NOTIF_ROWS: { key: NotifKey; label: string; sub: string }[] = [
-  { key: 'messages', label: 'Messages', sub: 'Buyer and seller chats' },
-  { key: 'offers', label: 'Offers & bids', sub: 'When someone makes an offer on your listing' },
-  { key: 'promos', label: 'Promotions', sub: 'Sales, deals, and platform news' },
-  { key: 'recycleReminders', label: 'Recycle reminders', sub: 'Tips and pickup reminders' },
+  { key: 'listing', label: 'Listings', sub: 'Updates about your listings' },
+  { key: 'offer', label: 'Offers & bids', sub: 'When someone makes an offer on your listing' },
+  { key: 'promotion', label: 'Promotions', sub: 'Sales, deals, and platform news' },
+  { key: 'system', label: 'System', sub: 'Account and service announcements' },
 ];
 
 const MORE_ROWS = [
@@ -412,21 +414,31 @@ function ActionRow({
   icon,
   tone = 'default',
   onClick,
+  disabled = false,
+  note,
 }: {
   label: string;
   icon: string;
   tone?: 'default' | 'warning' | 'danger';
   onClick?: () => void;
+  disabled?: boolean;
+  note?: string;
 }) {
-  const toneClass =
-    tone === 'danger' ? 'text-error' : tone === 'warning' ? 'text-tertiary' : 'text-on-surface';
+  const toneClass = disabled
+    ? 'text-on-surface-variant'
+    : tone === 'danger' ? 'text-error' : tone === 'warning' ? 'text-tertiary' : 'text-on-surface';
 
   return (
-    <button onClick={onClick} className="w-full text-left">
+    <button onClick={onClick} disabled={disabled} className={`w-full text-left ${disabled ? 'cursor-not-allowed' : ''}`}>
       <Row>
         <span className={`material-symbols-outlined text-[18px] ${toneClass}`}>{icon}</span>
-        <span className={`flex-1 font-medium text-[14px] ${toneClass}`}>{label}</span>
-        <span className="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
+        <span className="flex-1">
+          <span className={`block font-medium text-[14px] ${toneClass}`}>{label}</span>
+          {note && <span className="block text-on-surface-variant text-[12px] mt-0.5">{note}</span>}
+        </span>
+        {!disabled && (
+          <span className="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
+        )}
       </Row>
     </button>
   );
@@ -441,13 +453,40 @@ export default function SettingsSections() {
   const [editingField, setEditingField] = useState<(typeof ACCOUNT_FIELDS)[number] | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
-    messages: true,
-    offers: false,
-    promos: false,
-    recycleReminders: true,
+    listing: false,
+    offer: false,
+    promotion: false,
+    system: false,
   });
+  const [notifsLoaded, setNotifsLoaded] = useState(false);
+  const [notifError, setNotifError] = useState<string | null>(null);
 
-  
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch('/api/users/me/notification-preferences')
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Failed to load notification preferences');
+        return data.preferences as Partial<Record<NotifKey, boolean>>;
+      })
+      .then((preferences) => {
+        if (cancelled) return;
+        setNotifs((prev) => ({ ...prev, ...preferences }));
+        setNotifsLoaded(true);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('Failed to load notification preferences:', error);
+        setNotifError('Could not load your notification settings.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
   const accountFields = useMemo(
     () =>
       ACCOUNT_FIELDS.map((field) => ({
@@ -457,8 +496,25 @@ export default function SettingsSections() {
       [profile]
   );  
     
-  const toggle = (key: NotifKey) => () =>
-    setNotifs((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggle = (key: NotifKey) => async () => {
+    const next = !notifs[key];
+    setNotifs((prev) => ({ ...prev, [key]: next }));
+    setNotifError(null);
+
+    try {
+      const response = await fetch('/api/users/me/notification-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: next }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to save preference');
+    } catch (error) {
+      console.error('Failed to save notification preference:', error);
+      setNotifs((prev) => ({ ...prev, [key]: !next }));
+      setNotifError('Could not save that change. Please try again.');
+    }
+  };
 
   async function handleSaveField(id: string, value: string) {
     try {
@@ -486,11 +542,6 @@ export default function SettingsSections() {
     }
   };
 
-  const handleDeleteAccount = () => {
-    if (window.confirm('Delete account? All your data will be permanently removed. This cannot be undone.')) {
-      // Account deletion wiring pending auth integration.
-    }
-  };
 
   return (
     <>
@@ -517,9 +568,10 @@ export default function SettingsSections() {
               label={n.label}
               sub={n.sub}
               checked={notifs[n.key]}
-              onChange={toggle(n.key)}
+              onChange={notifsLoaded ? toggle(n.key) : () => {}}
             />
           ))}
+          {notifError && <p className="text-error text-[13px] px-4 pb-3">{notifError}</p>}
         </div>
 
         <SectionTitle title="More" />
@@ -532,7 +584,9 @@ export default function SettingsSections() {
         <SectionTitle title="Account actions" />
         <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
           <ActionRow label="Log out" icon="logout" tone="warning" onClick={handleLogout} />
-          <ActionRow label="Delete account" icon="delete" tone="danger" onClick={handleDeleteAccount} />
+          {/* Deliberately inert rather than wired: the button used to warn that
+              all data would be erased and then do nothing at all. */}
+          <ActionRow label="Delete account" icon="delete" disabled note="Coming soon" />
         </div>
       </div>
 

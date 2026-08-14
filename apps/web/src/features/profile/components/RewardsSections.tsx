@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
+  profileKeys,
   useMyStats,
   useRedeemOptions,
   useWalletTransactions,
@@ -12,7 +14,7 @@ type RedeemOption = {
   id: string;
   title: string;
   description: string;
-  cost: number;
+  cost: number | null;
   icon: string;
   highlight?: boolean;
 };
@@ -45,10 +47,10 @@ function toRedeemOption(row: RedeemOptionRow, index: number): RedeemOption {
     id: String(row.id),
     title: row.name,
     description: row.description ?? '',
-    cost: row.amount,
+    // coinCost, not amount — this is what redeemVoucher actually deducts, so
+    // the price shown and the affordability check match what gets charged.
+    cost: row.coinCost,
     icon: VOUCHER_ICONS[row.voucherType] ?? 'redeem',
-    // The design highlights the first card; the server orders by newest and
-    // largest, so that is the one worth featuring.
     highlight: index === 0,
   };
 }
@@ -77,8 +79,19 @@ function toCoinTx(row: WalletTransactionRow): CoinTx {
   };
 }
 
-function RedeemCard({ option, balance }: { option: RedeemOption; balance: number }) {
-  const canAfford = balance >= option.cost;
+function RedeemCard({
+  option,
+  balance,
+  onRedeem,
+  pending,
+}: {
+  option: RedeemOption;
+  balance: number;
+  onRedeem: (option: RedeemOption) => void;
+  pending: boolean;
+}) {
+  // A voucher with no coin price can never be redeemed — the server rejects it.
+  const canAfford = option.cost != null && balance >= option.cost;
 
   return (
     <div
@@ -102,17 +115,18 @@ function RedeemCard({ option, balance }: { option: RedeemOption; balance: number
         </p>
       </div>
       <button
-        disabled={!canAfford}
+        onClick={() => onRedeem(option)}
+        disabled={!canAfford || pending}
         className={[
           'shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors',
-          !canAfford
+          !canAfford || pending
             ? 'bg-surface-container text-on-surface-variant cursor-not-allowed'
             : option.highlight
               ? 'bg-white text-secondary hover:bg-surface-bright'
               : 'bg-secondary text-on-secondary hover:opacity-90',
         ].join(' ')}
       >
-        {option.cost} pts
+        {pending ? 'Redeeming…' : option.cost == null ? 'Unavailable' : `${option.cost} pts`}
       </button>
     </div>
   );
@@ -146,12 +160,13 @@ function HistoryRow({ tx }: { tx: CoinTx }) {
 }
 
 export default function RewardsSections() {
-  // Both lists were hardcoded before, and the affordability check compared
-  // costs against a fixed 1,240 balance rather than the user's own.
   const { data: redeemData } = useRedeemOptions();
   const { data: walletData } = useWalletTransactions();
   // Shares the cache entry with RecycleCoinsCard, which is on this same page.
   const { data: stats } = useMyStats();
+  const queryClient = useQueryClient();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
 
   const balance = Number(stats?.coinBalance ?? 0);
 
@@ -162,6 +177,32 @@ export default function RewardsSections() {
 
   const history = useMemo(() => (walletData ?? []).map(toCoinTx), [walletData]);
 
+  const handleRedeem = async (option: RedeemOption) => {
+    setPendingId(option.id);
+    setRedeemError(null);
+
+    try {
+      const response = await fetch('/api/redemptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voucherId: Number(option.id) }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not redeem that reward');
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: profileKeys.myStats() }),
+        queryClient.invalidateQueries({ queryKey: profileKeys.walletTransactions() }),
+        queryClient.invalidateQueries({ queryKey: profileKeys.redeemOptions() }),
+      ]);
+    } catch (error) {
+      console.error('Failed to redeem reward:', error);
+      setRedeemError(error instanceof Error ? error.message : 'Something went wrong');
+    } finally {
+      setPendingId(null);
+    }
+  };
+
   return (
     <>
       <section>
@@ -171,8 +212,15 @@ export default function RewardsSections() {
         ) : (
           <div className="flex flex-col gap-3">
             {redeemOptions.map((option) => (
-              <RedeemCard key={option.id} option={option} balance={balance} />
+              <RedeemCard
+                key={option.id}
+                option={option}
+                balance={balance}
+                onRedeem={handleRedeem}
+                pending={pendingId === option.id}
+              />
             ))}
+            {redeemError && <p className="text-error text-[13px]">{redeemError}</p>}
           </div>
         )}
       </section>
