@@ -519,6 +519,7 @@ export default function SettingsSections() {
   const [editingField, setEditingField] = useState<(typeof ACCOUNT_FIELDS)[number] | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
     listing: false,
     offer: false,
@@ -620,6 +621,27 @@ export default function SettingsSections() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (
+      isDeletingAccount ||
+      !window.confirm('Delete account? Your account will be deleted and you will be signed out. This cannot be undone.')
+    ) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      await ProfileClient.deleteAccount();
+      await signOut();
+      router.replace('/');
+    } catch (error) {
+      window.alert(
+        `Could not delete account. ${error instanceof Error ? error.message : 'Please try again.'}`,
+      );
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
 
   return (
     <>
@@ -674,9 +696,13 @@ export default function SettingsSections() {
         <SectionTitle title="Account actions" />
         <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
           <ActionRow label="Log out" icon="logout" tone="warning" onClick={handleLogout} />
-          {/* Deliberately inert rather than wired: the button used to warn that
-              all data would be erased and then do nothing at all. */}
-          <ActionRow label="Delete account" icon="delete" disabled note="Coming soon" />
+          <ActionRow
+            label={isDeletingAccount ? 'Deleting account...' : 'Delete account'}
+            icon="delete"
+            tone="danger"
+            onClick={handleDeleteAccount}
+            disabled={isDeletingAccount}
+          />
         </div>
       </div>
 

@@ -9,39 +9,6 @@ import EditListingContainer from '@/features/sell/containers/EditListingContaine
 import ReviewContainer from '@/features/sell/containers/ReviewContainer';
 import ConfirmationContainer from '@/features/sell/containers/ConfirmationContainer';
 
-// TEMP: dev-only shortcut to step through the sell flow without shooting
-// photos or waiting on a real AI analysis. Remove before shipping.
-function DevNextButton() {
-  const insets = useSafeAreaInsets();
-  const { devAdvance, isLastStep } = useSellFlow();
-
-  if (isLastStep) return null;
-
-  return (
-    <GuardedTouchableOpacity
-      onPress={devAdvance}
-      activeOpacity={0.8}
-      style={{
-        position: 'absolute',
-        top: insets.top + 8,
-        right: 12,
-        zIndex: 50,
-        backgroundColor: '#F59E0B',
-        borderRadius: 99,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 6,
-      }}
-    >
-      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>DEV: Next →</Text>
-    </GuardedTouchableOpacity>
-  );
-}
-
 export default function SellScreen() {
   const { step, reset } = useSellFlow();
 
@@ -57,7 +24,7 @@ export default function SellScreen() {
       {step === 'review'       && <ReviewContainer />}
       {step === 'confirmation' && <ConfirmationContainer />}
 
-      {__DEV__ && <DevNextButton />}
+      {__DEV__}
     </View>
   );
 }

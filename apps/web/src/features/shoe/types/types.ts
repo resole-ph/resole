@@ -1,4 +1,4 @@
-import { shoe, shoePrice, shoeListing } from '@/db/schema';
+import { shoe, shoePrice, shoeListing, relist } from '@/db/schema';
 import { User } from '@/features/auth/types/types';
 
 export type Shoe = typeof shoe.$inferSelect;
@@ -19,6 +19,9 @@ export type ShoeListing = Omit<InferShoeListing, 'shoeId' | 'userId'> & {
 };
 export type CreateShoeListing = typeof shoeListing.$inferInsert;
 export type UpdateShoeListing = Partial<InferShoeListing>;
+
+export type Relist = typeof relist.$inferSelect;
+export type CreateRelist = typeof relist.$inferInsert;
 
 /** Structured output extracted from the four shoe photos by Gemini. */
 export interface ShoeAnalysis {

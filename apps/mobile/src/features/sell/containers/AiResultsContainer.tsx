@@ -61,7 +61,7 @@ function LoadingDots() {
 
 export default function AiResultsContainer() {
   const router = useRouter();
-  const { isAnalyzing, analysisError, aiResult, setIsAnalyzed, initFormFromAiResult, setStep, goBack } = useSellFlow();
+  const { isAnalyzing, analysisError, aiResult, setIsAnalyzed, initFormFromAiResult, setStep, goBack, confirmDiscard } = useSellFlow();
   const slideIn = useSharedValue(40);
   const opacity = useSharedValue(0);
 
@@ -99,7 +99,7 @@ export default function AiResultsContainer() {
           </View>
 
           <StepFooter
-            onCancel={() => router.back()}
+            onCancel={() => confirmDiscard(() => router.back())}
             onPrimary={goBack}
             primaryLabel="Go Back"
           />
@@ -125,7 +125,7 @@ export default function AiResultsContainer() {
           </Animated.ScrollView>
 
           <StepFooter
-            onCancel={() => router.back()}
+            onCancel={() => confirmDiscard(() => router.back())}
             onPrimary={handleContinue}
             primaryLabel="Next"
           />

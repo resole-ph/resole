@@ -9,7 +9,7 @@ import HeroBanner from '@/components/organisms/HeroBanner';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import CharitiesSection from '@/components/organisms/CharitiesSection';
 import { useOnboardingStore } from '@/store/onboarding';
-import { useMyListings, useUserInfo } from '@/features/user/queries/user.queries';
+import { useMyActiveListings, useUserInfo } from '@/features/user/queries/user.queries';
 import { Listing } from '@/components/molecules/ListingCard';
 import { usePreferencesStore } from '@/store/preferences';
 import { sizeSystemFromUserPreferences } from '@/features/shoe/utils/size-conversion';
@@ -38,7 +38,7 @@ export default function HomeScreen() {
   // Both share their cache entries with the profile tab, so home -> profile
   // -> home costs no requests at all inside the stale window.
   const { data: userData } = useUserInfo(hydrated);
-  const { data: listingsData } = useMyListings(!!userData);
+  const { data: listingsData } = useMyActiveListings(!!userData);
 
   useEffect(() => {
     if (!userData) return;
@@ -80,13 +80,7 @@ export default function HomeScreen() {
           <Text className="text-2xl font-bold text-gray-900">{greeting}, {user.name}</Text>
           <Text className="text-sm text-gray-400 mt-0.5">Find your next pair today</Text>
         </View>
-        {/* TEMP: preview onboarding flow, remove before shipping */}
-        <GuardedTouchableOpacity
-          onPress={() => router.push('/onboarding/splash')}
-          className="mx-5 mb-2 self-start rounded-full bg-gray-200 px-3 py-1.5"
-        >
-          <Text className="text-xs text-gray-600">Preview Onboarding</Text>
-        </GuardedTouchableOpacity>
+
         <SearchBar
           onSearch={setSearchQuery}
           onSelectSeller={(personId) => router.push(`/profile/${personId}` as any)}

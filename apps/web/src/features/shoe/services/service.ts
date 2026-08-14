@@ -1,7 +1,7 @@
 import { db } from '@/config/db';
 import { sql, gt, eq, desc, asc, or, and, getTableColumns, cosineDistance, inArray, isNull, count, ilike, avg, max, gte, lte, lt } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
-import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating, transaction, categoryEnum } from '@/db/schema';
+import { shoe, shoePrice, shoeListing, user, shoeAnalysis, relist, rating, transaction, categoryEnum } from '@/db/schema';
 import {
   Shoe,
   CreateShoe,
@@ -13,7 +13,9 @@ import {
   CreateShoeListing,
   UpdateShoeListing,
   ShoeAnalysis,
-  ShoeAnalysisResult
+  ShoeAnalysisResult,
+  Relist,
+  CreateRelist
 } from '@/features/shoe/types/types';
 import { MIN_US_MENS, MAX_US_MENS } from '@/features/shoe/utils/size-conversion';
 import {
@@ -140,6 +142,20 @@ export async function createShoeAnalysis(data: ShoeAnalysisResult) {
     return result[0];
   } catch (error) {
     console.error("Error creating shoe analysis.", error);
+    return null;
+  }
+}
+
+export async function createRelistLog(data: CreateRelist) {
+  try {
+    const result = await db
+      .insert(relist)
+      .values(data)
+      .returning({ id: relist.id });
+
+    return !!result;
+  } catch (error) {
+    console.error("Error creating relist log.", error);
     return null;
   }
 }

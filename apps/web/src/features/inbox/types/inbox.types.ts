@@ -81,7 +81,7 @@ export type ThreadOffer = {
   listingId: number | null;
   isAccepted: boolean | null;
   isCompleted: boolean;
-  details: { price?: string; items?: { itemId: number }[] } | null;
+  details: { price?: string; items?: { itemId: number }[]; topUp?: string | null } | null;
 };
 
 export type OfferExtras = {
@@ -97,4 +97,4 @@ export type ConversationThreadData = {
 };
 
 /** Payload for `PATCH /api/offers/[id]` — shape depends on the offer's type. */
-export type EditOfferPayload = { price: number } | { listings: number[] };
+export type EditOfferPayload = { price: number } | { listings: number[]; topUp: number };

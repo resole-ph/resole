@@ -12,9 +12,11 @@ import FilterSheet, { MarketFilters, EMPTY_FILTERS } from '@/components/organism
 import { Listing } from '@/components/molecules/ListingCard';
 import { useSaleListings, useSwapListings } from '@/features/listing/queries/listing.queries';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { usePreferencesStore } from '@/store/preferences';
 
 export default function MarketScreen() {
   const router = useRouter();
+  const userSizeSystem = usePreferencesStore((state) => state.sizeSystem);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
@@ -129,6 +131,7 @@ export default function MarketScreen() {
         value={filters}
         sizeOptions={sizeOptions}
         colorOptions={colorOptions}
+        userSizeSystem={userSizeSystem}
         onApply={setFilters}
         onClose={() => setFilterVisible(false)}
       />

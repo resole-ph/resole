@@ -4,6 +4,16 @@ import { clearSessionToken, saveSessionToken } from '@/lib/session';
 import { queryClient } from '@/queries';
 import type { AuthResponse, UpdateProfileInput, User } from '../types/auth.types';
 
+async function clearLocalSession(): Promise<void> {
+  await clearSessionToken();
+  // Both caches outlive individual screens. Leaving either populated lets
+  // the next unauthenticated render (or the next account) see data from the
+  // previous session.
+  invalidateCache();
+  await queryClient.cancelQueries();
+  queryClient.clear();
+}
+
 export const authService = {
   async signUp(email: string, password: string): Promise<AuthResponse> {
     const res = await apiFetch<AuthResponse>('/api/auth/sign-up', {
@@ -43,14 +53,15 @@ export const authService = {
     try {
       await apiFetch('/api/auth/sign-out', { method: 'POST' });
     } finally {
-      await clearSessionToken();
-      // Both caches outlive individual screens. Leaving either populated lets
-      // the next unauthenticated render (or the next account) see data from
-      // the session that just ended.
-      invalidateCache();
-      await queryClient.cancelQueries();
-      queryClient.clear();
+      await clearLocalSession();
     }
+  },
+
+  async deleteAccount(): Promise<void> {
+    // Do not clear the local session on a failed deletion: the user needs to
+    // remain signed in to retry or resolve the server error.
+    await apiFetch<{ message: string }>('/api/users/me', { method: 'DELETE' });
+    await clearLocalSession();
   },
 
   async updateProfile(input: UpdateProfileInput): Promise<User> {

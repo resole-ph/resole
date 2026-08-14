@@ -147,13 +147,6 @@ function PendingCard({
         </View>
       </View>
 
-      {isArchived ? (
-        <View className="rounded-xl px-3 py-2.5 bg-gray-50">
-          <Text className="text-gray-500 text-xs text-center">
-            Hidden from the marketplace until automatic deletion.
-          </Text>
-        </View>
-      ) : <>
       <View className="flex-row gap-2 mb-2">
         <GuardedTouchableOpacity
           className="flex-1 flex-row items-center justify-center rounded-xl py-2.5"
@@ -190,7 +183,6 @@ function PendingCard({
           Delete Permanently
         </Text>
       </GuardedTouchableOpacity>
-      </>}
     </View>
   );
 }
@@ -222,6 +214,8 @@ export default function ListingsScreen() {
   const [charitiesLoading, setCharitiesLoading] = useState(false);
   const [donating, setDonating] = useState(false);
 
+  const userSizeSystem = usePreferencesStore((s) => s.sizeSystem);
+
   // Shared with the home screen's "Your Listings" row, so arriving here from
   // "View all" renders from cache instead of refetching the same list.
   const listingQuery = useMemo(
@@ -238,6 +232,8 @@ export default function ListingsScreen() {
 
     setSizeOptions((previous) => Array.from(new Set([
       ...previous,
+      // Keep filter values in the stored US Men's anchor system. FilterSheet
+      // converts these only for display, then sends the original values back.
       ...data.map((item) => item.size).filter((size): size is string => !!size),
     ])).sort((a, b) => Number(a) - Number(b)));
     setColorOptions((previous) => Array.from(new Set([
@@ -318,16 +314,37 @@ export default function ListingsScreen() {
     );
   };
 
-  const handleRelist = async (id: string) => {
-    try {
-      await ListingService.relistListing(Number(id));
-      patchCache((items) =>
-        items.map((l) => (l.id === id ? { ...l, isAvailable: true } : l))
-      );
-    } catch (error) {
-      console.error('Failed to re-list listing:', error);
-      Alert.alert('Could not re-list listing', 'Please try again.');
-    }
+  const handleRelist = async (item: Listing) => {
+    const createdAt = new Date(item.createdAt);
+    const now = new Date();
+
+    const isExpired = Math.floor(Math.abs(now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)) >= 30;
+
+    Alert.alert(
+      'Re-list shoe listing?',
+      `This listing will be placed back to the market, ${ isExpired
+        ? 'another 30 days for a fresh listing' 
+        : 'continuing where you left off previously'
+      }.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Re-list',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await ListingService.relistListing(Number(item.id), isExpired);
+              patchCache((items) =>
+                items.map((l) => (l.id === item.id ? { ...l, isAvailable: true } : l))
+              );
+            } catch (error) {
+              console.error('Failed to re-list listing:', error);
+              Alert.alert('Could not re-list listing', 'Please try again.');
+            }
+          }
+        }
+      ]
+    )
   };
 
   const openDonateModal = async (id: string) => {
@@ -449,7 +466,7 @@ export default function ListingsScreen() {
             <PendingCard
               key={item.id}
               item={item}
-              onRelist={() => handleRelist(item.id)}
+              onRelist={() => handleRelist(item)}
               onDonate={() => openDonateModal(item.id)}
               onDelete={() => handlePermanentDelete(item.id)}
             />
@@ -467,6 +484,7 @@ export default function ListingsScreen() {
         value={filters}
         sizeOptions={sizeOptions}
         colorOptions={colorOptions}
+        userSizeSystem={userSizeSystem}
         onApply={setFilters}
         onClose={() => setFilterVisible(false)}
       />

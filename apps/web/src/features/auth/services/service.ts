@@ -461,19 +461,27 @@ export async function updateUserProfile(
 
 export async function deleteUser(userId: string): Promise<boolean> {
   try {
-    await db
-      .update(user)
-      .set({
-        deletedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(user.id, userId));
+    const deleted = await db.transaction(async (tx) => {
+      const updatedUsers = await tx
+        .update(user)
+        .set({
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(and(eq(user.id, userId), isNull(user.deletedAt)))
+        .returning({ id: user.id });
 
-    // Also delete active sessions
-    await db.delete(session).where(eq(session.userId, userId));
-    clearAuthCache();
+      if (updatedUsers.length === 0) {
+        return false;
+      }
 
-    return true;
+      // Revoke every device's session as part of the same operation.
+      await tx.delete(session).where(eq(session.userId, userId));
+      return true;
+    });
+
+    if (deleted) clearAuthCache();
+    return deleted;
   } catch (error) {
     console.error('Error deleting user:', error);
     return false;

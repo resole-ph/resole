@@ -139,10 +139,14 @@ export const ListingService = {
     });
   },
 
-  async relistListing(id: number): Promise<undefined> {
+  async relistListing(id: number, isReset: boolean = false): Promise<undefined> {
     await apiFetch<undefined>(`/api/listings/${id}`, {
       method: 'PATCH',
-      body: { isAvailable: true },
+      body: { 
+        isAvailable: true,
+        archivedAt: null,
+        isReset
+      },
     });
   },
 
