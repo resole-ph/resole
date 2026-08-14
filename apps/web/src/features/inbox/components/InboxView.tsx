@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import ConversationList from './ConversationList';
 import ConversationThread from './ConversationThread';
+import ConfirmOfferModal from './ConfirmOfferModal';
 import EditOfferModal from './EditOfferModal';
 import { InboxClient } from '../services/inbox.client';
 import type {
@@ -44,6 +45,12 @@ export default function InboxView({
   const [sendError, setSendError] = useState<string | null>(null);
   const [isRespondingToOffer, setIsRespondingToOffer] = useState(false);
   const [threadError, setThreadError] = useState<string | null>(null);
+
+  /** Accept/decline is confirmed in a dialog first — neither is reversible. */
+  const [pendingResponse, setPendingResponse] = useState<
+    { transactionId: number; accept: boolean } | null
+  >(null);
+  const [responseError, setResponseError] = useState<string | null>(null);
 
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
   const [isSavingOfferEdit, setIsSavingOfferEdit] = useState(false);
@@ -163,8 +170,18 @@ export default function InboxView({
     }
   }
 
-  async function handleOfferResponse(transactionId: number, accept: boolean) {
+  function handleRequestOfferResponse(transactionId: number, accept: boolean) {
+    setResponseError(null);
+    setPendingResponse({ transactionId, accept });
+  }
+
+  async function handleConfirmOfferResponse() {
+    if (!pendingResponse) return;
+
+    const { transactionId, accept } = pendingResponse;
+
     setIsRespondingToOffer(true);
+    setResponseError(null);
     try {
       if (accept) {
         await InboxClient.acceptOffer(transactionId);
@@ -175,8 +192,15 @@ export default function InboxView({
         ...prev,
         [transactionId]: { ...prev[transactionId], isAccepted: accept },
       }));
+      setPendingResponse(null);
     } catch (error) {
       console.error(`Failed to ${accept ? 'accept' : 'decline'} offer:`, error);
+      // The dialog stays open so the failure is visible and retryable.
+      setResponseError(
+        error instanceof Error
+          ? error.message
+          : `Offer not ${accept ? 'accepted' : 'declined'}. Please try again.`
+      );
     } finally {
       setIsRespondingToOffer(false);
     }
@@ -223,6 +247,7 @@ export default function InboxView({
   }
 
   const editingOffer = editingOfferId != null ? offersById[editingOfferId] : null;
+  const respondingOffer = pendingResponse ? offersById[pendingResponse.transactionId] : null;
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -261,12 +286,28 @@ export default function InboxView({
             onBack={() => setSelectedId(null)}
             onSend={handleSend}
             onSendPhoto={handleSendPhoto}
-            onAccept={(id) => handleOfferResponse(id, true)}
-            onDecline={(id) => handleOfferResponse(id, false)}
+            onAccept={(id) => handleRequestOfferResponse(id, true)}
+            onDecline={(id) => handleRequestOfferResponse(id, false)}
             onEdit={handleOpenEditOffer}
           />
         </div>
       </div>
+
+      {respondingOffer && pendingResponse && (
+        <ConfirmOfferModal
+          offer={respondingOffer}
+          extras={offerExtrasById[respondingOffer.id]}
+          accept={pendingResponse.accept}
+          isSubmitting={isRespondingToOffer}
+          error={responseError}
+          onClose={() => {
+            if (isRespondingToOffer) return;
+            setPendingResponse(null);
+            setResponseError(null);
+          }}
+          onConfirm={handleConfirmOfferResponse}
+        />
+      )}
 
       {editingOffer && (
         <EditOfferModal
