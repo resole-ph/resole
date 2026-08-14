@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import ListingCard from "@/components/ListingCard";
-import DownloadAppModal from "@/components/DownloadAppModal";
 import { useListings } from "@/features/shoe/queries/listing.queries";
 import { useSearchSuggestions } from "@/features/search/queries/search.queries";
+import { profileKeys, useMyFavourites } from "@/features/profile/queries/profile.queries";
+import type { FavouriteItem } from "@/features/profile/types/profile.types";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useAuth } from "@/providers/AuthProvider";
+import { useAuthGate } from "@/providers/AuthGateProvider";
 import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
 
 const COLORS = {
@@ -35,21 +38,18 @@ const CATEGORIES = [
 export default function MarketPage() {
   const router = useRouter();
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  // Null when signed out, which is a valid way to browse the boards — every
-  // card then reads as someone else's.
   const { user } = useAuth();
+  const { requireAuth } = useAuthGate();
+  const queryClient = useQueryClient();
 
-  // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<string>("All");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // Closing the dropdown on the input's `onBlur` raced with the click on a
-  // suggestion — the blur fired and unmounted the dropdown before the click
-  // event landed, so suggestions looked unclickable. Closing only on a real
-  // outside click removes that race entirely.
+  // Closes only on a real outside click; an onBlur handler here raced with the
+  // click on a suggestion and swallowed it.
   useEffect(() => {
     if (!isSearchFocused) return;
 
@@ -63,18 +63,45 @@ export default function MarketPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isSearchFocused]);
 
-  // App Modal State
-  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
-  const [modalMeta, setModalMeta] = useState<{ title?: string; description?: string }>({});
+  const { data: favouritesData } = useMyFavourites();
 
-  const triggerAppModal = (title?: string, description?: string) => {
-    setModalMeta({ title, description });
-    setIsAppModalOpen(true);
+  // Overlay for hearts the user just toggled — the optimistic update has to
+  // survive until the refetch lands.
+  const [pendingSaves, setPendingSaves] = useState<Map<string, boolean>>(new Map());
+
+  const savedIds = useMemo(() => {
+    const ids = new Set<string>(
+      // `details.id` is the save row's id, not the listing's — only
+      // `listing.id` matches what the cards are keyed by.
+      (favouritesData?.favourites ?? []).map((row: FavouriteItem) => String(row.listing.id))
+    );
+    pendingSaves.forEach((saved, id) => (saved ? ids.add(id) : ids.delete(id)));
+    return ids;
+  }, [favouritesData, pendingSaves]);
+
+  const handleSaveListing = async (listingId: string) => {
+    const isSaved = savedIds.has(listingId);
+    setPendingSaves((prev) => new Map(prev).set(listingId, !isSaved));
+
+    try {
+      await fetch(`/api/listings/${listingId}/save`, {
+        method: isSaved ? 'DELETE' : 'POST',
+      });
+      await queryClient.invalidateQueries({ queryKey: profileKeys.myFavourites() });
+    } catch (e) {
+      console.error('Failed to toggle saved listing:', e);
+    } finally {
+      setPendingSaves((prev) => {
+        const next = new Map(prev);
+        next.delete(listingId);
+        return next;
+      });
+    }
   };
 
-  // The input updates on every keystroke for responsiveness, but only the
-  // settled value reaches the query — otherwise typing "jordan" fired twelve
-  // uncached requests across the two boards.
+  const handleFavorite = (listingId: string) =>
+    requireAuth(() => handleSaveListing(listingId), 'Log in to save listings to your favourites.');
+
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
   const { data: suggestions } = useSearchSuggestions(debouncedSearch);
@@ -95,9 +122,6 @@ export default function MarketPage() {
     router.push(`/users/${person.id}`);
   };
 
-  // Cached per (section, brand, search), so clearing a filter or retyping a
-  // previous search resolves from cache, and coming back from a listing page
-  // renders the grid with no request at all.
   const { data: saleListings = [], isPending: loadingSale } = useListings({
     section: "sale-board",
     category: selectedCategory ?? undefined,
@@ -112,9 +136,8 @@ export default function MarketPage() {
     search: debouncedSearch,
   });
 
-  // Client-side filtering on top of the server's. It looks redundant, but with
-  // the search debounced it is what narrows the grid during the 300ms before
-  // the request goes out — without it the list would visibly lag your typing.
+  // Narrows the grid during the 300ms before the debounced request goes out;
+  // without it the list visibly lags your typing.
   const filterListings = (list: SerializedShoeListing[]) => {
     return list.filter((item) => {
       const matchesBrand = selectedBrand === "All" || item.brand.toLowerCase() === selectedBrand.toLowerCase();
@@ -125,7 +148,8 @@ export default function MarketPage() {
         item.brand.toLowerCase().includes(term) ||
         `${item.brand} ${item.model}`.toLowerCase().includes(term) ||
         (item.colorway && item.colorway.toLowerCase().includes(term));
-      return matchesBrand && matchesCategory && matchesSearch;
+      const matchesFavorite = !favoritesOnly || savedIds.has(String(item.id));
+      return matchesBrand && matchesCategory && matchesSearch && matchesFavorite;
     });
   };
 
@@ -140,14 +164,8 @@ export default function MarketPage() {
         * { box-sizing: border-box; }
       `}</style>
 
-      {/*
-        No header bar here — the global <Navbar /> in app/layout.tsx already
-        renders one for every route, and a second brand/inbox row directly
-        under it read as a duplicate navbar.
-      */}
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 24px 80px" }}>
         
-        {/* SEARCH BAR */}
         <div ref={searchContainerRef} style={{ marginBottom: 16, position: "relative" }}>
           <span className="material-symbols-outlined" style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: COLORS.textFaint, fontSize: 20 }}>
             search
@@ -296,10 +314,9 @@ export default function MarketPage() {
           )}
         </div>
 
-        {/* FAVORITES TOGGLE */}
         <div style={{ marginTop: 20, marginBottom: 20 }}>
           <button
-            onClick={() => triggerAppModal("Saved Favorites", "View and sync your favorite sneakers across devices using the Resole Mobile App.")}
+            onClick={() => setFavoritesOnly((v) => !v)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -320,7 +337,6 @@ export default function MarketPage() {
           </button>
         </div>
 
-        {/* CATEGORY & BRAND FILTERS */}
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
             Category
@@ -387,7 +403,6 @@ export default function MarketPage() {
           </div>
         </div>
 
-        {/* FOR SALE FEED */}
         <section style={{ marginBottom: 48 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: COLORS.textMain, margin: 0 }}>For Sale</h2>
@@ -406,13 +421,19 @@ export default function MarketPage() {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 20 }}>
               {filteredSaleListings.map((item) => (
-                <ListingCard key={item.id} item={item} currentUserId={user?.id} onRequireApp={() => triggerAppModal()} />
+                <ListingCard
+                  key={item.id}
+                  item={item}
+                  currentUserId={user?.id}
+                  isSaved={savedIds.has(String(item.id))}
+                  onFavorite={handleFavorite}
+                  onRequireApp={() => requireAuth(() => router.push(`/listings/${item.id}`), 'Log in to make an offer.')}
+                />
               ))}
             </div>
           )}
         </section>
 
-        {/* SWAP BOARD FEED */}
         <section style={{ marginBottom: 48 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <span className="material-symbols-outlined" style={{ fontSize: 20, color: COLORS.primary }}>swap_horiz</span>
@@ -429,60 +450,29 @@ export default function MarketPage() {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 20 }}>
               {filteredSwapListings.map((item) => (
-                <ListingCard key={item.id} item={item} currentUserId={user?.id} onRequireApp={() => triggerAppModal("Propose Swap", "Swapping shoes is processed securely in the Resole Mobile App.")} />
+                <ListingCard
+                  key={item.id}
+                  item={item}
+                  currentUserId={user?.id}
+                  isSaved={savedIds.has(String(item.id))}
+                  onFavorite={handleFavorite}
+                  onRequireApp={() => requireAuth(() => router.push(`/swap?id=${item.id}`), 'Log in to propose a swap.')}
+                />
               ))}
             </div>
           )}
         </section>
 
-        {/* HERO BANNER (Voucher Promo) */}
-        <section
-          onClick={() => triggerAppModal("Claim Voucher", "Claim free shipping vouchers and apply discount codes inside the Resole Mobile App.")}
-          style={{
-            background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-            borderRadius: 24,
-            padding: "32px",
-            color: "#FFFFFF",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            cursor: "pointer",
-            boxShadow: "0px 10px 30px rgba(37,99,235,0.25)",
-          }}
-        >
-          <div>
-            <span style={{ background: "rgba(255,255,255,0.2)", fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 99, letterSpacing: "0.5px" }}>
-              LIMITED OFFER
-            </span>
-            <h3 style={{ fontSize: 24, fontWeight: 800, margin: "12px 0 6px", lineHeight: 1.2 }}>
-              Claim your Free Shipping Voucher
-            </h3>
-            <p style={{ fontSize: 13.5, opacity: 0.9, margin: 0 }}>
-              Valid for Metro Manila deliveries
-            </p>
+        <section style={{ borderRadius: 16, padding: 20, background: "#EFF6FF", textAlign: "center" }}>
+          <div style={{ color: COLORS.primary, fontSize: 12, fontWeight: 700 }}>COMING SOON</div>
+          <div style={{ color: COLORS.textMuted, fontSize: 13, marginTop: 4 }}>
+            Vouchers and promo codes will appear here soon.
           </div>
-
-          <button
-            style={{
-              background: "#FFFFFF",
-              color: COLORS.primary,
-              border: "none",
-              borderRadius: 9999,
-              padding: "12px 24px",
-              fontSize: 14,
-              fontWeight: 800,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Claim Now
-          </button>
         </section>
       </main>
 
-      {/* FLOATING ACTION BUTTON */}
       <button
-        onClick={() => triggerAppModal("Sell Your Kicks", "Listing sneakers for sale or trade is exclusively supported on the Resole Mobile App.")}
+        onClick={() => requireAuth(() => router.push('/sell'), 'Log in to list a pair.')}
         style={{
           position: "fixed",
           bottom: 28,
@@ -504,14 +494,6 @@ export default function MarketPage() {
         <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
         Sell Your Kicks
       </button>
-
-      {/* APP DOWNLOAD POPUP MODAL */}
-      <DownloadAppModal
-        isOpen={isAppModalOpen}
-        onClose={() => setIsAppModalOpen(false)}
-        title={modalMeta.title}
-        description={modalMeta.description}
-      />
     </div>
   );
 }
