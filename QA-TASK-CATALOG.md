@@ -171,6 +171,8 @@ Five steps: Photos → AI Results → Edit Listing → Review → Confirmation.
 | `SELL-1.2` | Drag a file onto a tile | Same as picking — preview fills the tile |
 | `SELL-1.3` | × on a filled tile | Clears that slot, progress bar drops |
 | `SELL-1.4` | "Analyze with AI" (enabled once all 6 are filled) | Advances to AI Results; uploads then runs analysis |
+| `SELL-1.5` | Fill 5 slots from one pair and 1 slot with a clearly different shoe, then "Analyze with AI" | Blocked on AI Results with a red error naming the odd photo's slot; no advance to Edit Listing. Back-chevron returns to Photos |
+| `SELL-1.6` | Upload a genuine 6-photo set where one photo is noticeably dimmer/warmer than the rest | Still passes — lighting differences must not be mistaken for a different shoe. An amber lighting tip is fine, a red error is a bug |
 
 ### Step 2 of 4 — AI Results
 

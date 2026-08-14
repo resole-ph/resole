@@ -16,6 +16,12 @@ import {
   ShoeAnalysisResult
 } from '@/features/shoe/types/types';
 import { MIN_US_MENS, MAX_US_MENS } from '@/features/shoe/utils/size-conversion';
+import {
+  InvalidShoePhotoError,
+  SHOE_ANALYSIS_PROMPT,
+  SHOE_ANALYSIS_SCHEMA,
+  interpretAnalysisResponse,
+} from '@/features/shoe/utils/analysis-response';
 import type { ConditionLabel } from '@/features/sell/utils/condition';
 import { GoogleGenAI } from "@google/genai";
 
@@ -787,7 +793,8 @@ export async function deleteUserShoeListing(userId: string, id: number) {
   }
 }
 
-export class InvalidShoePhotoError extends Error {}
+// Re-exported so callers can keep importing it from the service alongside `analyzeAndPriceShoe`.
+export { InvalidShoePhotoError };
 
 export async function analyzeShoePhotos(photoUrls: {
   top: string;
@@ -830,72 +837,13 @@ export async function analyzeShoePhotos(photoUrls: {
   );
 
   const ai = new GoogleGenAI({ apiKey });
-  const prompt = [
-    'You are an expert sneaker authenticator, appraiser, and visual inspector.',
-    '',
-    'INPUT PHOTOS:',
-    'These 6 photos show ONE pair of shoes (left + right) together in every frame, provided in this exact order:',
-    '1. "Top View" — top view of both shoes',
-    '2. "Left Side View" — outer face of the LEFT shoe (right shoe also visible)',
-    '3. "Right Side View" — outer face of the RIGHT shoe (left shoe also visible)',
-    '4. "Sole View" — both shoes flipped over, outsoles visible',
-    '5. "Insole Right" — right shoe tilted open, insole and size label visible',
-    '6. "Insole Left" — left shoe tilted open, insole and size label visible',
-    '',
-    'LIGHTING & QUALITY ASSESSMENT:',
-    '• Photos are ideally clear and well-lit so details, stitching, logos, sole wear, and size tags are easy to inspect.',
-    '• Be LENIENT about lighting — never reject the whole photo set just because lighting is imperfect. Do your best to identify brand, model, condition, and defects even from photos with dim, shadowed, or glare-y lighting, as long as the shoe itself and its key details are still discernible.',
-    '',
-    'VALIDATION RULES:',
-    '1. Set `isValidPhotoSet` to FALSE ONLY if:',
-    '   a) Any photo clearly does NOT show footwear (e.g. random scene, person, non-shoe object, blank/corrupted image).',
-    '   b) Any photo is so pitch-black, blown-out, or blurred that literally NOTHING about the shoe is visible or usable — not merely dim or somewhat shadowed.',
-    '2. If `isValidPhotoSet` is FALSE:',
-    '   • Set `rejectionReason` naming the offending photo(s) ONLY by their exact label from the list above (e.g. "Sole View", "Insole Right", "Insole Left") — NEVER reference them by number.',
-    '   • Fill all other schema fields with neutral placeholders (empty string / 0 / empty array).',
-    '3. If `isValidPhotoSet` is TRUE:',
-    '   • If one or more photos have noticeably poor lighting (dim, shadowed, or glare) that made analysis harder but still possible, set `rejectionReason` to a short, friendly, non-alarming one-sentence lighting tip naming the affected photo(s) by label (e.g. "The \'Sole View\' photo is a bit dark — retaking it in brighter light can improve accuracy."). This is just a tip, NOT a rejection — the set is still valid.',
-    '   • Otherwise (lighting was fine), set `rejectionReason` to "".',
-    '',
-    'ANGLE VERIFICATION:',
-    '• For each of the 6 labeled photos, check whether it plausibly shows the angle named by its label above.',
-    '• If one or more photos clearly show the wrong angle for their slot (e.g. the "Sole View" slot actually contains a side-view shot), set `angleWarning` to a short, friendly, non-alarming one-sentence heads-up naming the mismatched photo(s) by label (e.g. "The \'Sole View\' photo looks like a side view — double-check you uploaded the outsole photo in that slot."). This is just a heads-up, NOT a rejection.',
-    '• Minor tilt/framing differences do NOT count as a mismatch — only flag photos that clearly show a different angle than labeled.',
-    '• If all photos reasonably match their labels, set `angleWarning` to "".',
-    '• Angle mismatches never affect `isValidPhotoSet` — that field is governed solely by the VALIDATION RULES above.',
-    '',
-    'ANALYSIS & VALUATION RULES:',
-    '• Brand/Model/Colorway/Size: Read from whichever photo gives the clearest view under good lighting (especially tongue/insole size tag). Size must be a plain US MEN\'S size number string like "10" or "10.5" — if the tag only shows a women\'s or EU size, convert it to US Men\'s first. Never return a bare women\'s size.',
-    '• Category: Can only be any of the following: running, basketball, football, casual, lifestyle, skate, training, other. Category is based on the classification of the shoe, and must be in small characters.',
-    '• Condition & Defects: Set conditionScore (0-10, where 10 = brand new/unworn) based on the worse shoe of the pair. Prefix each defect entry with "Left: ", "Right: ", or "Both: ".',
-    '• Estimated Price: Estimate typical brand-new retail price in PHP for this shoe model.',
-    '• Year: Provide a valid Gregorian calendar year (e.g., 2026, 2016, 2006) of the release of the model.',
-  ].join('\n');
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
-    contents: [prompt, ...imageParts],
+    contents: [SHOE_ANALYSIS_PROMPT, ...imageParts],
     config: {
       responseMimeType: 'application/json',
-      responseSchema: {
-        type: 'OBJECT',
-        properties: {
-          isValidPhotoSet: { type: 'BOOLEAN' },
-          rejectionReason: { type: 'STRING' },
-          angleWarning: { type: 'STRING' },
-          brand: { type: 'STRING' },
-          model: { type: 'STRING' },
-          colorway: { type: 'STRING' },
-          size: { type: 'STRING' },
-          category: { type: 'STRING' },
-          year: { type: 'NUMBER' },
-          conditionScore: { type: 'NUMBER' },
-          description: { type: 'STRING' },
-          defects: { type: 'ARRAY', items: { type: 'STRING' } },
-          estimatedPrice: { type: 'NUMBER' },
-        },
-        required: ['isValidPhotoSet', 'rejectionReason', 'angleWarning', 'brand', 'model', 'colorway', 'size', 'year', 'conditionScore', 'description', 'defects', 'estimatedPrice'],
-      },
+      responseSchema: SHOE_ANALYSIS_SCHEMA,
     },
   });
 
@@ -904,15 +852,7 @@ export async function analyzeShoePhotos(photoUrls: {
     throw new Error('Failed to generate content from AI model');
   }
 
-  const parsed = JSON.parse(resultText) as ShoeAnalysis & { isValidPhotoSet: boolean; rejectionReason: string; angleWarning: string };
-
-  if (!parsed.isValidPhotoSet) {
-    throw new InvalidShoePhotoError(parsed.rejectionReason || 'One or more uploaded photos do not appear to show a pair of shoes.');
-  }
-
-  // Valid sets repurpose `rejectionReason` as a non-blocking lighting tip.
-  const { isValidPhotoSet, rejectionReason, angleWarning, ...analysis } = parsed;
-  return { ...analysis, lightingWarning: rejectionReason || undefined, angleWarning: angleWarning || undefined };
+  return interpretAnalysisResponse(resultText);
 }
 
 /**
