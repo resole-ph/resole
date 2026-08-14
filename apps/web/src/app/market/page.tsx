@@ -22,14 +22,14 @@ const COLORS = {
 
 const BRANDS = ["All", "Nike", "Adidas", "Jordan", "New Balance", "Yeezy", "Asics"];
 const CATEGORIES = [
-  { id: 'running', label: 'Running' },
-  { id: 'basketball', label: 'Basketball' },
-  { id: 'football', label: 'Football' },
-  { id: 'lifestyle', label: 'Lifestyle' },
-  { id: 'skate', label: 'Skate' },
-  { id: 'training', label: 'Training' },
-  { id: 'casual', label: 'Casual' },
-  { id: 'other', label: 'Other' },
+  { id: 'running', label: 'Running', icon: 'directions_run', iconColor: '#F59E0B' },
+  { id: 'basketball', label: 'Basketball', icon: 'sports_basketball', iconColor: '#EF4444' },
+  { id: 'football', label: 'Football', icon: 'sports_soccer', iconColor: '#16A34A' },
+  { id: 'lifestyle', label: 'Lifestyle', icon: 'wb_sunny', iconColor: '#8B5CF6' },
+  { id: 'skate', label: 'Skate', icon: 'trending_up', iconColor: '#10B981' },
+  { id: 'training', label: 'Training', icon: 'fitness_center', iconColor: '#3B82F6' },
+  { id: 'casual', label: 'Casual', icon: 'checkroom', iconColor: '#EC4899' },
+  { id: 'other', label: 'Other', icon: 'more_horiz', iconColor: '#6B7280' },
 ] as const;
 
 export default function MarketPage() {
@@ -296,9 +296,8 @@ export default function MarketPage() {
           )}
         </div>
 
-        {/* FAVORITES TOGGLE & CATEGORIES ROW */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32, overflowX: "auto", paddingBottom: 4 }}>
-          {/* Favorites Filter */}
+        {/* FAVORITES TOGGLE */}
+        <div style={{ marginBottom: 20 }}>
           <button
             onClick={() => triggerAppModal("Saved Favorites", "View and sync your favorite sneakers across devices using the Resole Mobile App.")}
             style={{
@@ -319,60 +318,73 @@ export default function MarketPage() {
             <span className="material-symbols-outlined" style={{ fontSize: 16, color: favoritesOnly ? "#DC2626" : COLORS.textFaint }}>favorite</span>
             Saved Kicks
           </button>
+        </div>
 
-          <div style={{ height: 20, width: 1, background: COLORS.border }} />
+        {/* CATEGORY & BRAND FILTERS */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
+            Category
+          </div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
+            {CATEGORIES.map((category) => {
+              const active = selectedCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(active ? null : category.id)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    borderRadius: 9999,
+                    padding: "8px 18px",
+                    background: active ? "#111827" : COLORS.surface,
+                    color: active ? "#FFFFFF" : COLORS.textMain,
+                    border: `1px solid ${active ? "#111827" : COLORS.border}`,
+                    fontSize: 13,
+                    fontWeight: active ? 700 : 500,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, color: active ? "#FFFFFF" : category.iconColor }}>
+                    {category.icon}
+                  </span>
+                  {category.label}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Category Filter */}
-          {CATEGORIES.map((category) => {
-            const active = selectedCategory === category.id;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(active ? null : category.id)}
-                style={{
-                  borderRadius: 9999,
-                  padding: "8px 18px",
-                  background: active ? "#111827" : COLORS.surface,
-                  color: active ? "#FFFFFF" : COLORS.textMain,
-                  border: `1px solid ${active ? "#111827" : COLORS.border}`,
-                  fontSize: 13,
-                  fontWeight: active ? 700 : 500,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {category.label}
-              </button>
-            );
-          })}
-
-          <div style={{ height: 20, width: 1, background: COLORS.border }} />
-
-          {/* Brands Filter */}
-          {BRANDS.map((brand) => {
-            const active = selectedBrand === brand;
-            return (
-              <button
-                key={brand}
-                onClick={() => setSelectedBrand(brand)}
-                style={{
-                  borderRadius: 9999,
-                  padding: "8px 18px",
-                  background: active ? COLORS.primary : COLORS.surface,
-                  color: active ? "#FFFFFF" : COLORS.textMain,
-                  border: `1px solid ${active ? COLORS.primary : COLORS.border}`,
-                  fontSize: 13,
-                  fontWeight: active ? 700 : 500,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {brand}
-              </button>
-            );
-          })}
+          <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
+            Brand
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {BRANDS.map((brand) => {
+              const active = selectedBrand === brand;
+              return (
+                <button
+                  key={brand}
+                  onClick={() => setSelectedBrand(brand)}
+                  style={{
+                    borderRadius: 9999,
+                    padding: "8px 18px",
+                    background: active ? COLORS.primary : COLORS.surface,
+                    color: active ? "#FFFFFF" : COLORS.textMain,
+                    border: `1px solid ${active ? COLORS.primary : COLORS.border}`,
+                    fontSize: 13,
+                    fontWeight: active ? 700 : 500,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {brand}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* FOR SALE FEED */}
