@@ -24,6 +24,7 @@ type OfferCardProps = {
   listing: Listing | null;
   swapItem: Listing | null;
   price: string | null;
+  topUp: string | null | undefined;
   status: OfferStatus;
   canRespond: boolean;
   canEdit: boolean;
@@ -37,10 +38,11 @@ type OfferCardProps = {
 };
 
 export default function OfferCard({
-  type, listing, swapItem, price, status, canRespond, canEdit, onAccept, onDecline, onEdit, time, isMe, isAccepting, isDeclining
+  type, listing, swapItem, price, topUp, status, canRespond, canEdit, onAccept, onDecline, onEdit, time, isMe, isAccepting, isDeclining
 }: OfferCardProps) {
   const isSwap = type === 'swap';
   const disabled = isAccepting || isDeclining;
+  const cashTopUp = Number(topUp ?? 0);
 
   return (
     <View className="px-4 mb-1">
@@ -79,15 +81,44 @@ export default function OfferCard({
         </View>
 
         {isSwap ? (
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-gray-400 text-xs">
-              Size {listing?.size ?? '—'} · Item swap
-            </Text>
-            {swapItem?.size && (
-              <Text className="text-gray-400 text-xs text-right">
-                Size {swapItem.size}
+          <View>
+            {/* 3-Column Layout: Listing <-> Icon <-> Swap Item */}
+            <View className="flex-row items-center justify-between mb-3 gap-2">
+              
+              {/* Left Column: Your Listing */}
+              <View className="flex-1 items-start">
+                <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
+                  {listing?.model ?? 'Your Listing'}
+                </Text>
+                <Text className="text-gray-400 text-xs">
+                  Size {listing?.size ?? '—'}
+                </Text>
+              </View>
+
+              {/* Middle: Swap Icon Indicator */}
+              <View className="px-1">
+                <Ionicons name="swap-horizontal" size={20} color="#9CA3AF" />
+              </View>
+
+              {/* Right Column: Offered Swap Item */}
+              <View className="flex-1 items-end">
+                <Text className="text-gray-900 font-semibold text-sm text-right" numberOfLines={1}>
+                  {swapItem?.model ?? 'Offered Item'}
+                </Text>
+                <Text className="text-gray-400 text-xs text-right">
+                  Size {swapItem?.size ?? '—'}
+                </Text>
+              </View>
+              
+            </View>
+
+            {/* Cash Top-Up Section (Unchanged) */}
+            <View className="bg-violet-50 rounded-xl px-3 py-2.5 mb-3 flex-row items-center justify-center w-full border border-violet-100">
+              <Ionicons name="cash-outline" size={16} color="#7C3AED" />
+              <Text className="text-violet-700 text-xs font-semibold ml-1.5">
+                Cash top-up: ₱{cashTopUp.toLocaleString()}
               </Text>
-            )}
+            </View>
           </View>
         ) : (
           <View className="mb-3">

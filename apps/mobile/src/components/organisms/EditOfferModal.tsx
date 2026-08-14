@@ -9,8 +9,19 @@ import { Listing } from '@/components/molecules/ListingCard';
 
 type OfferSummary = {
   type: 'sale' | 'swap' | 'donation';
-  details: { price?: string; items?: { itemId: number }[] } | null;
+  details: { price?: string; items?: { itemId: number }[]; topUp?: string | null } | null;
 };
+
+const MAX_CASH_TOP_UP = 1_000_000;
+
+function parseCashTopUp(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(trimmed)) return null;
+
+  const amount = Number(trimmed);
+  return Number.isFinite(amount) && amount >= 0 && amount <= MAX_CASH_TOP_UP ? amount : null;
+}
 
 interface EditOfferModalProps {
   visible: boolean;
@@ -21,7 +32,7 @@ interface EditOfferModalProps {
   isLoadingListings: boolean;
   submitting: boolean;
   onClose: () => void;
-  onSave: (payload: { price: number } | { listings: number[] }) => void;
+  onSave: (payload: { price: number } | { listings: number[]; topUp: number }) => void;
 }
 
 export default function EditOfferModal({
@@ -31,23 +42,26 @@ export default function EditOfferModal({
   const isSwap = offer?.type === 'swap';
   const [price, setPrice] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [cashTopUp, setCashTopUp] = useState('');
 
   useEffect(() => {
     if (!visible) return;
     setPrice(offer?.details?.price ?? '');
     setSelectedId(swapItem ? Number(swapItem.id) : null);
+    setCashTopUp(offer?.details?.topUp ?? '');
   }, [visible, offer, swapItem]);
 
   const priceValue = Number.parseFloat(price);
+  const topUp = parseCashTopUp(cashTopUp);
   const isSaleValid = !isSwap && Number.isFinite(priceValue) && priceValue > 0;
-  const isSwapValid = isSwap && selectedId != null;
+  const isSwapValid = isSwap && selectedId != null && topUp !== null;
   const canSave = (isSaleValid || isSwapValid) && !submitting;
 
   function handleSave() {
     if (!canSave) return;
     if (isSwap) {
-      if (selectedId == null) return;
-      onSave({ listings: [selectedId] });
+      if (selectedId == null || topUp === null) return;
+      onSave({ listings: [selectedId], topUp });
     } else {
       onSave({ price: priceValue });
     }
@@ -130,6 +144,27 @@ export default function EditOfferModal({
                   </View>
                 </ScrollView>
               )}
+              <View style={{ marginTop: 16 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 }}>
+                  Cash top-up (optional)
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 14, borderWidth: 1.5, borderColor: topUp === null ? '#EF4444' : '#E5E7EB', paddingHorizontal: 14 }}>
+                  <Text style={{ fontSize: 15, color: '#9CA3AF', marginRight: 6 }}>₱</Text>
+                  <TextInput
+                    value={cashTopUp}
+                    onChangeText={(value) => setCashTopUp(value.replace(/[^0-9.]/g, ''))}
+                    keyboardType="decimal-pad"
+                    placeholder="0"
+                    placeholderTextColor="#9CA3AF"
+                    style={{ flex: 1, paddingVertical: 14, fontSize: 15, color: '#111827' }}
+                  />
+                </View>
+                {topUp === null && (
+                  <Text style={{ fontSize: 12, color: '#EF4444', marginTop: 6 }}>
+                    Enter an amount from ₱0 to ₱1,000,000 with up to two decimal places.
+                  </Text>
+                )}
+              </View>
             </View>
           ) : (
             <View style={{ marginBottom: 20 }}>

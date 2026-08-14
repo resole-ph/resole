@@ -14,6 +14,17 @@ import { usePreferencesStore } from '@/store/preferences';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
 import { CONDITION_COLORS } from '@/features/sell/utils/condition';
 
+const MAX_CASH_TOP_UP = 100_000;
+
+function parseCashTopUp(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(trimmed)) return null;
+
+  const amount = Number(trimmed);
+  return Number.isFinite(amount) && amount >= 0 && amount <= MAX_CASH_TOP_UP ? amount : null;
+}
+
 export default function SwapOfferScreen() {
   const insets = useSafeAreaInsets();
   const { listingId, listingName, listingPrice, listingImage } =
@@ -35,6 +46,10 @@ export default function SwapOfferScreen() {
   const [isValid, setIsValid]       = useState<boolean>(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const sizeSystem = usePreferencesStore((s) => s.sizeSystem);
+  const topUp = parseCashTopUp(cashTopUp);
+  const cashTopUpError = topUp === null
+    ? 'Enter an amount from ₱0 to ₱100,000'
+    : null;
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -63,12 +78,17 @@ export default function SwapOfferScreen() {
   }, []);
 
   async function submitSwapOffer() {
-    if (!isValid || !selectedId || isSubmitting) return;
+    if (!isValid || !selectedId || isSubmitting || topUp === null) return;
 
     setIsConfirming(false);
     setIsSubmitting(true);
     try {
-      await OfferService.createSwap(Number(listingId), [selectedId], notes || `Hello! Please check out my swap offer for your ${selectedListing?.model || 'shoe'}!`);
+      await OfferService.createSwap(
+        Number(listingId),
+        [selectedId],
+        topUp,
+        notes || `Hello! Please check out my swap offer for your ${selectedListing?.model || 'shoe'}!`,
+      );
 
       setSent(true);
       setTimeout(() => {
@@ -83,11 +103,15 @@ export default function SwapOfferScreen() {
 
   function handleSubmit() {
     if (!isValid || !selectedId || isSubmitting || isConfirming || sent) return;
+    if (topUp === null) {
+      Alert.alert('Invalid cash top-up', cashTopUpError ?? 'Enter a valid amount.');
+      return;
+    }
 
     setIsConfirming(true);
     Alert.alert(
       'Send swap offer?',
-      `Send your swap offer for ${selectedListing?.model ?? 'this listing'}?`,
+      `Send your swap offer for ${selectedListing?.model ?? 'this listing'}${topUp > 0 ? ` with a ₱${topUp.toLocaleString()} cash top-up` : ''}?`,
       [
         { text: 'Cancel', style: 'cancel', onPress: () => setIsConfirming(false) },
         { text: 'Send Offer', onPress: () => void submitSwapOffer() },
@@ -263,10 +287,11 @@ export default function SwapOfferScreen() {
                 placeholder="0"
                 placeholderTextColor="#9CA3AF"
                 value={cashTopUp}
-                onChangeText={(v) => setCashTopUp(v.replace(/[^0-9]/g, ''))}
-                keyboardType="numeric"
+                onChangeText={(v) => setCashTopUp(v.replace(/[^0-9]/g, ''))} 
+                keyboardType="decimal-pad"
               />
             </View>
+            {cashTopUpError && <Text className="text-red-500 text-xs mt-2">{cashTopUpError}</Text>}
           </View>
 
           {/* Notes */}
@@ -302,16 +327,16 @@ export default function SwapOfferScreen() {
         <GuardedTouchableOpacity
           className="rounded-2xl py-4 items-center flex-row justify-center"
           style={{
-            backgroundColor: isValid && !isSubmitting && !isConfirming && !sent ? '#7C3AED' : '#E5E7EB',
-            shadowColor: isValid && !isSubmitting && !isConfirming && !sent ? '#7C3AED' : 'transparent',
+            backgroundColor: isValid && topUp !== null && !isSubmitting && !isConfirming && !sent ? '#7C3AED' : '#E5E7EB',
+            shadowColor: isValid && topUp !== null && !isSubmitting && !isConfirming && !sent ? '#7C3AED' : 'transparent',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.35,
             shadowRadius: 8,
-            elevation: isValid && !isSubmitting && !isConfirming && !sent ? 6 : 0,
+            elevation: isValid && topUp !== null && !isSubmitting && !isConfirming && !sent ? 6 : 0,
           }}
-          activeOpacity={isValid && !isSubmitting && !isConfirming && !sent ? 0.85 : 1}
+          activeOpacity={isValid && topUp !== null && !isSubmitting && !isConfirming && !sent ? 0.85 : 1}
           onPress={handleSubmit}
-          disabled={!isValid || isSubmitting || isConfirming || sent}
+          disabled={!isValid || topUp === null || isSubmitting || isConfirming || sent}
         >
           <Ionicons name={sent ? 'checkmark-circle' : 'swap-horizontal'} size={18} color={isValid && !isSubmitting && !isConfirming ? '#fff' : '#9CA3AF'} />
           <Text className="font-bold text-base ml-2" style={{ color: isValid && !isSubmitting && !isConfirming ? '#fff' : '#9CA3AF' }}>

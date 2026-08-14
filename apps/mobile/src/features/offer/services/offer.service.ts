@@ -50,12 +50,13 @@ export const OfferService = {
     return offers ?? [];
   },
 
-  async createSwap(id: number, listings: number[], message: string) {
+  async createSwap(id: number, listings: number[], topUp: number, message: string) {
     const transaction = await apiFetch<any>(`api/listings/${id}/swap-offers`, {
       method: 'POST',
       body: {
         'type': 'swap',
-        listings: listings
+        listings: listings,
+        topUp: topUp
       }
     });
 
@@ -114,7 +115,7 @@ export const OfferService = {
     });
   },
 
-  async editOffer(transactionId: number, payload: { price: number } | { listings: number[] }) {
+  async editOffer(transactionId: number, payload: { price: number } | { listings: number[]; topUp: number }) {
     return apiFetch<{ message: string; details: any }>(`api/offers/${transactionId}`, {
       method: 'PATCH',
       body: payload,

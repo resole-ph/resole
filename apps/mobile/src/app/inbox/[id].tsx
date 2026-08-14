@@ -510,7 +510,7 @@ export default function ConversationScreen() {
     }
   };
 
-  const handleSaveOfferEdit = async (payload: { price: number } | { listings: number[] }) => {
+  const handleSaveOfferEdit = async (payload: { price: number } | { listings: number[]; topUp: number }) => {
     if (editingOfferId == null) return;
 
     try {
@@ -634,6 +634,7 @@ export default function ConversationScreen() {
                     listing={extras?.listing ?? null}
                     swapItem={extras?.swapItem ?? null}
                     price={offerItem.details?.price}
+                    topUp={offerItem.details?.topUp}
                     status={getOfferStatus(offerItem)}
                     canRespond={!!currentUserId && !!extras?.listing && extras.listing.seller.id === currentUserId}
                     canEdit={isMe && !offerItem.isCompleted}
