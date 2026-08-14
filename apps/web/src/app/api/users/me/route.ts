@@ -85,11 +85,7 @@ export async function PATCH(request: Request) {
     updates.city = cityValue;
   }
 
-  const contactValue = typeof body?.contactNo === 'string'
-    ? body.contactNo
-    : typeof body?.phoneNumber === 'string'
-      ? body.phoneNumber
-      : '';
+  const contactValue = body?.contactNo || body?.phoneNumber || body?.phone || '';
 
   if (contactValue) {
     const normalizedContactNo = normalizeContactNo(contactValue);

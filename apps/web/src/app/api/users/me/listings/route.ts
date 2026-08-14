@@ -30,9 +30,7 @@ export async function GET(request: Request) {
   const requestedSort = searchParams.get('sort');
   const includeArchived = searchParams.get('includeArchived') === 'true'
   const filters = {
-    sizes: searchParams
-      .getAll('size')
-      .filter((size) => Number.isFinite(Number(size))),
+    sizes: searchParams.getAll('size').filter((size) => Number.isFinite(Number(size))),
     colors: searchParams.getAll('color').filter(Boolean),
     conditions: CONDITION_OPTIONS.filter((condition) => requestedConditions.includes(condition)),
     minRating: parseOptionalNumber(searchParams.get('minRating'), 5),

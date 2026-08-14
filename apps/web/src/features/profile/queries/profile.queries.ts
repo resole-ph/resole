@@ -42,10 +42,10 @@ export function useMyStats() {
   });
 }
 
-export function useMyListings() {
+export function useMyListings(filters?: any) {
   return useQuery({
     queryKey: profileKeys.myListings(),
-    queryFn: () => ProfileClient.getMyListings(),
+    queryFn: () => ProfileClient.getMyListings(filters),
   });
 }
 
@@ -129,7 +129,18 @@ export function useUpdateMyProfile() {
     mutationFn: (input: UpdateProfileInput) => ProfileClient.updateMyProfile(input),
     onSuccess: (updated, variables) => {
       queryClient.setQueryData<MyProfile>(profileKeys.me(), (prev) =>
-        prev ? { ...prev, ...updated, location: variables.location } : prev
+        prev
+          ? { 
+            ...prev, 
+            ...updated, 
+            name: variables.name ?? prev.name,
+            location: variables.location ?? prev.location, 
+            email: variables.email ?? prev.email,
+            contactNo: variables.contactNo ?? prev.contactNo,
+            unit: variables.unit ?? prev.unit, 
+            classification: variables.classification ?? prev.classification, 
+          }
+          : prev
       );
       queryClient.invalidateQueries({ queryKey: profileKeys.myStats() });
     },

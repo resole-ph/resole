@@ -9,14 +9,13 @@ import type { AnalyticsMetric } from '../types/profile.types';
  * this — so show a dash rather than a fabricated "+100%".
  */
 function toDelta(metric: AnalyticsMetric | undefined) {
-  if (!metric || metric.lastWeek === 0) {
+  if (!metric) {
     return { delta: '—', up: true };
   }
 
-  const change = ((metric.thisWeek - metric.lastWeek) / metric.lastWeek) * 100;
-  const rounded = Math.round(change);
+  const change = Math.round((metric.lastWeek > 0 ? (metric.thisWeek - metric.lastWeek) / metric.lastWeek * 100 : metric.thisWeek > 0 ? 100 : 0) * 100) / 100;
 
-  return { delta: `${rounded >= 0 ? '+' : ''}${rounded}%`, up: rounded >= 0 };
+  return { delta: `${change}%`, up: change >= 0 };
 }
 
 export default function SellerAnalyticsCard() {
@@ -53,7 +52,7 @@ export default function SellerAnalyticsCard() {
               <span
                 className={`material-symbols-outlined text-[14px] ${up ? 'text-secondary' : 'text-error'}`}
               >
-                {up ? 'trending_up' : 'trending_down'}
+                {delta === '0%' ? 'check_indeterminate_small' : (up ? 'trending_up' : 'trending_down')}
               </span>
               <span className={`text-[12px] font-semibold ${up ? 'text-secondary' : 'text-error'}`}>
                 {delta}

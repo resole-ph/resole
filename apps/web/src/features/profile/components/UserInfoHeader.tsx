@@ -39,7 +39,7 @@ export default function UserInfoHeader() {
       await updateProfile.mutateAsync({
         name: values.name,
         location: values.location,
-        image: values.avatar,
+        image: values.avatar || undefined,
       });
       setIsEditing(false);
     } catch (err) {

@@ -37,8 +37,6 @@ const ACCOUNT_FIELDS = [
   { id: 'classification', label: 'Classification',  value: '', icon: 'male-female-outline' as const },
 ];
 
-// TODO: replace with the real enums/labels from size-conversion.ts if it
-// already exports something for these — don't want two sources of truth.
 const UNIT_OPTIONS = ['us', 'uk', 'eu', 'cm'];
 const CLASSIFICATION_OPTIONS = ["men", "women"];
 
