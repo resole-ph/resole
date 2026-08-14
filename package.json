@@ -16,7 +16,9 @@
     "ios:mobile": "npm run ios --prefix apps/mobile",
     "web:mobile": "npm run web --prefix apps/mobile",
     "dev": "npm run dev:web",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:web && npm run test:mobile",
+    "test:web": "npm run test --prefix apps/web",
+    "test:mobile": "npm run test --prefix apps/mobile"
   },
   "repository": {
     "type": "git",
