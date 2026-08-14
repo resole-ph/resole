@@ -128,6 +128,38 @@ Copy the relevant file(s) to `.env` (or `.env.local`) in the same folder and fil
 Never commit a populated `.env` file — the ones checked into your working copy already contain
 real, unrotated production secrets, so double-check `git status` before staging anything env-related.
 
+### Root / `apps/web`
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Supabase Postgres connection string (Drizzle ORM) |
+| `GOOGLE_OAUTH_CLIENT_IDS` | Comma-separated list of additional allowed Google OAuth client IDs |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_WEB_CLIENT_ID` | Google OAuth client ID for the web client |
+| `GOOGLE_IOS_CLIENT_ID` | Google OAuth client ID for the iOS client |
+| `GOOGLE_ANDROID_CLIENT_ID` | Google OAuth client ID for the Android client |
+| `GOOGLE_GEMINI_API_KEY` | Gemini API key used for listing condition/authenticity analysis and embedding search |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (storage) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key for server-side storage access |
+| `EMBEDDING_MODEL` | Gemini embedding model used for shoe match search (defaults to `gemini-embedding-001`) |
+| `EMBEDDING_DIMENSIONS` | Dimensionality of the embedding vectors (defaults to `1536`) |
+| `BASELINE_MATCH_THRESHOLD` | Minimum cosine similarity for a baseline shoe match (defaults to `0.75`) |
+| `SCRAPE_SITE` | Source site URL for the sneaker catalog scraper |
+| `RESEND_API_KEY` | Resend API key used to send transactional emails (e.g. password reset) |
+| `RESEND_FROM_EMAIL` | "From" address used when sending emails via Resend |
+| `NEXT_PUBLIC_APP_URL` | Public base URL of the app, used in email links and redirects |
+
+### `apps/mobile`
+
+| Variable | Description |
+|---|---|
+| `EXPO_PUBLIC_API_URL` | Base URL of the deployed web app the mobile client talks to |
+| `GOOGLE_OAUTH_CLIENT_IDS` | Comma-separated list of additional allowed Google OAuth client IDs |
+| `GOOGLE_WEB_CLIENT_ID` | Google OAuth client ID for the web client |
+| `GOOGLE_IOS_CLIENT_ID` | Google OAuth client ID for the iOS client |
+| `GOOGLE_ANDROID_CLIENT_ID` | Google OAuth client ID for the Android client |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (storage — no service-role key on the client) |
+
 ## Contributing
 
 ### Branches

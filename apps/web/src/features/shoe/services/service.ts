@@ -1,7 +1,7 @@
 import { db } from '@/config/db';
 import { sql, gt, eq, desc, asc, or, and, getTableColumns, cosineDistance, inArray, isNull, count, ilike, avg, max, gte, lte, lt } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
-import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating, transaction } from '@/db/schema';
+import { shoe, shoePrice, shoeListing, user, shoeAnalysis, rating, transaction, categoryEnum } from '@/db/schema';
 import {
   Shoe,
   CreateShoe,
@@ -188,7 +188,7 @@ function buildShoeListingFilters(filters?: ShoeListingFilters) {
   const conditions = [];
 
   if (filters?.category) {
-    conditions.push(ilike(shoe.category, filters.category));
+    conditions.push(eq(shoe.category, filters.category as (typeof categoryEnum.enumValues)[number]));
   }
 
   if (filters?.brand) {
