@@ -10,6 +10,39 @@ export const SIZE_SYSTEM_LABELS: Record<SizeSystem, string> = {
 
 export const SIZE_SYSTEMS: SizeSystem[] = ['us_m', 'us_w', 'eur', 'uk', 'jp_cm'];
 
+export type UserSizePreferences = {
+  unit: 'us' | 'uk' | 'eu' | 'cm';
+  classification?: 'men' | 'women';
+};
+
+/** Convert the account fields used by the API into the UI's combined size system. */
+export function sizeSystemFromUserPreferences(
+  unit: string | null | undefined,
+  classification: string | null | undefined
+): SizeSystem {
+  if (unit === 'us') return classification === 'women' ? 'us_w' : 'us_m';
+  if (unit === 'uk') return 'uk';
+  if (unit === 'eu') return 'eur';
+  if (unit === 'cm') return 'jp_cm';
+  return 'us_m';
+}
+
+/** Convert the UI's combined size system back into the API's account fields. */
+export function userPreferencesFromSizeSystem(system: SizeSystem): UserSizePreferences {
+  switch (system) {
+    case 'us_w':
+      return { unit: 'us', classification: 'women' };
+    case 'eur':
+      return { unit: 'eu' };
+    case 'uk':
+      return { unit: 'uk' };
+    case 'jp_cm':
+      return { unit: 'cm' };
+    default:
+      return { unit: 'us', classification: 'men' };
+  }
+}
+
 /** The system every stored size is expressed in. Nothing persists a size in any other system. */
 export const ANCHOR_SYSTEM: SizeSystem = 'us_m';
 
@@ -104,15 +137,13 @@ export function formatSize(usMens: number, system: SizeSystem): string {
   return `${value} (${SIZE_SYSTEM_LABELS[system]})`;
 }
 
-/**
- * Label for listing cards, e.g. "10 (US Men)". Web has no per-user size
- * preference yet, so cards always render the stored anchor — but it is spelled
- * out the same way mobile does it, because a bare "US" is ambiguous between the
- * Men's and Women's scales.
- */
-export function formatSizeShort(size: string | number | null | undefined): string | null {
+/** Label for listing cards, e.g. "10 (US Men)" or "43 (EUR)". */
+export function formatSizeShort(
+  size: string | number | null | undefined,
+  system: SizeSystem = ANCHOR_SYSTEM
+): string | null {
   if (size === null || size === undefined || size === '') return null;
   const n = Number(size);
   if (Number.isNaN(n)) return null;
-  return formatSize(n, ANCHOR_SYSTEM);
+  return formatSize(n, system);
 }

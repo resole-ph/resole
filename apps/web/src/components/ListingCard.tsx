@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
 import { formatSizeShort } from "@/features/shoe/utils/size-conversion";
+import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
 import { CONDITION_COLORS } from "@/features/sell/utils/condition";
 
 const COLORS = {
@@ -108,6 +109,7 @@ export default function ListingCard({
   currentUserId,
 }: ListingCardProps) {
   const router = useRouter();
+  const sizeSystem = usePreferredSizeSystem();
 
   const title = item.colorway ? `${item.model} '${item.colorway}'` : item.model;
   const isSwap = item.listingMode === "Swap";
@@ -119,7 +121,8 @@ export default function ListingCard({
   // Sizes are stored as US Men's; the DTO stringifies unconditionally, so a
   // missing size arrives as "null"/"undefined" and formatSizeShort rejects it.
   const sizeLabel = formatSizeShort(
-    item.size === 'null' || item.size === 'undefined' ? null : item.size
+    item.size === 'null' || item.size === 'undefined' ? null : item.size,
+    sizeSystem
   );
   // Null when the seller has no ratings yet — the chip is hidden rather than defaulted.
   const sellerRating = item.seller?.rating ?? null;

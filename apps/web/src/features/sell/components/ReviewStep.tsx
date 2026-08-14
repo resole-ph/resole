@@ -3,6 +3,7 @@
 import StepHeader from './StepHeader';
 import type { ListingFormData, PhotoAngle, SellPhoto } from '../types/sell.types';
 import { getConditionLabel } from '../utils/condition';
+import { SIZE_SYSTEM_LABELS, type SizeSystem } from '@/features/shoe/utils/size-conversion';
 
 const ANGLES: PhotoAngle[] = ['top', 'leftSide', 'rightSide', 'sole', 'insoleRight', 'insoleLeft'];
 const MODE_LABELS: Record<ListingFormData['listingMode'], string> = {
@@ -19,6 +20,7 @@ interface ReviewStepProps {
   onBack: () => void;
   onPublish: () => void;
   flowMode?: 'create' | 'edit';
+  sizeSystem: SizeSystem;
 }
 
 function FieldRow({ label, value }: { label: string; value: string }) {
@@ -38,6 +40,7 @@ export default function ReviewStep({
   onBack,
   onPublish,
   flowMode = 'create',
+  sizeSystem,
 }: ReviewStepProps) {
   const isEditing = flowMode === 'edit';
   return (
@@ -70,7 +73,7 @@ export default function ReviewStep({
           <FieldRow label="Brand" value={form.brand} />
           <FieldRow label="Model" value={form.model} />
           <FieldRow label="Colorway" value={form.colorway} />
-          <FieldRow label="Size" value={`US ${form.size}`} />
+          <FieldRow label="Size" value={`${form.size} (${SIZE_SYSTEM_LABELS[sizeSystem]})`} />
           <FieldRow label="Category" value={form.category} />
           <FieldRow
             label="Condition"

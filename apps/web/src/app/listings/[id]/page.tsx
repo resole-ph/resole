@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthGate } from '@/providers/AuthGateProvider';
+import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 const COLORS = {
   primary: '#2563EB',
@@ -25,6 +27,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { requireAuth } = useAuthGate();
+  const sizeSystem = usePreferredSizeSystem();
 
   // Safely extract the ID from the URL parameter
   const productId = params?.id as string;
@@ -235,7 +238,7 @@ export default function ProductDetailPage() {
             <div style={{ fontSize: 12.5, color: COLORS.textFaint, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{listing.brand}</div>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: COLORS.textMain, margin: '4px 0 6px' }}>{listing.model}</h1>
             <p style={{ fontSize: 13.5, color: COLORS.textMuted, margin: '0 0 20px' }}>
-              Size: US {listing.size} {listing.colorway ? `| Colorway: ${listing.colorway}` : ''}
+              Size: {formatSize(Number(listing.size), sizeSystem)} {listing.colorway ? `| Colorway: ${listing.colorway}` : ''}
             </p>
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 20 }}>
@@ -388,7 +391,9 @@ export default function ProductDetailPage() {
               <div style={{ flex: 1, marginLeft: 12 }}>
                 <div style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 2 }}>{listing.brand}</div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: COLORS.textMain }}>{listing.model}</div>
-                <div style={{ fontSize: 12, color: COLORS.textFaint, marginTop: 2 }}>Size US {listing.size}</div>
+                <div style={{ fontSize: 12, color: COLORS.textFaint, marginTop: 2 }}>
+                  Size {formatSize(Number(listing.size), sizeSystem)}
+                </div>
               </div>
             </div>
 

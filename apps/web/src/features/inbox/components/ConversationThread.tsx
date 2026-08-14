@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import LocalTime from './LocalTime';
 import { formatMessageTime } from '../utils/format-time';
+import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 import type {
   InboxItem,
   OfferExtras,
@@ -235,6 +237,7 @@ function OfferCard({
   onEdit: () => void;
 }) {
   const isSwap = offer.type === 'swap';
+  const sizeSystem = usePreferredSizeSystem();
   const status = getOfferStatus(offer);
   const listing = extras?.listing ?? null;
   const swapItem = extras?.swapItem ?? null;
@@ -270,12 +273,18 @@ function OfferCard({
                 {listing?.model ?? 'Your listing'}
               </span>
             </div>
-            <p className="text-on-surface-variant text-[12px] mb-3">Size US {listing?.size ?? '—'} · Item swap</p>
+            <p className="text-on-surface-variant text-[12px] mb-3">
+              {listing?.size ? `Size ${formatSize(Number(listing.size), sizeSystem)} · Item swap` : 'Size — · Item swap'}
+            </p>
           </div>
         ) : (
           <div className="mb-3">
             <p className="text-on-surface font-semibold text-[13px] truncate">{listing?.model ?? 'Listing'}</p>
-            {listing?.size && <p className="text-on-surface-variant text-[12px]">Size US {listing.size}</p>}
+            {listing?.size && (
+              <p className="text-on-surface-variant text-[12px]">
+                Size {formatSize(Number(listing.size), sizeSystem)}
+              </p>
+            )}
             <p className="text-primary font-bold text-[17px] mt-1">
               ₱{Number(offer.details?.price ?? 0).toLocaleString()}
             </p>

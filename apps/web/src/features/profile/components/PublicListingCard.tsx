@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import type { ProfileListing } from '../types/profile.types';
 import { CONDITION_COLORS } from '@/features/sell/utils/condition';
+import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 /**
  * Web port of the mobile home-feed listing card. The seller row is dropped on
@@ -23,6 +25,7 @@ function getDaysLeft(createdAt: string | Date): number {
 }
 
 export default function PublicListingCard({ listing }: { listing: ProfileListing }) {
+  const sizeSystem = usePreferredSizeSystem();
   const badge = BADGE_STYLES[listing.listingMode];
   const conditionColor = CONDITION_COLORS[listing.condition] ?? '#9CA3AF';
   const daysLeft = getDaysLeft(listing.createdAt);
@@ -75,14 +78,18 @@ export default function PublicListingCard({ listing }: { listing: ProfileListing
         {isSwapOnly ? (
           <div className="mt-auto pt-2 border-t border-surface-variant">
             <p className="text-on-surface-variant text-[12px]">Open to swap offers</p>
-            <p className="text-on-surface font-semibold text-[12px] mt-0.5">US {listing.size}</p>
+            <p className="text-on-surface font-semibold text-[12px] mt-0.5">
+              {formatSize(Number(listing.size), sizeSystem)}
+            </p>
           </div>
         ) : (
           <div className="mt-auto">
             <p className="text-primary font-bold text-[16px]">
               ₱{Number(listing.price || 0).toLocaleString()}
             </p>
-            <p className="text-on-surface-variant text-[12px] mt-0.5">US {listing.size}</p>
+            <p className="text-on-surface-variant text-[12px] mt-0.5">
+              {formatSize(Number(listing.size), sizeSystem)}
+            </p>
           </div>
         )}
       </div>

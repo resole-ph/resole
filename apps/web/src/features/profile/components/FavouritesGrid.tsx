@@ -3,6 +3,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys, useMyFavourites } from '../queries/profile.queries';
 import { formatSizeShort } from '@/features/shoe/utils/size-conversion';
+import type { SizeSystem } from '@/features/shoe/utils/size-conversion';
+import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
 import type { FavouriteItem } from '../types/profile.types';
 
 type FavCardItem = {
@@ -21,7 +23,7 @@ const PESO = new Intl.NumberFormat('en-PH', {
   maximumFractionDigits: 0,
 });
 
-function toCardItem(row: FavouriteItem): FavCardItem {
+function toCardItem(row: FavouriteItem, sizeSystem: SizeSystem): FavCardItem {
   return {
     id: String(row.details.id),
     listingId: row.listing.id,
@@ -29,7 +31,7 @@ function toCardItem(row: FavouriteItem): FavCardItem {
     brand: row.details.brand,
     // Same formatter the listing cards use, so "10 (US Men)" reads the same
     // everywhere instead of this page's old hardcoded "US 10".
-    size: formatSizeShort(row.details.size) ?? '',
+    size: formatSizeShort(row.details.size, sizeSystem) ?? '',
     price: PESO.format(Number(row.details.price ?? 0)),
     imageUrl: row.listing.imageUrlTop,
   };
@@ -70,13 +72,14 @@ function FavCard({ item, onToggle }: { item: FavCardItem; onToggle: (item: FavCa
 
 export default function FavouritesGrid() {
   const queryClient = useQueryClient();
+  const sizeSystem = usePreferredSizeSystem();
 
   // This page previously rendered eight hardcoded sneakers, so it disagreed
   // with the favourites count the preview card on /profile showed. Same query
   // key as that card now, so the two cannot diverge.
   const { data, isPending } = useMyFavourites();
 
-  const saved = (data?.favourites ?? []).map(toCardItem);
+  const saved = (data?.favourites ?? []).map((row) => toCardItem(row, sizeSystem));
 
   const handleToggle = async (item: FavCardItem) => {
     // Optimistic removal, reverted by the refetch below if the request fails.
