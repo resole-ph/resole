@@ -13,7 +13,6 @@ import { useMyListings, useUserInfo } from '@/features/user/queries/user.queries
 import { Listing } from '@/components/molecules/ListingCard';
 import { usePreferencesStore } from '@/store/preferences';
 import { sizeSystemFromUserPreferences } from '@/features/shoe/utils/size-conversion';
-import { ListingService } from '@/features/listing/services/listing.service';
 
 export default function HomeScreen() {
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
@@ -23,7 +22,6 @@ export default function HomeScreen() {
     () => useOnboardingStore.persist.hasHydrated()
   );
   const [searchQuery, setSearchQuery] = useState('');
-  const [listingsData, setListingsData] = useState<Listing[]>([])
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -40,13 +38,9 @@ export default function HomeScreen() {
   // Both share their cache entries with the profile tab, so home -> profile
   // -> home costs no requests at all inside the stale window.
   const { data: userData } = useUserInfo(hydrated);
+  const { data: listingsData } = useMyListings(!!userData);
 
   useEffect(() => {
-    const getUserListings = async () => {
-      const data = await ListingService.getUserListings();
-      setListingsData(data);
-    }
-
     if (!userData) return;
     const accountSizeSystem = sizeSystemFromUserPreferences(
       userData.unit,
@@ -55,9 +49,7 @@ export default function HomeScreen() {
     if (accountSizeSystem) {
       usePreferencesStore.getState().setSizeSystem(accountSizeSystem);
     }
-
-    getUserListings();
-  }, [userData, listingsData]);
+  }, [userData]);
 
   const user = userData ?? { name: 'Resoler' };
   const myListings: Listing[] = Array.isArray(listingsData) ? listingsData : [];
