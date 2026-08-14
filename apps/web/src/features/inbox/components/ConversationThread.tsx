@@ -158,7 +158,7 @@ function PhotoBubble({ msg, isMe }: { msg: ThreadMessage; isMe: boolean }) {
               type="button"
               onClick={() => setIsPreviewOpen(true)}
               aria-label="Open photo attachment"
-              className="block w-64 max-w-[70vw] max-h-80 overflow-hidden rounded-2xl bg-surface-container border border-outline-variant cursor-zoom-in"
+              className="block w-64 max-w-[70vw] max-h-80 overflow-hidden rounded-2xl bg-surface-container border border-outline-variant cursor-pointer"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs cannot use the static host allowlist */}
               <img
