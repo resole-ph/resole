@@ -898,7 +898,7 @@ export async function scheduleDonationPickup(userId: string, data: DonationPicku
       throw new Error('Shoe listing not found');
     }
 
-    if (!listing.isAvailable) {
+    if (listing.archivedAt) {
       throw new Error('Shoe listing is not eligible for donation pickup');
     }
 
