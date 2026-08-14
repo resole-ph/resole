@@ -214,6 +214,8 @@ export default function ListingsScreen() {
   const [charitiesLoading, setCharitiesLoading] = useState(false);
   const [donating, setDonating] = useState(false);
 
+  const userSizeSystem = usePreferencesStore((s) => s.sizeSystem);
+
   // Shared with the home screen's "Your Listings" row, so arriving here from
   // "View all" renders from cache instead of refetching the same list.
   const listingQuery = useMemo(
@@ -230,6 +232,8 @@ export default function ListingsScreen() {
 
     setSizeOptions((previous) => Array.from(new Set([
       ...previous,
+      // Keep filter values in the stored US Men's anchor system. FilterSheet
+      // converts these only for display, then sends the original values back.
       ...data.map((item) => item.size).filter((size): size is string => !!size),
     ])).sort((a, b) => Number(a) - Number(b)));
     setColorOptions((previous) => Array.from(new Set([
@@ -480,6 +484,7 @@ export default function ListingsScreen() {
         value={filters}
         sizeOptions={sizeOptions}
         colorOptions={colorOptions}
+        userSizeSystem={userSizeSystem}
         onApply={setFilters}
         onClose={() => setFilterVisible(false)}
       />
