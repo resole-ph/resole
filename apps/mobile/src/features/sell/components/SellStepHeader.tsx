@@ -35,8 +35,7 @@ export default function SellStepHeader({ title, stepLabel, onBack }: SellStepHea
           ) : null}
           <Text className="font-title-md text-title-md text-on-surface">{title}</Text>
         </View>
-
-        {/* Spacer to keep the title centered now that the close button is gone */}
+        
         <View className="w-9 h-9" />
       </View>
     </View>

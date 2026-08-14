@@ -53,7 +53,7 @@ export default function SearchBar({ onSearch, onFocus, onSelectSeller }: SearchB
   };
 
   return (
-    <View className="px-5 pb-4" style={{ position: 'relative', zIndex: 10 }}>
+    <View className="px-5 pt-4 pb-4" style={{ position: 'relative', zIndex: 10 }}>
       <View
         className="flex-row items-center bg-white rounded-2xl px-4 py-3.5"
         style={{

@@ -532,12 +532,6 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleResetOnboarding = () => {
-    useOnboardingStore.persist.clearStorage();
-    useOnboardingStore.setState({ hasSeenOnboarding: false, intent: 'buy', location: '' });
-    router.replace('/onboarding/splash' as any);
-  };
-
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete account?',
@@ -632,12 +626,6 @@ export default function SettingsScreen() {
             icon="log-out-outline"
             color="#F59E0B"
             onPress={handleLogout}
-          />
-          <ActionRow
-            label="Reset Onboarding (Dev)"
-            icon="refresh-outline"
-            color="#8B5CF6"
-            onPress={handleResetOnboarding}
           />
           <ActionRow
             label="Delete account"

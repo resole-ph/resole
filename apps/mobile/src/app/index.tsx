@@ -80,13 +80,7 @@ export default function HomeScreen() {
           <Text className="text-2xl font-bold text-gray-900">{greeting}, {user.name}</Text>
           <Text className="text-sm text-gray-400 mt-0.5">Find your next pair today</Text>
         </View>
-        {/* TEMP: preview onboarding flow, remove before shipping */}
-        <GuardedTouchableOpacity
-          onPress={() => router.push('/onboarding/splash')}
-          className="mx-5 mb-2 self-start rounded-full bg-gray-200 px-3 py-1.5"
-        >
-          <Text className="text-xs text-gray-600">Preview Onboarding</Text>
-        </GuardedTouchableOpacity>
+
         <SearchBar
           onSearch={setSearchQuery}
           onSelectSeller={(personId) => router.push(`/profile/${personId}` as any)}
