@@ -13,8 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "scrape": "tsx src/features/shoe/services/scraper.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/config/migrate.ts",
-    "charity:images": "tsx scripts/upload-charity-images.ts"
+    "db:migrate": "tsx src/config/migrate.ts"
   },
   "dependencies": {
     "@google/genai": "^2.8.0",
