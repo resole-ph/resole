@@ -775,8 +775,7 @@ export async function deleteUserShoeListing(userId: string, id: number) {
       .update(shoeListing)
       .set({
         isAvailable: false,
-        updatedAt: new Date(),
-        archivedAt: new Date()
+        updatedAt: new Date()
       })
       .where(and(eq(shoeListing.id, id), eq(shoeListing.userId, userId)))
       .returning({ id: shoeListing.id });
