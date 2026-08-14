@@ -297,7 +297,7 @@ export default function MarketPage() {
         </div>
 
         {/* FAVORITES TOGGLE */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginTop: 20, marginBottom: 20 }}>
           <button
             onClick={() => triggerAppModal("Saved Favorites", "View and sync your favorite sneakers across devices using the Resole Mobile App.")}
             style={{
