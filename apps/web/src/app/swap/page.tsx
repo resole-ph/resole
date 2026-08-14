@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ALL_SNEAKERS } from "../data/sneakers";
+import { formatSizeShort } from "@/features/shoe/utils/size-conversion";
+import type { SerializedShoeListing } from "@/features/shoe/utils/listing-dto";
 
 const COLORS = {
   primary: "#2563EB",
@@ -20,7 +21,6 @@ const COLORS = {
 
 const CARD_SHADOW = "0px 4px 20px rgba(0,0,0,0.05)";
 
-// Subcomponent that renders a single shoe box in the VS view
 function ShoeSquare({
   label,
   labelColor,
@@ -64,57 +64,179 @@ function ShoeSquare({
   );
 }
 
+function listingTitle(listing: SerializedShoeListing) {
+  return listing.colorway ? `${listing.model} '${listing.colorway}'` : listing.model;
+}
+
+function listingImage(listing: SerializedShoeListing) {
+  return listing.imageUrl || listing.imageUrlTop || "/placeholder-shoe.png";
+}
+
 function SwapContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
-  // 1. Get Target Item from URL
+
   const targetId = searchParams.get("id");
-  const targetItem = ALL_SNEAKERS.find(s => s.id === targetId) || ALL_SNEAKERS[0];
-  
-  // 2. Generate the user's inventory (mocking by taking 3 other sneakers)
-  const myVault = useMemo(() => ALL_SNEAKERS.filter(item => item.id !== targetItem.id).slice(0, 3), [targetItem.id]);
 
-  // Handle owner fallbacks if the item wasn't originally from the swap board
-  const ownerName = targetItem.swapOwner?.name || "@sneakerhead_ph";
-  const ownerAvatarColor = targetItem.swapOwner?.avatarColor || COLORS.primary;
+  const [targetItem, setTargetItem] = useState<SerializedShoeListing | null>(null);
+  const [myVault, setMyVault] = useState<SerializedShoeListing[]>([]);
+  const [loading, setLoading] = useState(Boolean(targetId));
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const loadError = targetId ? fetchError : "No listing was selected to swap for.";
 
-  const [selectedId, setSelectedId] = useState(myVault[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [extraCash, setExtraCash] = useState<string>("");
   const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const selected = useMemo(() => myVault.find((l) => l.id === selectedId) ?? myVault[0], [selectedId, myVault]);
+  useEffect(() => {
+    if (!targetId) return;
+
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setFetchError(null);
+
+      try {
+        const [targetRes, vaultRes] = await Promise.all([
+          fetch(`/api/listings/${targetId}`),
+          fetch('/api/users/me/listings'),
+        ]);
+
+        const targetData = await targetRes.json().catch(() => ({}));
+        if (!targetRes.ok || !targetData.shoeListing) {
+          throw new Error(targetData.error || 'Listing not found');
+        }
+
+        const vaultData = await vaultRes.json().catch(() => ({}));
+        if (!vaultRes.ok) {
+          throw new Error(vaultData.error || 'Could not load your listings');
+        }
+
+        const vault: SerializedShoeListing[] = (vaultData.shoeListings ?? []).filter(
+          (listing: SerializedShoeListing) =>
+            listing.isAvailable && !listing.archivedAt && String(listing.id) !== String(targetData.shoeListing.id)
+        );
+
+        if (cancelled) return;
+        setTargetItem(targetData.shoeListing);
+        setMyVault(vault);
+        setSelectedId(vault[0]?.id ?? "");
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Failed to load swap details:', err);
+        setFetchError(err instanceof Error ? err.message : 'Something went wrong');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [targetId]);
+
+  const ownerName = targetItem?.seller?.name || "the seller";
+
+  const selected = useMemo(
+    () => myVault.find((l) => String(l.id) === selectedId) ?? myVault[0],
+    [selectedId, myVault]
+  );
 
   const cashValue = Number(extraCash) || 0;
-  // Fixed: using .price instead of .estValue
-  const valueDiff = (targetItem.price ?? 0) - (selected?.price ?? 0) - cashValue;
+  const valueDiff = (targetItem?.price ?? 0) - (selected?.price ?? 0) - cashValue;
 
-  const handleSend = () => {
-    alert("Swap offer securely submitted to escrow! The seller will be notified.");
-    router.push('/market');
+  // `extraCash` and `note` stay page-local: the swap table records only which
+  // listings are on each side of the trade, so there is nowhere to persist them
+  // without a schema change.
+  const handleSend = async () => {
+    if (!targetItem || !selected || submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch(`/api/listings/${targetItem.id}/swap-offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'swap', listings: [Number(selected.id)] }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to send your swap proposal');
+
+      router.push('/inbox');
+    } catch (err) {
+      console.error('Failed to send swap proposal:', err);
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong');
+      setSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <main style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px", textAlign: "center", color: COLORS.textMuted }}>
+        Loading swap details...
+      </main>
+    );
+  }
+
+  if (loadError || !targetItem) {
+    return (
+      <main style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px", textAlign: "center" }}>
+        <p style={{ color: COLORS.red, fontSize: 14, fontWeight: 600, margin: "0 0 16px" }}>
+          {loadError || 'Listing not found'}
+        </p>
+        <button
+          onClick={() => router.push('/market')}
+          style={{ background: COLORS.primary, color: "#fff", border: "none", borderRadius: 9999, padding: "10px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+        >
+          Back to the market
+        </button>
+      </main>
+    );
+  }
+
+  if (myVault.length === 0) {
+    return (
+      <main style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px", textAlign: "center" }}>
+        <p style={{ color: COLORS.textMain, fontSize: 15, fontWeight: 700, margin: "0 0 6px" }}>
+          You have no pairs to offer yet
+        </p>
+        <p style={{ color: COLORS.textMuted, fontSize: 13.5, margin: "0 0 16px" }}>
+          List a pair of your own and you can propose it as a swap.
+        </p>
+        <button
+          onClick={() => router.push('/sell')}
+          style={{ background: COLORS.primary, color: "#fff", border: "none", borderRadius: 9999, padding: "10px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+        >
+          List a pair
+        </button>
+      </main>
+    );
+  }
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "28px 24px 64px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <div style={{ width: 26, height: 26, borderRadius: 9999, background: ownerAvatarColor, color: "#fff", fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {ownerName[0]}
+        <div style={{ width: 26, height: 26, borderRadius: 9999, background: COLORS.primary, color: "#fff", fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {ownerName[0]?.toUpperCase()}
         </div>
         <span style={{ fontSize: 13.5, color: COLORS.textMuted }}>Proposing a swap with <strong style={{ color: COLORS.textMain }}>{ownerName}</strong></span>
       </div>
 
-      {/* Two squares: Your Offer VS Their Shoe */}
       <div style={{ display: "flex", gap: 20, alignItems: "stretch", marginTop: 20, marginBottom: 24, position: "relative" }}>
         <ShoeSquare
           label="Your Offer"
           labelColor={COLORS.green}
-          name={selected?.name ?? ""}
+          name={selected ? listingTitle(selected) : ""}
           brand={selected?.brand ?? ""}
-          size={selected?.size ?? ""}
+          size={selected ? `Size ${formatSizeShort(selected.size) ?? selected.size}` : ""}
           condition={selected?.condition ?? ""}
-          estValue={selected?.price ?? 0} // Fixed: using .price
-          image={selected?.image ?? ""}
+          estValue={selected?.price ?? 0}
+          image={selected ? listingImage(selected) : ""}
           footer={
             <div style={{ position: "relative" }}>
               <button
@@ -135,17 +257,19 @@ function SwapContent() {
                   {myVault.map((l) => (
                     <button
                       key={l.id}
-                      onClick={() => { setSelectedId(l.id); setPickerOpen(false); }}
+                      onClick={() => { setSelectedId(String(l.id)); setPickerOpen(false); }}
                       style={{
                         width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                        background: l.id === selectedId ? `${COLORS.primary}0D` : "transparent", border: "none",
+                        background: String(l.id) === selectedId ? `${COLORS.primary}0D` : "transparent", border: "none",
                         borderBottom: `1px solid ${COLORS.border}`, cursor: "pointer", textAlign: "left",
                       }}
                     >
-                      <img src={l.image} alt={l.name} style={{ width: 34, height: 34, borderRadius: 8, objectFit: "cover" }} />
+                      <img src={listingImage(l)} alt={listingTitle(l)} style={{ width: 34, height: 34, borderRadius: 8, objectFit: "cover" }} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: COLORS.textMain }}>{l.name}</div>
-                        <div style={{ fontSize: 11, color: COLORS.textFaint }}>{l.size} · ₱{(l.price ?? 0).toLocaleString()}</div> {/* Fixed: using .price */}
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: COLORS.textMain }}>{listingTitle(l)}</div>
+                        <div style={{ fontSize: 11, color: COLORS.textFaint }}>
+                          Size {formatSizeShort(l.size) ?? l.size} · ₱{(l.price ?? 0).toLocaleString()}
+                        </div>
                       </div>
                     </button>
                   ))}
@@ -169,24 +293,23 @@ function SwapContent() {
         <ShoeSquare
           label="Their Shoe"
           labelColor={COLORS.primary}
-          name={targetItem.name}
+          name={listingTitle(targetItem)}
           brand={targetItem.brand}
-          size={targetItem.size}
+          size={`Size ${formatSizeShort(targetItem.size) ?? targetItem.size}`}
           condition={targetItem.condition}
-          estValue={targetItem.price ?? 0} // Fixed: using .price
-          image={targetItem.image}
+          estValue={targetItem.price ?? 0}
+          image={listingImage(targetItem)}
         />
       </div>
 
-      {/* Value comparison & Cash Injection */}
       <div style={{ background: COLORS.surface, borderRadius: 16, padding: 16, boxShadow: CARD_SHADOW, marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, marginBottom: 8 }}>
           <span style={{ color: COLORS.textMuted }}>Your offer value</span>
-          <span style={{ color: COLORS.textMain, fontWeight: 600 }}>₱{(selected?.price ?? 0).toLocaleString()}</span> {/* Fixed: using .price */}
+          <span style={{ color: COLORS.textMain, fontWeight: 600 }}>₱{(selected?.price ?? 0).toLocaleString()}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, marginBottom: 8 }}>
           <span style={{ color: COLORS.textMuted }}>Their shoe value</span>
-          <span style={{ color: COLORS.textMain, fontWeight: 600 }}>₱{(targetItem.price ?? 0).toLocaleString()}</span> {/* Fixed: using .price */}
+          <span style={{ color: COLORS.textMain, fontWeight: 600 }}>₱{(targetItem.price ?? 0).toLocaleString()}</span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, marginBottom: 6 }}>
@@ -219,7 +342,6 @@ function SwapContent() {
         </div>
       </div>
 
-      {/* Note */}
       <div style={{ background: COLORS.surface, borderRadius: 16, padding: 16, boxShadow: CARD_SHADOW, marginBottom: 24 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.textMain, marginBottom: 8 }}>Add a note (optional)</div>
         <textarea
@@ -231,11 +353,18 @@ function SwapContent() {
         />
       </div>
 
+      {submitError && (
+        <p style={{ fontSize: 13, color: COLORS.red, margin: "0 0 12px", textAlign: "center" }}>{submitError}</p>
+      )}
+
       <button
         onClick={handleSend}
+        disabled={submitting || !selected}
         style={{
           width: "100%", background: COLORS.primary, color: "#fff", border: "none", borderRadius: 9999,
-          padding: "15px 0", fontSize: 15, fontWeight: 700, cursor: "pointer",
+          padding: "15px 0", fontSize: 15, fontWeight: 700,
+          cursor: submitting || !selected ? "default" : "pointer",
+          opacity: submitting || !selected ? 0.7 : 1,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
         }}
       >
@@ -243,7 +372,7 @@ function SwapContent() {
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
         </svg>
-        Send Swap Proposal
+        {submitting ? "Sending…" : "Send Swap Proposal"}
       </button>
     </main>
   );
@@ -256,7 +385,6 @@ export default function ProposeSwapPage() {
     <div style={{ minHeight: "100vh", background: COLORS.background, fontFamily: "Inter, sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'); * { box-sizing: border-box; }`}</style>
 
-      {/* Header */}
       <header style={{ position: "sticky", top: 0, zIndex: 20, background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", gap: 14 }}>
           <button onClick={() => router.back()} style={{ width: 34, height: 34, borderRadius: 9999, border: `1px solid ${COLORS.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
@@ -270,7 +398,6 @@ export default function ProposeSwapPage() {
         </div>
       </header>
 
-      {/* Suspense Wrapper for NextJS URL parameter fetching */}
       <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: COLORS.textMuted }}>Loading trade parameters...</div>}>
         <SwapContent />
       </Suspense>

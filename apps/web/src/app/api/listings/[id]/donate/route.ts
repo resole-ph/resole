@@ -49,7 +49,7 @@ export async function POST(
   if (!shoeListing) {
     return NextResponse.json({ error: 'Shoe listing not found' }, { status: 404 });
   }
-  if (!shoeListing.isAvailable || shoeListing.archivedAt) {
+  if (shoeListing.archivedAt) {
     return NextResponse.json({ error: 'This listing is no longer available' }, { status: 409 });
   }
 
