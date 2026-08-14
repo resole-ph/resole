@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
 import { useMyProfile, useUpdateMyProfile } from '../queries/profile.queries';
 import type { MyProfile } from '../types/profile.types';
-import { isStrongPassword, isValidEmail, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth';
+import { isStrongPassword, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth';
 import { ProfileClient } from '../services/profile.client';
 import {
   SIZE_SYSTEM_LABELS,
@@ -15,9 +15,7 @@ import {
   type SizeSystem,
 } from '@/features/shoe/utils/size-conversion';
 
-// These are the four categories the API actually stores; the labels below name
-// them as the server does rather than inventing a mapping.
-type NotifKey = 'listing' | 'offer' | 'promotion' | 'system';
+type NotifKey = 'messages' | 'offers' | 'promos' | 'recycleReminders';
 
 const ACCOUNT_FIELDS: { id: keyof MyProfile; label: string; value: string, icon: string }[] = [
   { id: 'name',           label: 'Full name',       value: '', icon: 'person' },
@@ -27,10 +25,10 @@ const ACCOUNT_FIELDS: { id: keyof MyProfile; label: string; value: string, icon:
 ];
 
 const NOTIF_ROWS: { key: NotifKey; label: string; sub: string }[] = [
-  { key: 'listing', label: 'Listings', sub: 'Updates about your listings' },
-  { key: 'offer', label: 'Offers & bids', sub: 'When someone makes an offer on your listing' },
-  { key: 'promotion', label: 'Promotions', sub: 'Sales, deals, and platform news' },
-  { key: 'system', label: 'System', sub: 'Account and service announcements' },
+  { key: 'messages', label: 'Messages', sub: 'Buyer and seller chats' },
+  { key: 'offers', label: 'Offers & bids', sub: 'When someone makes an offer on your listing' },
+  { key: 'promos', label: 'Promotions', sub: 'Sales, deals, and platform news' },
+  { key: 'recycleReminders', label: 'Recycle reminders', sub: 'Tips and pickup reminders' },
 ];
 
 const MORE_ROWS = [
@@ -170,11 +168,6 @@ function EditFieldModal({
   }, [field]);
  
   if (!visible || !field) return null;
-
-  const options = fieldOptions(field.id);
-  const isEmailField = field.id === 'email';
-  const trimmedValue = value.trim();
-  const emailInvalid = isEmailField && trimmedValue !== '' && !isValidEmail(trimmedValue);
  
   const handleSave = async (nextValue: string) => {
     setSaving(true);
@@ -195,63 +188,98 @@ function EditFieldModal({
       title={`Edit ${field.label}`}
       onClose={onClose}
       footer={
-        options ? (
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-on-surface-variant bg-surface-container hover:bg-surface-container-high transition-colors"
-          >
-            Close
-          </button>
-        ) : (
-          <FooterButtons
-            onCancel={onClose}
-            onConfirm={() => handleSave(value)}
-            confirmLabel={saving ? 'Saving...' : 'Save changes'}
-            confirmDisabled={saving || !value.trim() || emailInvalid}
-          />
-        )
+        <FooterButtons
+          onCancel={onClose}
+          onConfirm={() => handleSave(value)}
+          confirmLabel={saving ? 'Saving...' : 'Save changes'}
+          confirmDisabled={saving || !value.trim()}
+        />
       }
     >
-      {options ? (
-        <div className="flex flex-col gap-1">
-          {options.map((option) => {
-            const selected = option === value;
-            return (
-              <button
-                key={option}
-                onClick={() => handleSave(option)}
-                disabled={saving}
-                className={`flex items-center justify-between rounded-lg px-3.5 py-2.5 text-[14px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                  selected
-                    ? 'bg-primary/10 text-primary font-semibold'
-                    : 'text-on-surface hover:bg-surface-container'
-                }`}
-              >
-                <span>{option}</span>
-                {selected && <span className="material-symbols-outlined text-[18px]">check</span>}
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <label className="flex flex-col gap-1.5">
-          <span className="text-on-surface-variant text-[13px] font-semibold">{field.label}</span>
-          <input
-            type={isEmailField ? 'email' : 'text'}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={field.label}
-            autoFocus
-            autoComplete={isEmailField ? 'email' : undefined}
-            className="rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-          />
-          {emailInvalid && <p className="text-error text-[13px]">Enter a valid email address.</p>}
-        </label>
-      )}
+      <label className="flex flex-col gap-1.5">
+        <span className="text-on-surface-variant text-[13px] font-semibold">{field.label}</span>
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={field.label}
+          autoFocus
+          className="rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-[14px] text-on-surface outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+        />
+      </label>
     </DialogShell>
   );
 }
-        
+
+function SizeSystemModal({
+  visible,
+  current,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  current: SizeSystem;
+  onClose: () => void;
+  onSelect: (system: SizeSystem) => Promise<void>;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  if (!visible) return null;
+
+  const handleSelect = async (system: SizeSystem) => {
+    if (system === current) {
+      onClose();
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onSelect(system);
+      onClose();
+    } catch {
+      // The parent surfaces the API error; keep the modal open for retrying.
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <DialogShell
+      title="Shoe size system"
+      onClose={onClose}
+      footer={
+        <button
+          onClick={onClose}
+          disabled={saving}
+          className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-on-surface-variant bg-surface-container hover:bg-surface-container-high disabled:opacity-40 transition-colors"
+        >
+          Close
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        {SIZE_SYSTEMS.map((system) => {
+          const selected = system === current;
+          return (
+            <button
+              key={system}
+              onClick={() => handleSelect(system)}
+              disabled={saving}
+              className={`flex items-center justify-between rounded-lg px-3.5 py-2.5 text-[14px] transition-colors disabled:opacity-40 ${
+                selected
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-on-surface hover:bg-surface-container'
+              }`}
+            >
+              <span>{SIZE_SYSTEM_LABELS[system]}</span>
+              {selected && <span className="material-symbols-outlined text-[18px]">check</span>}
+            </button>
+          );
+        })}
+      </div>
+    </DialogShell>
+  );
+}
+ 
 function PasswordEditModal({
   visible,
   onClose,
@@ -368,76 +396,6 @@ function PasswordEditModal({
   );
 }
 
-function SizeSystemModal({
-  visible,
-  current,
-  onClose,
-  onSelect,
-}: {
-  visible: boolean;
-  current: SizeSystem;
-  onClose: () => void;
-  onSelect: (system: SizeSystem) => Promise<void>;
-}) {
-  const [saving, setSaving] = useState(false);
-
-  if (!visible) return null;
-
-  const handleSelect = async (system: SizeSystem) => {
-    if (system === current) {
-      onClose();
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await onSelect(system);
-      onClose();
-    } catch {
-      // The parent surfaces the API error; keep the modal open for retrying.
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <DialogShell
-      title="Shoe size system"
-      onClose={onClose}
-      footer={
-        <button
-          onClick={onClose}
-          disabled={saving}
-          className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-on-surface-variant bg-surface-container hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-        >
-          Close
-        </button>
-      }
-    >
-      <div className="flex flex-col gap-1">
-        {SIZE_SYSTEMS.map((system) => {
-          const selected = system === current;
-          return (
-            <button
-              key={system}
-              onClick={() => handleSelect(system)}
-              disabled={saving}
-              className={`flex items-center justify-between rounded-lg px-3.5 py-2.5 text-[14px] transition-colors disabled:opacity-40 ${
-                selected
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-on-surface hover:bg-surface-container'
-              }`}
-            >
-              <span>{SIZE_SYSTEM_LABELS[system]}</span>
-              {selected && <span className="material-symbols-outlined text-[18px]">check</span>}
-            </button>
-          );
-        })}
-      </div>
-    </DialogShell>
-  );
-}
-
 function ToggleRow({
   label,
   sub,
@@ -481,30 +439,26 @@ function ActionRow({
   tone = 'default',
   onClick,
   disabled = false,
-  note,
 }: {
   label: string;
   icon: string;
   tone?: 'default' | 'warning' | 'danger';
   onClick?: () => void;
   disabled?: boolean;
-  note?: string;
 }) {
-  const toneClass = disabled
-    ? 'text-on-surface-variant'
-    : tone === 'danger' ? 'text-error' : tone === 'warning' ? 'text-tertiary' : 'text-on-surface';
+  const toneClass =
+    tone === 'danger' ? 'text-error' : tone === 'warning' ? 'text-tertiary' : 'text-on-surface';
 
   return (
-    <button onClick={onClick} disabled={disabled} className={`w-full text-left ${disabled ? 'cursor-not-allowed' : ''}`}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full text-left disabled:cursor-not-allowed disabled:opacity-40"
+    >
       <Row>
         <span className={`material-symbols-outlined text-[18px] ${toneClass}`}>{icon}</span>
-        <span className="flex-1">
-          <span className={`block font-medium text-[14px] ${toneClass}`}>{label}</span>
-          {note && <span className="block text-on-surface-variant text-[12px] mt-0.5">{note}</span>}
-        </span>
-        {!disabled && (
-          <span className="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
-        )}
+        <span className={`flex-1 font-medium text-[14px] ${toneClass}`}>{label}</span>
+        <span className="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
       </Row>
     </button>
   );
@@ -521,40 +475,13 @@ export default function SettingsSections() {
   const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
-    listing: false,
-    offer: false,
-    promotion: false,
-    system: false,
+    messages: true,
+    offers: false,
+    promos: false,
+    recycleReminders: true,
   });
-  const [notifsLoaded, setNotifsLoaded] = useState(false);
-  const [notifError, setNotifError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch('/api/users/me/notification-preferences')
-      .then(async (response) => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'Failed to load notification preferences');
-        return data.preferences as Partial<Record<NotifKey, boolean>>;
-      })
-      .then((preferences) => {
-        if (cancelled) return;
-        setNotifs((prev) => ({ ...prev, ...preferences }));
-        setNotifsLoaded(true);
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        console.error('Failed to load notification preferences:', error);
-        setNotifError('Could not load your notification settings.');
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-
+  
   const accountFields = useMemo(
     () =>
       ACCOUNT_FIELDS.map((field) => ({
@@ -564,25 +491,8 @@ export default function SettingsSections() {
       [profile]
   );  
     
-  const toggle = (key: NotifKey) => async () => {
-    const next = !notifs[key];
-    setNotifs((prev) => ({ ...prev, [key]: next }));
-    setNotifError(null);
-
-    try {
-      const response = await fetch('/api/users/me/notification-preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [key]: next }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Failed to save preference');
-    } catch (error) {
-      console.error('Failed to save notification preference:', error);
-      setNotifs((prev) => ({ ...prev, [key]: !next }));
-      setNotifError('Could not save that change. Please try again.');
-    }
-  };
+  const toggle = (key: NotifKey) => () =>
+    setNotifs((prev) => ({ ...prev, [key]: !prev[key] }));
 
   async function handleSaveField(id: string, value: string) {
     try {
@@ -668,10 +578,9 @@ export default function SettingsSections() {
               label={n.label}
               sub={n.sub}
               checked={notifs[n.key]}
-              onChange={notifsLoaded ? toggle(n.key) : () => {}}
+              onChange={toggle(n.key)}
             />
           ))}
-          {notifError && <p className="text-error text-[13px] px-4 pb-3">{notifError}</p>}
         </div>
 
         <SectionTitle title="Preferences" />
