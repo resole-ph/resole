@@ -54,6 +54,12 @@ function formatOfferDate(value: string) {
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/** Swaps are listed without what was put up — those specifics live in the thread. */
+function formatOfferValue(offer: ReceivedListingOffer) {
+  if (offer.type === 'swap') return 'Swap offer';
+  return offer.price != null ? `₱${offer.price.toLocaleString()}` : 'No amount';
+}
+
 function OfferRow({ offer }: { offer: ReceivedListingOffer }) {
   const router = useRouter();
   const status = STATUS_STYLES[getStatus(offer)];
@@ -130,10 +136,10 @@ function OfferRow({ offer }: { offer: ReceivedListingOffer }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
           <span className="material-symbols-outlined" style={{ fontSize: 14, color: COLORS.primary }}>
-            sell
+            {offer.type === 'swap' ? 'swap_horiz' : 'sell'}
           </span>
           <span style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.primary }}>
-            {offer.price != null ? `₱${offer.price.toLocaleString()}` : 'No amount'}
+            {formatOfferValue(offer)}
           </span>
           <span style={{ fontSize: 12, color: COLORS.textFaint }}>{formatOfferDate(offer.createdAt)}</span>
         </div>
@@ -157,20 +163,16 @@ export default function ListingOffersSection({
   offers: ReceivedListingOffer[];
   isLoading: boolean;
 }) {
-  // Sale offers only — swaps are read in the inbox thread instead. Filtered here
-  // rather than in the shared `/offers` route, which mobile and web both call.
-  const saleOffers = offers.filter((offer) => offer.type === 'sale');
-
   // Declined offers stay listed: hiding them would make an offer look like it vanished.
   return (
     <section style={{ marginBottom: 56 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 16px' }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: COLORS.textMain, margin: 0 }}>Offers Received</h2>
-        {!isLoading && saleOffers.length > 0 && (
+        {!isLoading && offers.length > 0 && (
           <span
             style={{ background: COLORS.primary, color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: 9999, padding: '2px 9px' }}
           >
-            {saleOffers.length}
+            {offers.length}
           </span>
         )}
       </div>
@@ -179,7 +181,7 @@ export default function ListingOffersSection({
         <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0' }}>
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : saleOffers.length === 0 ? (
+      ) : offers.length === 0 ? (
         <div
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: COLORS.surface, borderRadius: 16, padding: '36px 20px', boxShadow: CARD_SHADOW }}
         >
@@ -193,7 +195,7 @@ export default function ListingOffersSection({
         </div>
       ) : (
         <div>
-          {saleOffers.map((offer) => (
+          {offers.map((offer) => (
             <OfferRow key={offer.transactionId} offer={offer} />
           ))}
         </div>

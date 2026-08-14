@@ -31,7 +31,9 @@ function formatOfferDate(value: string) {
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/** Swaps are listed without what was put up — those specifics live in the thread. */
 function formatOfferValue(offer: ReceivedListingOffer) {
+  if (offer.type === 'swap') return 'Swap offer';
   return offer.price != null ? `₱${offer.price.toLocaleString()}` : 'No amount';
 }
 
@@ -103,7 +105,11 @@ function OfferRow({ offer }: { offer: ReceivedListingOffer }) {
         </View>
 
         <View className="flex-row items-center mt-1">
-          <Ionicons name="pricetag-outline" size={12} color="#2563EB" />
+          <Ionicons
+            name={offer.type === 'swap' ? 'swap-horizontal-outline' : 'pricetag-outline'}
+            size={12}
+            color="#2563EB"
+          />
           <Text className="text-blue-600 font-bold text-sm ml-1">{formatOfferValue(offer)}</Text>
           <Text className="text-gray-400 text-xs ml-2">{formatOfferDate(offer.createdAt)}</Text>
         </View>
@@ -126,10 +132,6 @@ export default function ListingOffersSection({
   offers: ReceivedListingOffer[];
   isLoading: boolean;
 }) {
-  // Sale offers only — swaps are read in the inbox thread instead. Filtered here
-  // rather than in the shared `/offers` route, which mobile and web both call.
-  const saleOffers = offers.filter((offer) => offer.type === 'sale');
-
   // Declined offers stay listed: the thread is still the seller's record of the
   // conversation, and hiding them would make an offer look like it vanished.
   return (
@@ -137,9 +139,9 @@ export default function ListingOffersSection({
       <View className="h-px bg-gray-100 mb-5" />
       <View className="flex-row items-center mb-3">
         <Text className="text-gray-900 font-bold text-base">Offers Received</Text>
-        {!isLoading && saleOffers.length > 0 && (
+        {!isLoading && offers.length > 0 && (
           <View className="bg-blue-600 rounded-full px-2 py-0.5 ml-2">
-            <Text className="text-white text-[10px] font-bold">{saleOffers.length}</Text>
+            <Text className="text-white text-[10px] font-bold">{offers.length}</Text>
           </View>
         )}
       </View>
@@ -148,7 +150,7 @@ export default function ListingOffersSection({
         <View className="items-center py-6">
           <ActivityIndicator color="#2563EB" />
         </View>
-      ) : saleOffers.length === 0 ? (
+      ) : offers.length === 0 ? (
         <View className="items-center bg-white rounded-2xl py-8 mb-6" style={CARD_SHADOW}>
           <Ionicons name="pricetags-outline" size={32} color="#D1D5DB" />
           <Text className="text-gray-400 text-sm mt-2">No offers yet</Text>
@@ -156,7 +158,7 @@ export default function ListingOffersSection({
         </View>
       ) : (
         <View className="mb-6">
-          {saleOffers.map((offer) => (
+          {offers.map((offer) => (
             <OfferRow key={offer.transactionId} offer={offer} />
           ))}
         </View>
