@@ -92,7 +92,8 @@ function StyledInput({
 
 export default function EditListingContainer() {
   const router = useRouter();
-  const { form, aiResult, updateFormField, priceAllowedRange, ratingToLabel, setStep, goBack } = useSellFlow();
+  const { form, aiResult, isAnalyzed, photosDirty, originalCondition, updateFormField, priceAllowedRange, ratingToLabel, setStep, goBack, confirmDiscard } = useSellFlow();
+  const isAnalysisUnchanged = isAnalyzed && !photosDirty;
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -124,7 +125,7 @@ export default function EditListingContainer() {
 
   const priceRange = priceAllowedRange();
   const aiConditionRating =
-    aiResult?.conditionRating ?? baselineConditionRating ?? form.conditionRating;
+    aiResult?.conditionRating ?? originalCondition ?? baselineConditionRating ?? form.conditionRating;
   const conditionTone = getConditionTone(form.conditionRating, aiConditionRating, 1, 10);
   const errors = validateListingForm(form);
   const canContinue = Object.keys(errors).length === 0;
@@ -266,6 +267,7 @@ export default function EditListingContainer() {
             max={10}
             aiValue={aiConditionRating}
             conditionLabel={form.conditionLabel}
+            isEditing={isAnalysisUnchanged}
             onChange={handleConditionChange}
           />
         </View>
@@ -382,7 +384,7 @@ export default function EditListingContainer() {
       </ScrollView>
 
       <StepFooter
-        onCancel={() => router.back()}
+        onCancel={() => confirmDiscard(() => router.back())}
         onPrimary={() => canContinue && setStep('review')}
         primaryLabel="Next"
         primaryDisabled={!canContinue}

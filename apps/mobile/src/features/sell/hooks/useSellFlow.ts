@@ -1,5 +1,6 @@
 import { useSellStore } from '@/store/sell';
 import { usePreferencesStore } from '@/store/preferences';
+import { Alert } from 'react-native';
 import { convertFromUSMens, formatSizeValue } from '@/features/shoe/utils/size-conversion';
 import type { AiAnalysisResult, SellStep } from '../types/sell.types';
 import { ratingToLabel } from '../utils/condition';
@@ -77,6 +78,31 @@ export function useSellFlow() {
     if (idx > 0) store.setStep(STEP_ORDER[idx - 1]);
   }
 
+  /** Confirm before leaving a create/edit session that contains unsaved work. */
+  function confirmDiscard(onDiscard: () => void) {
+    const discard = () => {
+      store.reset();
+      onDiscard();
+    };
+
+    if (!store.hasUnsavedChanges) {
+      discard();
+      return;
+    }
+
+    const isEditing = store.flowMode === 'edit';
+    Alert.alert(
+      isEditing ? 'Discard changes?' : 'Discard listing?',
+      isEditing
+        ? 'You have unsaved changes to this listing. Do you want to discard them?'
+        : 'You have an unfinished listing. Do you want to discard your draft?',
+      [
+        { text: 'Keep editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: discard },
+      ],
+    );
+  }
+
   /**
    * DEV ONLY — advances to the next step, backfilling whatever data that step
    * needs to render (mock AI result, form) so it can be reached without
@@ -110,6 +136,7 @@ export function useSellFlow() {
     priceAllowedRange,
     ratingToLabel,
     goBack,
+    confirmDiscard,
     devAdvance,
     isLastStep,
   };

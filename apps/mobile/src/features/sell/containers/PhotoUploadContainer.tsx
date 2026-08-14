@@ -54,7 +54,7 @@ async function finalizePhoto(uri: string, rotation: 0 | 90 | 180 | 270): Promise
 
 export default function PhotoUploadContainer() {
   const router = useRouter();
-  const { photos, setPhoto, allPhotosUploaded, setStep, isAnalyzed, photosDirty, setAnalysisSkipped } = useSellFlow();
+  const { photos, setPhoto, allPhotosUploaded, setStep, isAnalyzed, photosDirty, setAnalysisSkipped, confirmDiscard } = useSellFlow();
   const isEditingUnchanged = isAnalyzed && !photosDirty;
   const [pendingAngle, setPendingAngle] = useState<PhotoAngle | null>(null);
   const [previewPhoto, setPreviewPhoto] = useState<{ uri: string; originalUri: string; angle: PhotoAngle; rotation: 0 | 90 | 180 | 270 } | null>(null);
@@ -251,7 +251,7 @@ export default function PhotoUploadContainer() {
       </ScrollView>
 
       <StepFooter
-        onCancel={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onCancel={() => confirmDiscard(() => (router.canGoBack() ? router.back() : router.replace('/')))}
         onPrimary={isEditingUnchanged ? handleContinueUnchanged : handleAnalyze}
         primaryLabel={isEditingUnchanged ? 'Continue' : 'Analyze with AI'}
         primaryDisabled={isEditingUnchanged ? false : !allPhotosUploaded || uploading}

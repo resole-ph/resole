@@ -73,18 +73,20 @@ export function getDeviationLabel(tone: DeviationTone): string {
   }
 }
 
-function messageFor(tone: DeviationTone, aiValue: number, conditionLabel: string) {
+function messageFor(tone: DeviationTone, aiValue: number, conditionLabel: string, isEditing: boolean) {
+  const origin = isEditing ? 'previous' : 'AI'
+
   switch (tone) {
     case 'exact':
-      return `Condition is ${conditionLabel} — it matches our AI's estimate.`;
+      return `Condition is ${conditionLabel} — it matches our ${origin} estimate.`;
     case 'close':
-      return `Condition is ${conditionLabel} — close to our AI's estimate of ${aiValue}/10.`;
+      return `Condition is ${conditionLabel} — close to our ${origin} estimate of ${aiValue}/10.`;
     case 'slight':
-      return `Condition is ${conditionLabel} — slightly different from our AI's estimate of ${aiValue}/10. Double-check before continuing.`;
+      return `Condition is ${conditionLabel} — slightly different from our ${origin} estimate of ${aiValue}/10. Double-check before continuing.`;
     case 'off':
-      return `Condition is ${conditionLabel} — quite different from our AI's estimate of ${aiValue}/10. Buyers may question this listing.`;
+      return `Condition is ${conditionLabel} — quite different from our ${origin} estimate of ${aiValue}/10. Buyers may question this listing.`;
     case 'far':
-      return `Condition is ${conditionLabel} — way off our AI's estimate of ${aiValue}/10. Buyers may flag this listing as inaccurate.`;
+      return `Condition is ${conditionLabel} — way off our ${origin} estimate of ${aiValue}/10. Buyers may flag this listing as inaccurate.`;
   }
 }
 
@@ -118,10 +120,11 @@ interface ConditionSliderProps {
   aiValue: number;
   /** The condition word (Good/Poor/etc.) for the current value, used in the bottom message. */
   conditionLabel: string;
+  isEditing: boolean
   onChange: (value: number) => void;
 }
 
-export default function ConditionSlider({ value, min, max, aiValue, conditionLabel, onChange }: ConditionSliderProps) {
+export default function ConditionSlider({ value, min, max, aiValue, conditionLabel, isEditing, onChange }: ConditionSliderProps) {
   const trackWidth = useRef(0);
   const thumbX = useSharedValue(0);
   const [displayValue, setDisplayValue] = useState(value);
@@ -240,7 +243,7 @@ export default function ConditionSlider({ value, min, max, aiValue, conditionLab
       </View>
 
       <Text className="font-label-md text-label-md mt-1" style={{ color: toneColor }}>
-        {messageFor(tone, aiValue, conditionLabel)}
+        {messageFor(tone, aiValue, conditionLabel, isEditing)}
       </Text>
     </View>
   );

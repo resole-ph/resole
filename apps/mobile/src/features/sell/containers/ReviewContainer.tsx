@@ -12,7 +12,7 @@ import { convertToUSMens } from '@/features/shoe/utils/size-conversion';
 
 export default function ReviewContainer() {
   const router = useRouter();
-  const { photos, form, aiAnalysisId, flowMode, editingListingId, setPublishedListing, setStep, goBack } =
+  const { photos, form, aiAnalysisId, flowMode, editingListingId, setPublishedListing, setStep, goBack, confirmDiscard } =
     useSellFlow();
   const { mutateAsync: publishListing, isPending: isPublishing } = usePublishListingMutation();
   const { mutateAsync: updateListing, isPending: isUpdating } = useUpdateListingMutation();
@@ -88,7 +88,7 @@ export default function ReviewContainer() {
       </ScrollView>
 
       <StepFooter
-        onCancel={() => router.back()}
+        onCancel={() => confirmDiscard(() => router.back())}
         onPrimary={handlePublish}
         primaryLabel={isEditing ? 'Save Changes' : 'Publish Listing'}
         primaryDisabled={isPending}
