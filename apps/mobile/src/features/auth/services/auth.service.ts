@@ -1,5 +1,7 @@
 import { apiFetch } from '@/lib/api-client';
+import { invalidateCache } from '@/lib/cache';
 import { clearSessionToken, saveSessionToken } from '@/lib/session';
+import { queryClient } from '@/queries';
 import type { AuthResponse, UpdateProfileInput, User } from '../types/auth.types';
 
 export const authService = {
@@ -42,6 +44,12 @@ export const authService = {
       await apiFetch('/api/auth/sign-out', { method: 'POST' });
     } finally {
       await clearSessionToken();
+      // Both caches outlive individual screens. Leaving either populated lets
+      // the next unauthenticated render (or the next account) see data from
+      // the session that just ended.
+      invalidateCache();
+      await queryClient.cancelQueries();
+      queryClient.clear();
     }
   },
 
