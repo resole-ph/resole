@@ -7,6 +7,7 @@ import {
   resetOfferToPending
 } from '@/features/transaction/services/service';
 import { createNotification } from '@/features/notifications/services/service';
+import { getShoeListingById } from '@/features/shoe/services/service';
 
 function parseTransactionId(rawId: string) {
   const transactionId = Number.parseInt(rawId, 10);
@@ -23,7 +24,18 @@ function getErrorMessage(error: unknown) {
 }
 
 type SaleEdit = { price: number };
-type SwapEdit = { listings: number[] };
+type SwapEdit = { listings: number[]; topUp?: number };
+
+const MAX_CASH_TOP_UP = 1_000_000;
+
+function parseCashTopUp(value: unknown): number {
+  const rawValue = String(value).trim();
+  const topUp = Number(rawValue);
+  if (!/^\d+(?:\.\d{1,2})?$/.test(rawValue) || !Number.isFinite(topUp) || topUp > MAX_CASH_TOP_UP) {
+    throw new Error('Cash top-up must be between ₱0 and ₱1,000,000 with at most two decimal places');
+  }
+  return topUp;
+}
 
 function parseEditPayload(type: string, body: Record<string, unknown>): SaleEdit | SwapEdit {
   if (type === 'sale') {
@@ -49,7 +61,8 @@ function parseEditPayload(type: string, body: Record<string, unknown>): SaleEdit
       throw new Error('Invalid listing id');
     }
 
-    return { listings };
+    const topUp = body.topUp === undefined ? undefined : parseCashTopUp(body.topUp);
+    return { listings, topUp };
   }
 
   throw new Error('This offer type cannot be edited');
@@ -88,7 +101,14 @@ export async function PATCH(
     const body = await request.json();
     const edit = parseEditPayload(transaction.type, body);
 
-    let details: { price: string } | { items: { itemId: number }[] };
+    if ('listings' in edit) {
+      const offeredListings = await Promise.all(edit.listings.map((listingId) => getShoeListingById(listingId)));
+      if (offeredListings.some((listing) => !listing || listing.seller.id !== currentUser.user.id || !listing.isAvailable || listing.archivedAt)) {
+        return NextResponse.json({ error: 'You can only offer your own active listings' }, { status: 400 });
+      }
+    }
+
+    let details: { price: string } | { items: { itemId: number }[]; topUp: string | null };
 
     if ('price' in edit) {
       const updatedSale = await updateSaleByTransactionId(transaction.id, edit.price);
@@ -97,11 +117,16 @@ export async function PATCH(
       }
       details = { price: updatedSale.price };
     } else {
-      const updatedSwap = await updateSwapItemsByTransactionId(transaction.id, edit.listings);
+      const updatedSwap = await updateSwapItemsByTransactionId(transaction.id, edit.listings, edit.topUp);
       if (!updatedSwap) {
         return NextResponse.json({ error: 'Failed to update offer' }, { status: 400 });
       }
-      details = { items: updatedSwap.items.map((item) => ({ itemId: item.itemId })) };
+      details = {
+        items: updatedSwap.items
+          .filter((item): item is typeof item & { itemId: number } => item.itemId != null)
+          .map((item) => ({ itemId: item.itemId })),
+        topUp: updatedSwap.topUp,
+      };
     }
 
     await resetOfferToPending(transaction.id);

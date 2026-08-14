@@ -197,6 +197,20 @@
       "when": 1786552314715,
       "tag": "0027_yellow_doctor_octopus",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1786552314716,
+      "tag": "0028_add_swap_top_up",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1786737267862,
+      "tag": "0029_watery_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

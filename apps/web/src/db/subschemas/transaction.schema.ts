@@ -96,6 +96,7 @@ export const swap = pgTable('swap', {
   transactionId: integer('transaction_id')
     .notNull()
     .references(() => transaction.id, { onDelete: 'cascade' }),
+  topUp: numeric('top_up').notNull().default('0'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
   index('swap_transaction_id_idx').on(table.transactionId)
