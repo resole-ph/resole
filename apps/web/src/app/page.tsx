@@ -7,11 +7,12 @@ import { useAuthGate } from '@/providers/AuthGateProvider';
 import {
   profileKeys,
   useMyFavourites,
-  useMyListings,
   useMyProfile,
 } from '@/features/profile/queries/profile.queries';
 import ListingCard from '@/components/ListingCard';
 import { getConditionLabel } from '@/features/sell/utils/condition';
+import { ProfileListing } from '@/features/profile/types/profile.types';
+import { ProfileClient } from '@/features/profile/services/profile.client';
 
 /* ---------------------------------------------------------
    Resole design tokens
@@ -295,6 +296,8 @@ function CharitiesSection({ charities, loading, unavailable, selectedCharity, on
 export default function ResoleHome() {
   const { requireAuth } = useAuthGate();
 
+  const [myListings, setMyListings] = useState<ProfileListing[]>([])
+  const [loading, setLoading] = useState<boolean>(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeBrand, setActiveBrand] = useState<string | null>(null);
   const [selectedCharity, setSelectedCharity] = useState<number | null>(null);
@@ -325,6 +328,23 @@ export default function ResoleHome() {
     return 'Good evening';
   }, []);
 
+  useEffect(() => {
+    const getUserListings = async () => {
+      setLoading(true);
+      
+      try {
+        const data = await ProfileClient.getMyListings();
+        setMyListings(data);
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+      } finally {
+        setLoading(false); 
+      }
+    };
+
+    getUserListings();
+  }, []);
+
   // The home page only shows the signed-in user's own inventory and the
   // listings they favourited — the full catalogue lives on /market.
   //
@@ -332,10 +352,7 @@ export default function ResoleHome() {
   // between home and profile is a cache hit in both directions rather than
   // six repeated requests.
   const { data: user } = useMyProfile();
-  const { data: myListingsData, isPending: loading } = useMyListings();
   const { data: favouritesData } = useMyFavourites();
-
-  const myListings = myListingsData ?? [];
 
   // `any[]` preserves what this was before the cache conversion, when
   // `favourites` was untyped state. favouriteToListing only builds 8 of the

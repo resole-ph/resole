@@ -44,6 +44,21 @@ export function initialsOf(name: string | null | undefined): string {
     .toUpperCase();
 }
 
+function buildListingQuery(params: Record<string, string | string[] | undefined>): string {
+  if (!params) return '';
+
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      value.forEach((item) => query.append(key, item));
+    } else if (value) {
+      query.set(key, value);
+    }
+  }
+  const queryString = query.toString();
+  return queryString ? `?${queryString}` : '';
+}
+
 export type UpdateProfileInput = {
   name?: string;
   location?: string;
@@ -80,8 +95,9 @@ export const ProfileClient = {
     }).then((data) => data.user);
   },
 
-  getMyListings() {
-    return request<{ shoeListings: ProfileListing[] }>('/api/users/me/listings').then(
+  getMyListings(filters?: any) {
+    const query = buildListingQuery(filters ?? undefined)
+    return request<{ shoeListings: ProfileListing[] }>(`/api/users/me/listings${query}`).then(
       (data) => data.shoeListings ?? []
     );
   },

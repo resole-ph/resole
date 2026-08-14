@@ -42,10 +42,10 @@ export function useMyStats() {
   });
 }
 
-export function useMyListings() {
+export function useMyListings(filters?: any) {
   return useQuery({
     queryKey: profileKeys.myListings(),
-    queryFn: () => ProfileClient.getMyListings(),
+    queryFn: () => ProfileClient.getMyListings(filters),
   });
 }
 

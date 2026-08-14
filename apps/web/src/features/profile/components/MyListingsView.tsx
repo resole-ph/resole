@@ -175,7 +175,7 @@ export default function MyListingsView() {
 
   // Same cache entry MyListingsPreviewCard fills on /profile, so arriving here
   // via "View all" renders instantly instead of refetching a list we just had.
-  const { data, isPending, error, refetch } = useMyListings();
+  const { data, isPending, error, refetch } = useMyListings({ includeArchived: 'true' });
 
   /**
    * Applies a change to the cached listing array. Every action below used to
