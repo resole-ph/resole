@@ -13,7 +13,8 @@ function hasOwnedListingCriteria(filters?: OwnedListingQuery) {
     filters.minRating !== null ||
     !!filters.priceMin ||
     !!filters.priceMax ||
-    filters.sort !== 'newest'
+    filters.sort !== 'newest' ||
+    typeof filters.includeArchived === 'boolean'
   );
 }
 
@@ -40,6 +41,23 @@ export const userKeys = {
           filters.priceMin,
           filters.priceMax,
           filters.sort,
+          filters.includeArchived
+        ]
+      : [];
+
+    return [...userKeys.all, 'me', 'listings', ...criteria] as const;
+  },
+  myActiveListings: (filters?: OwnedListingQuery) => {
+    const criteria = hasOwnedListingCriteria(filters) && filters
+      ? [
+          JSON.stringify([...filters.sizes].sort()),
+          JSON.stringify([...filters.colors].sort()),
+          JSON.stringify([...filters.conditions].sort()),
+          filters.minRating ?? 'any-rating',
+          filters.priceMin,
+          filters.priceMax,
+          filters.sort,
+          filters.includeArchived
         ]
       : [];
 
@@ -101,6 +119,14 @@ export function useUpdateSizeSystem() {
 export function useMyListings(enabled = true, filters?: OwnedListingQuery) {
   return useQuery({
     queryKey: userKeys.myListings(filters),
+    queryFn: () => ListingService.getUserListings(filters),
+    enabled,
+  });
+}
+
+export function useMyActiveListings(enabled = true, filters?: OwnedListingQuery) {
+  return useQuery({
+    queryKey: userKeys.myActiveListings(filters),
     queryFn: () => ListingService.getUserListings(filters),
     enabled,
   });

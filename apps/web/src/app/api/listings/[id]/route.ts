@@ -5,7 +5,8 @@ import {
   updateShoeListing,
   permanentlyDeleteShoeListing,
   ListingNotArchivedError,
-  ListingHasTransactionHistoryError
+  ListingHasTransactionHistoryError,
+  createRelistLog
 } from '@/features/shoe/services/service';
 import type { UpdateShoeListing } from '@/features/shoe/types/types';
 import { createListingView } from '@/features/view/services/service';
@@ -175,19 +176,33 @@ export async function PATCH(
   try {
     const body = await request.json();
 
-    if (shoeListing.archivedAt) {
-      return NextResponse.json({ error: 'Archived listings cannot be edited or relisted' }, { status: 409 });
+    if (shoeListing.archivedAt && body.archivedAt !== null) {
+      return NextResponse.json({ error: 'Archived listings cannot be edited. Relist to continue.' }, { status: 409 });
     }
 
     const updateData = getEditableShoeListingFields(body);
+
+    if (body.isReset) {
+      updateData.createdAt = new Date();
+    }
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No editable listing fields provided' }, { status: 400 });
     }
 
+    const archiveDate = shoeListing.archivedAt;
+
     const updatedShoeListing = await updateShoeListing(updateData, shoeListingId);
     if (!updatedShoeListing) {
       return NextResponse.json({ error: 'Failed to update shoe listing' }, { status: 400 });
+    }
+
+    // For relistings
+    if (body.archivedAt === null && body.isAvailable === true && archiveDate) {
+      await createRelistLog({
+        archivedAt: archiveDate,
+        listingId: shoeListingId
+      });
     }
 
     return NextResponse.json({ shoeListing: updatedShoeListing });

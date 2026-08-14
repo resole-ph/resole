@@ -9,7 +9,7 @@ import HeroBanner from '@/components/organisms/HeroBanner';
 import BrowseFeed from '@/components/organisms/BrowseFeed';
 import CharitiesSection from '@/components/organisms/CharitiesSection';
 import { useOnboardingStore } from '@/store/onboarding';
-import { useMyListings, useUserInfo } from '@/features/user/queries/user.queries';
+import { useMyActiveListings, useUserInfo } from '@/features/user/queries/user.queries';
 import { Listing } from '@/components/molecules/ListingCard';
 import { usePreferencesStore } from '@/store/preferences';
 import { sizeSystemFromUserPreferences } from '@/features/shoe/utils/size-conversion';
@@ -38,7 +38,7 @@ export default function HomeScreen() {
   // Both share their cache entries with the profile tab, so home -> profile
   // -> home costs no requests at all inside the stale window.
   const { data: userData } = useUserInfo(hydrated);
-  const { data: listingsData } = useMyListings(!!userData);
+  const { data: listingsData } = useMyActiveListings(!!userData);
 
   useEffect(() => {
     if (!userData) return;
