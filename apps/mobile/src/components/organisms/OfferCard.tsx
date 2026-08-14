@@ -107,6 +107,7 @@ export default function OfferCard({
                 activeOpacity={disabled ? 0.6 : 0.8}
                 onPress={onDecline}
                 disabled={disabled}
+                haptic="press"
               >
                 {isDeclining ? (
                   <ActivityIndicator size="small" color="#6B7280" />
@@ -122,6 +123,7 @@ export default function OfferCard({
                 activeOpacity={disabled ? 0.6 : 0.85}
                 onPress={onAccept}
                 disabled={disabled}
+                haptic="press"
                 style={
                   !disabled
                     ? { shadowColor: '#2563EB', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 3 }

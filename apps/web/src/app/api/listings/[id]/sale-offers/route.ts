@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/request-auth';
 import { createTransaction, createSale } from '@/features/transaction/services/service';
+import { ensureOfferConversation } from '@/features/inbox/services/service';
 import { getShoeListingById } from '@/features/shoe/services/service';
 import { parsePositiveInt } from '@/lib/id';
 
@@ -46,6 +47,13 @@ export async function POST(
   if (!sale) {
     return NextResponse.json({ error: 'Failed to retrieve sale details' }, { status: 400 });
   }
+
+  // Best-effort: the offer is already saved and lists with or without a thread.
+  await ensureOfferConversation({
+    listerId: shoeListing.seller.id,
+    recipientId: currentUser.user.id,
+    transactionId: transactionDetails.id,
+  });
 
   const { transaction, ...saleDetails } = sale;
 

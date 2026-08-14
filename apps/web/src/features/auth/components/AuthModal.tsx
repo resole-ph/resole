@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
+import { isValidEmail } from '@/lib/auth';
 
 const PASSWORD_REQUIREMENT_MESSAGE =
   'Password must be at least 8 characters and include uppercase, lowercase, and a number.';
@@ -89,6 +90,11 @@ export default function AuthModal({ initialMode = 'sign-in', prompt, onClose, on
     e.preventDefault();
     setError(null);
 
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
     if (mode === 'sign-up') {
       if (!isStrongPassword(password)) {
         setError(PASSWORD_REQUIREMENT_MESSAGE);
@@ -129,6 +135,12 @@ export default function AuthModal({ initialMode = 'sign-in', prompt, onClose, on
   async function handleForgotPasswordSubmit(e: FormEvent) {
     e.preventDefault();
     setForgotError(null);
+
+    if (!isValidEmail(forgotEmail)) {
+      setForgotError('Enter a valid email address.');
+      return;
+    }
+
     setForgotSubmitting(true);
 
     try {

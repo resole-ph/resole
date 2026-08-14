@@ -8,7 +8,10 @@ export async function POST(request: Request) {
   const currentUser = await getAuthenticatedUser(request);
 
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Please sign in again to analyze your photos — your session has expired.' },
+      { status: 401 }
+    );
   }
 
   try {
@@ -27,7 +30,10 @@ export async function POST(request: Request) {
     const insoleLeft = imageUrlInsoleLeft || imageUrlInsole;
 
     if (!imageUrlTop || !imageUrlLeftSide || !imageUrlRightSide || !imageUrlSole || !insoleRight || !insoleLeft) {
-      return NextResponse.json({ error: 'Missing one or more required photo URLs' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Some of your photos are still missing. Please go back and make sure all 6 slots are filled.' },
+        { status: 400 }
+      );
     }
 
     const analysis = await analyzeAndPriceShoe({
@@ -45,11 +51,16 @@ export async function POST(request: Request) {
       analysis, 
       analysisId: insertAnalysis?.id || 0
     });
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof InvalidShoePhotoError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+    // Internal failures (missing API key, image download, Gemini outage) are logged in full but
+    // never echoed to the seller — those messages mean nothing to them and can leak config details.
     console.error('Error analyzing photos:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: "We couldn't analyze your photos just now. Please go back and try again in a moment." },
+      { status: 500 }
+    );
   }
 }

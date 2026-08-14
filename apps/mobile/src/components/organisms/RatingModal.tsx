@@ -6,6 +6,7 @@ import {
 import { GuardedTouchableOpacity } from '@/components/atoms/GuardedTouchableOpacity';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { haptic } from '@/lib/haptics';
 
 interface RatingModalProps {
   visible: boolean;
@@ -44,7 +45,16 @@ export default function RatingModal({ visible, targetName, submitting, onSubmit,
 
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
             {[1, 2, 3, 4, 5].map((star) => (
-              <GuardedTouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7} disabled={submitting}>
+              <GuardedTouchableOpacity
+                key={star}
+                onPress={() => setRating(star)}
+                activeOpacity={0.7}
+                disabled={submitting}
+                // Stars are picked by trial, so the cooldown is dropped to keep
+                // 1→5 tapping responsive.
+                cooldownMs={0}
+                haptic="select"
+              >
                 <Ionicons name={star <= rating ? 'star' : 'star-outline'} size={34} color="#F59E0B" />
               </GuardedTouchableOpacity>
             ))}
@@ -66,6 +76,7 @@ export default function RatingModal({ visible, targetName, submitting, onSubmit,
           <GuardedTouchableOpacity
             onPress={handleSubmit}
             disabled={rating === 0 || submitting}
+            haptic="press"
             style={{ backgroundColor: rating > 0 ? '#2563EB' : '#E5E7EB', borderRadius: 18, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 10 }}
             activeOpacity={rating > 0 ? 0.85 : 1}
           >

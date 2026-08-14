@@ -23,7 +23,7 @@ export function useAiAnalysis() {
       const url = photos[angle]?.remoteUrl;
       if (!url) {
         setIsAnalyzing(false);
-        setAnalysisError('Photos are not fully uploaded yet. Please go back and retry.');
+        setAnalysisError('Your photos are still uploading. Please go back and try again in a moment.');
         return;
       }
       remoteUrls[angle] = url;
@@ -39,7 +39,11 @@ export function useAiAnalysis() {
       })
       .catch((err: unknown) => {
         setIsAnalyzing(false);
-        setAnalysisError(err instanceof Error ? err.message : 'Analysis failed');
+        setAnalysisError(
+          err instanceof Error
+            ? err.message
+            : "We couldn't analyze your photos just now. Please go back and try again in a moment."
+        );
       });
   }, []);
 }

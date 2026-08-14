@@ -4,11 +4,18 @@ import {
   TouchableOpacity,
   type TouchableOpacityProps,
 } from 'react-native';
+import { haptic, type HapticFeel } from '@/lib/haptics';
+
 type GuardedTouchableOpacityProps = Omit<TouchableOpacityProps, 'disabled' | 'onPress'> & {
   /** Prevent accidental repeated taps after a synchronous UI/navigation action. */
   cooldownMs?: number;
   disabled?: boolean;
   onPress?: (event: GestureResponderEvent) => void | Promise<void>;
+  /**
+   * Haptic feedback on a press that actually runs. Off by default so the app
+   * stays quiet except where feedback is earned; `true` is shorthand for 'tap'.
+   */
+  haptic?: HapticFeel | boolean;
 };
 
 /**
@@ -19,6 +26,7 @@ export function GuardedTouchableOpacity({
   cooldownMs = 400,
   disabled = false,
   onPress,
+  haptic: hapticFeel = false,
   ...props
 }: GuardedTouchableOpacityProps) {
   const lockedRef = useRef(false);
@@ -50,6 +58,12 @@ export function GuardedTouchableOpacity({
     lockedRef.current = true;
     setIsLocked(true);
 
+    // Fires only past the guard, so a tap swallowed by the cooldown stays silent
+    // — buzzing on an ignored tap would report success the press never had.
+    if (hapticFeel) {
+      haptic.feel(hapticFeel === true ? 'tap' : hapticFeel);
+    }
+
     Promise.resolve()
       .then(() => onPress(event))
       .catch(() => undefined)
@@ -58,7 +72,7 @@ export function GuardedTouchableOpacity({
           releaseTimerRef.current = setTimeout(release, cooldownMs);
         }
       });
-  }, [cooldownMs, disabled, onPress, release]);
+  }, [cooldownMs, disabled, hapticFeel, onPress, release]);
 
   return <TouchableOpacity {...props} disabled={disabled || isLocked} onPress={handlePress} />;
 }

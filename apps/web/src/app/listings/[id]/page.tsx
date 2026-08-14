@@ -4,8 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthGate } from '@/providers/AuthGateProvider';
+import { useAuth } from '@/providers/AuthProvider';
 import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
 import { formatSize } from '@/features/shoe/utils/size-conversion';
+import ListingOffersSection, {
+  type ReceivedListingOffer,
+} from '@/features/shoe/components/ListingOffersSection';
 
 const COLORS = {
   primary: '#2563EB',
@@ -27,6 +31,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { requireAuth } = useAuthGate();
+  const { user } = useAuth();
   const sizeSystem = usePreferredSizeSystem();
 
   // Safely extract the ID from the URL parameter
@@ -39,6 +44,8 @@ export default function ProductDetailPage() {
   const [saved, setSaved] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
+  const [receivedOffers, setReceivedOffers] = useState<ReceivedListingOffer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
 
   // Modals & offers
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -46,7 +53,14 @@ export default function ProductDetailPage() {
   const [offerPrice, setOfferPrice] = useState('');
   const [offerNote, setOfferNote] = useState('');
   const [buyConfirmed, setBuyConfirmed] = useState(false);
+  const [buySubmitting, setBuySubmitting] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
   const [offerSent, setOfferSent] = useState(false);
+  const [offerSubmitting, setOfferSubmitting] = useState(false);
+  const [offerError, setOfferError] = useState<string | null>(null);
+
+  // Up here rather than with the other derived flags, because the offers fetch needs it.
+  const isOwnListing = !!user && !!listing?.seller?.id && user.id === listing.seller.id;
 
   useEffect(() => {
     if (!productId) return;
@@ -103,6 +117,33 @@ export default function ProductDetailPage() {
     loadRelated();
   }, [listing, productId]);
 
+  // Gated on ownership rather than letting it fail — the route 403s anyone else.
+  useEffect(() => {
+    if (!productId || !isOwnListing) return;
+
+    let cancelled = false;
+    setLoadingOffers(true);
+
+    async function loadOffers() {
+      try {
+        const res = await fetch(`/api/listings/${productId}/offers`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load offers');
+        if (!cancelled) setReceivedOffers(data.offers ?? []);
+      } catch (e) {
+        console.error('Failed to load offers for listing:', e);
+      } finally {
+        if (!cancelled) setLoadingOffers(false);
+      }
+    }
+
+    loadOffers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [productId, isOwnListing]);
+
   const handleToggleSave = async () => {
     if (!listing) return;
     const isSaved = saved;
@@ -131,30 +172,80 @@ export default function ProductDetailPage() {
     ].filter(Boolean);
   }, [listing]);
 
+  // Hidden from the seller: both offer routes 400 on a self-offer anyway.
   const isSwappable = listing?.listingMode === 'Swap' || listing?.listingMode === 'Both';
-  const showBuyButton = listing?.listingMode === 'Sale' || listing?.listingMode === 'Both';
-  const showSwapButton = listing?.listingMode === 'Swap' || listing?.listingMode === 'Both';
-  const showOfferButton = listing?.listingMode === 'Sale' || listing?.listingMode === 'Both';
+  const showBuyButton = !isOwnListing && (listing?.listingMode === 'Sale' || listing?.listingMode === 'Both');
+  const showSwapButton = !isOwnListing && (listing?.listingMode === 'Swap' || listing?.listingMode === 'Both');
+  const showOfferButton = !isOwnListing && (listing?.listingMode === 'Sale' || listing?.listingMode === 'Both');
 
-  function handleConfirmPurchase() {
-    setBuyConfirmed(true);
-    setTimeout(() => {
-      setBuyConfirmed(false);
-      setShowBuyModal(false);
-      router.push('/inbox');
-    }, 1200);
+  async function handleConfirmPurchase() {
+    if (buySubmitting) return;
+    setBuySubmitting(true);
+    setBuyError(null);
+
+    try {
+      // Staging a buy-now cart row first is what /api/checkout consumes; it
+      // clears any previous buy-now row, so pressing this twice buys once.
+      const cartResponse = await fetch('/api/cart/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId: Number(productId), quantity: 1, isBuyNow: true }),
+      });
+      const cartData = await cartResponse.json().catch(() => ({}));
+      if (!cartResponse.ok) throw new Error(cartData.error || 'Could not start your purchase');
+
+      const checkoutResponse = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isBuyNow: true }),
+      });
+      const checkoutData = await checkoutResponse.json().catch(() => ({}));
+      if (!checkoutResponse.ok) throw new Error(checkoutData.error || 'Checkout failed');
+
+      setBuyConfirmed(true);
+      setTimeout(() => {
+        setBuyConfirmed(false);
+        setShowBuyModal(false);
+        router.push('/inbox');
+      }, 1200);
+    } catch (err) {
+      console.error('Failed to complete purchase:', err);
+      setBuyError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setBuySubmitting(false);
+    }
   }
 
-  function handleSendOffer() {
-    if (!offerPrice) return;
-    setOfferSent(true);
-    setTimeout(() => {
-      setOfferSent(false);
-      setShowOfferModal(false);
-      setOfferPrice('');
-      setOfferNote('');
-      router.push('/inbox');
-    }, 1200);
+  // `offerNote` stays UI-only — the sale table has no column for a message to
+  // the seller, so there is nowhere to put it yet.
+  async function handleSendOffer() {
+    if (!offerPrice || offerSubmitting) return;
+    setOfferSubmitting(true);
+    setOfferError(null);
+
+    try {
+      const response = await fetch(`/api/listings/${productId}/sale-offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'sale', price: Number(offerPrice) }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to send your offer');
+
+      setOfferSent(true);
+      setTimeout(() => {
+        setOfferSent(false);
+        setShowOfferModal(false);
+        setOfferPrice('');
+        setOfferNote('');
+        router.push('/inbox');
+      }, 1200);
+    } catch (err) {
+      console.error('Failed to send offer:', err);
+      setOfferError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setOfferSubmitting(false);
+    }
   }
 
   if (loading) {
@@ -254,7 +345,7 @@ export default function ProductDetailPage() {
 
             {/* Eco-Conscious badge */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: `${COLORS.green}0D`, borderRadius: 14, padding: 14, marginBottom: 20 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 9999, background: `${COLORS.green}26`, display: 'flex', alignItems: 'center', justifycenter: 'center', flexShrink: 0 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9999, background: `${COLORS.green}26`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={COLORS.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="m-2">
                   <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.58-1 9.5A7 7 0 0 1 11 20z"></path>
                   <path d="M19 2L11 10"></path>
@@ -271,23 +362,21 @@ export default function ProductDetailPage() {
             {/* Seller profile card */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: COLORS.surface, borderRadius: 14, padding: 14, boxShadow: CARD_SHADOW, marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9999, background: COLORS.primary, color: '#fff', display: 'flex', alignItems: 'center', justifycontent: 'center', fontWeight: 700, fontSize: 14 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 9999, background: COLORS.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>
                   <span className="m-2">{listing.seller?.name ? listing.seller.name.substring(0, 1).toUpperCase() : 'S'}</span>
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.textMain }}>@{listing.seller?.name || 'sneakerhead'}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLORS.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12 6.477 22 12 22z"></path>
-                      <path d="M9 12l2 2 4-4"></path>
-                    </svg>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.textMain }}>@{listing.seller?.name || 'Seller'}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: COLORS.textFaint }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill={COLORS.amber} stroke={COLORS.amber} strokeWidth="1">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                    </svg>
-                    4.8 (Verified Seller)
-                  </div>
+                  {listing.seller?.rating != null && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: COLORS.textFaint }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill={COLORS.amber} stroke={COLORS.amber} strokeWidth="1">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                      {Number(listing.seller.rating).toFixed(1)}
+                    </div>
+                  )}
                 </div>
               </div>
               <button
@@ -305,7 +394,11 @@ export default function ProductDetailPage() {
             <div style={{ display: 'flex', gap: 12 }}>
               {showOfferButton && (
                 <button
-                  onClick={() => { setOfferPrice(String(listing.price)); setShowOfferModal(true); }}
+                  onClick={() => requireAuth(() => {
+                    setOfferPrice(String(listing.price));
+                    setOfferError(null);
+                    setShowOfferModal(true);
+                  }, 'Log in to make an offer.')}
                   style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#D97706', color: '#fff', border: 'none', borderRadius: 9999, padding: '14px 0', fontSize: 14.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0px 4px 14px rgba(217,119,6,0.3)' }}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>sell</span>
@@ -314,7 +407,10 @@ export default function ProductDetailPage() {
               )}
               {showBuyButton && (
                 <button
-                  onClick={() => setShowBuyModal(true)}
+                  onClick={() => requireAuth(() => {
+                    setBuyError(null);
+                    setShowBuyModal(true);
+                  }, 'Log in to buy this pair.')}
                   style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#059669', color: '#fff', border: 'none', borderRadius: 9999, padding: '14px 0', fontSize: 14.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0px 4px 14px rgba(5,150,105,0.3)' }}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>shopping_bag</span>
@@ -323,7 +419,7 @@ export default function ProductDetailPage() {
               )}
               {showSwapButton && (
                 <button
-                  onClick={() => router.push(`/swap?id=${listing.id}`)}
+                  onClick={() => requireAuth(() => router.push(`/swap?id=${listing.id}`), 'Log in to propose a swap.')}
                   style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#7C3AED', color: '#fff', border: 'none', borderRadius: 9999, padding: '14px 0', fontSize: 14.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0px 4px 14px rgba(124,58,237,0.3)' }}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>swap_horiz</span>
@@ -333,6 +429,11 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Offers received — only ever rendered for the seller. */}
+        {isOwnListing && (
+          <ListingOffersSection offers={receivedOffers} isLoading={loadingOffers} />
+        )}
 
         {/* Related sneakers */}
         {relatedItems.length > 0 && (
@@ -413,14 +514,19 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
+            {buyError && (
+              <p style={{ fontSize: 13, color: COLORS.red, margin: '0 0 12px' }}>{buyError}</p>
+            )}
+
             <button
               onClick={handleConfirmPurchase}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#059669', color: '#fff', border: 'none', borderRadius: 18, padding: '16px 0', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0px 4px 14px rgba(5,150,105,0.3)' }}
+              disabled={buySubmitting}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#059669', color: '#fff', border: 'none', borderRadius: 18, padding: '16px 0', fontSize: 16, fontWeight: 700, cursor: buySubmitting ? 'default' : 'pointer', opacity: buySubmitting ? 0.7 : 1, boxShadow: '0px 4px 14px rgba(5,150,105,0.3)' }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
                 {buyConfirmed ? 'check_circle' : 'shopping_bag'}
               </span>
-              {buyConfirmed ? 'Order Placed!' : 'Confirm Purchase'}
+              {buyConfirmed ? 'Order Placed!' : buySubmitting ? 'Placing order…' : 'Confirm Purchase'}
             </button>
           </div>
         </div>
@@ -485,9 +591,13 @@ export default function ProductDetailPage() {
               style={{ width: '100%', background: '#F9FAFB', borderRadius: 14, padding: 14, fontSize: 14, color: COLORS.textMain, border: `1.5px solid ${COLORS.border}`, marginBottom: 20, resize: 'none', outline: 'none', fontFamily: 'Inter, sans-serif' }}
             />
 
+            {offerError && (
+              <p style={{ fontSize: 13, color: COLORS.red, margin: '0 0 12px' }}>{offerError}</p>
+            )}
+
             <button
               onClick={offerPrice ? handleSendOffer : undefined}
-              disabled={!offerPrice}
+              disabled={!offerPrice || offerSubmitting}
               style={{
                 width: '100%',
                 display: 'flex',
@@ -501,14 +611,15 @@ export default function ProductDetailPage() {
                 padding: '16px 0',
                 fontSize: 16,
                 fontWeight: 700,
-                cursor: offerPrice ? 'pointer' : 'default',
+                cursor: offerPrice && !offerSubmitting ? 'pointer' : 'default',
+                opacity: offerSubmitting ? 0.7 : 1,
                 boxShadow: offerPrice ? '0px 4px 14px rgba(217,119,6,0.3)' : 'none',
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
                 {offerSent ? 'check_circle' : 'sell'}
               </span>
-              {offerSent ? 'Offer Sent!' : 'Send Offer'}
+              {offerSent ? 'Offer Sent!' : offerSubmitting ? 'Sending…' : 'Send Offer'}
             </button>
           </div>
         </div>
