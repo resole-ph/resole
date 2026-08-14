@@ -3,6 +3,7 @@
 import StepHeader from './StepHeader';
 import type { AiAnalysisResult } from '../types/sell.types';
 import { getConditionLabel } from '../utils/condition';
+import { formatSize, type SizeSystem } from '@/features/shoe/utils/size-conversion';
 
 interface AiResultsStepProps {
   isAnalyzing: boolean;
@@ -10,6 +11,7 @@ interface AiResultsStepProps {
   result: AiAnalysisResult | null;
   onBack: () => void;
   onContinue: () => void;
+  sizeSystem: SizeSystem;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -27,6 +29,7 @@ export default function AiResultsStep({
   result,
   onBack,
   onContinue,
+  sizeSystem,
 }: AiResultsStepProps) {
   return (
     <div>
@@ -107,6 +110,9 @@ export default function AiResultsStep({
 
               <DetailRow label="Brand" value={result.brand} />
               <DetailRow label="Model" value={result.model} />
+              {result.size && Number.isFinite(Number(result.size)) && (
+                <DetailRow label="Size" value={formatSize(Number(result.size), sizeSystem)} />
+              )}
 
               <div className="flex items-center justify-between py-2.5 border-b border-outline-variant last:border-0">
                 <span className="text-[13px] font-semibold text-on-surface-variant">Condition</span>

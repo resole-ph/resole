@@ -15,6 +15,11 @@ export interface SellPhoto {
 export interface AiAnalysisResult {
   brand: string;
   model: string;
+  colorway?: string;
+  /** AI analysis returns the storage anchor (US Men). */
+  size?: string;
+  category?: string;
+  year?: number;
   conditionScore: number;
   description: string;
   estimatedPrice: number;

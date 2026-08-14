@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export type SessionUser = {
   id: string;
@@ -19,6 +20,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,8 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include' });
     } finally {
       setUser(null);
+      // QueryProvider lives for the lifetime of the tab, so its account data
+      // must be removed explicitly when the session ends.
+      await queryClient.cancelQueries();
+      queryClient.clear();
     }
-  }, []);
+  }, [queryClient]);
 
   return (
     <AuthContext.Provider value={{ user, loading, refresh, signOut }}>

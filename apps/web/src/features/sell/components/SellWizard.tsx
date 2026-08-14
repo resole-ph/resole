@@ -23,9 +23,12 @@ import type {
   ListingFormData,
   UploadedPhotoUrls,
 } from '../types/sell.types';
+import { usePreferredSizePreference } from '@/features/shoe/hooks/usePreferredSizeSystem';
+import { convertFromUSMens, formatSizeValue, type SizeSystem } from '@/features/shoe/utils/size-conversion';
 
 const ANGLES: PhotoAngle[] = ['top', 'leftSide', 'rightSide', 'sole', 'insoleRight', 'insoleLeft'];
 const STEP_ORDER: SellStep[] = ['photos', 'results', 'editListing', 'review', 'confirmation'];
+const CATEGORIES: ListingFormData['category'][] = ['running', 'basketball', 'football', 'casual', 'other'];
 
 const INITIAL_PHOTOS: Record<PhotoAngle, SellPhoto | null> = {
   top: null,
@@ -36,14 +39,18 @@ const INITIAL_PHOTOS: Record<PhotoAngle, SellPhoto | null> = {
   insoleLeft: null,
 };
 
-function initFormFromAiResult(ai: AiAnalysisResult): ListingFormData {
+function initFormFromAiResult(ai: AiAnalysisResult, sizeSystem: SizeSystem): ListingFormData {
   const conditionScore = Math.round(ai.conditionScore);
+  const anchorSize = Number(ai.size);
+  const category = CATEGORIES.find((candidate) => candidate === ai.category) ?? 'other';
   return {
     brand: ai.brand ?? '',
     model: ai.model ?? '',
-    category: 'other',
-    colorway: '',
-    size: '',
+    category,
+    colorway: ai.colorway ?? '',
+    size: Number.isFinite(anchorSize)
+      ? formatSizeValue(convertFromUSMens(anchorSize, sizeSystem))
+      : '',
     conditionScore: Math.min(10, Math.max(1, Number.isFinite(conditionScore) ? conditionScore : 5)),
     price: String(Math.round(ai.estimatedPrice) || 0),
     description: ai.description ?? '',
@@ -55,6 +62,7 @@ function initFormFromAiResult(ai: AiAnalysisResult): ListingFormData {
 export default function SellWizard() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
+  const { sizeSystem, isLoading: isSizeSystemLoading } = usePreferredSizePreference();
 
   const [step, setStep] = useState<SellStep>('photos');
   const [photos, setPhotos] = useState<Record<PhotoAngle, SellPhoto | null>>(INITIAL_PHOTOS);
@@ -90,6 +98,8 @@ export default function SellWizard() {
   }, []);
 
   useEffect(() => {
+    if (isSizeSystemLoading) return;
+
     if (!editId) {
       setFlowMode('create');
       setEditingListingId(null);
@@ -104,7 +114,7 @@ export default function SellWizard() {
       try {
         const listing = await fetchListingById(Number(editId));
         if (listing) {
-          const { photos: mappedPhotos, form: mappedForm } = listingToEditState(listing);
+          const { photos: mappedPhotos, form: mappedForm } = listingToEditState(listing, sizeSystem);
           setPhotos(mappedPhotos);
           setForm(mappedForm);
           setBaselineConditionScore(mappedForm.conditionScore);
@@ -122,7 +132,7 @@ export default function SellWizard() {
     }
 
     loadListing();
-  }, [editId]);
+  }, [editId, isSizeSystemLoading, sizeSystem]);
 
   function handleSelectPhoto(angle: PhotoAngle, file: File) {
     const previewUrl = URL.createObjectURL(file);
@@ -180,7 +190,7 @@ export default function SellWizard() {
 
   function handleResultsContinue() {
     if (!aiResult) return;
-    const initialForm = initFormFromAiResult(aiResult);
+    const initialForm = initFormFromAiResult(aiResult, sizeSystem);
     setForm(initialForm);
     // The seller was shown the AI's score rounded on the results step, and the
     // form starts from that same rounded value — so the dial opens on
@@ -212,9 +222,9 @@ export default function SellWizard() {
       }
 
       if (flowMode === 'edit' && editingListingId) {
-        await updateListing(editingListingId, form, finalUrls);
+        await updateListing(editingListingId, form, finalUrls, sizeSystem);
       } else {
-        const result = await publishListing(form, finalUrls);
+        const result = await publishListing(form, finalUrls, sizeSystem);
         setPublishedListingId(result.id);
       }
       setStep('confirmation');
@@ -248,7 +258,7 @@ export default function SellWizard() {
   }
 
 
-  if (loading) {
+  if (loading || isSizeSystemLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -284,6 +294,7 @@ export default function SellWizard() {
           isAnalyzing={isAnalyzing}
           error={analysisError}
           result={aiResult}
+          sizeSystem={sizeSystem}
           onBack={goBack}
           onContinue={handleResultsContinue}
         />
@@ -293,6 +304,7 @@ export default function SellWizard() {
         <EditListingStep
           form={form}
           aiConditionScore={baselineConditionScore ?? form.conditionScore}
+          sizeSystem={sizeSystem}
           onChange={updateFormField}
           onBack={goBack}
           onContinue={() => setStep('review')}
@@ -308,6 +320,7 @@ export default function SellWizard() {
           onBack={goBack}
           onPublish={handlePublish}
           flowMode={flowMode}
+          sizeSystem={sizeSystem}
         />
       )}
 

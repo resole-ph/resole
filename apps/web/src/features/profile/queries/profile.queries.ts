@@ -28,10 +28,11 @@ export const profileKeys = {
   userReviews: (userId: string) => [...profileKeys.all, 'public', userId, 'reviews'] as const,
 };
 
-export function useMyProfile() {
+export function useMyProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: profileKeys.me(),
     queryFn: () => ProfileClient.getMyProfile(),
+    enabled: options?.enabled ?? true,
   });
 }
 

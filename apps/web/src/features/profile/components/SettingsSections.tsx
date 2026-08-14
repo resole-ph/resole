@@ -7,6 +7,13 @@ import { useMyProfile, useUpdateMyProfile } from '../queries/profile.queries';
 import type { MyProfile } from '../types/profile.types';
 import { isStrongPassword, isValidEmail, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth';
 import { ProfileClient } from '../services/profile.client';
+import {
+  SIZE_SYSTEM_LABELS,
+  SIZE_SYSTEMS,
+  sizeSystemFromUserPreferences,
+  userPreferencesFromSizeSystem,
+  type SizeSystem,
+} from '@/features/shoe/utils/size-conversion';
 
 // These are the four categories the API actually stores; the labels below name
 // them as the server does rather than inventing a mapping.
@@ -17,8 +24,6 @@ const ACCOUNT_FIELDS: { id: keyof MyProfile; label: string; value: string, icon:
   { id: 'email',          label: 'Email',           value: '', icon: 'mail' },
   { id: 'contactNo',      label: 'Phone',           value: '', icon: 'call' },
   { id: 'location',       label: 'Location',        value: '', icon: 'location_on' },
-  { id: 'unit',           label: 'Unit',            value: '', icon: 'deployed_code' },
-  { id: 'classification', label: 'Classification',  value: '', icon: 'wc' },
 ];
 
 const NOTIF_ROWS: { key: NotifKey; label: string; sub: string }[] = [
@@ -34,15 +39,6 @@ const MORE_ROWS = [
   { label: 'Help & support', icon: 'help' },
   { label: 'About Resole', icon: 'info' },
 ];
-
-const UNIT_OPTIONS = ['us', 'uk', 'eu', 'cm'];
-const CLASSIFICATION_OPTIONS = ["men", "women"];
-
-function fieldOptions(fieldId: string): string[] | null {
-  if (fieldId === 'unit') return UNIT_OPTIONS;
-  if (fieldId === 'classification') return CLASSIFICATION_OPTIONS;
-  return null;
-}
 
 function SectionTitle({ title }: { title: string }) {
   return (
@@ -255,7 +251,7 @@ function EditFieldModal({
     </DialogShell>
   );
 }
- 
+        
 function PasswordEditModal({
   visible,
   onClose,
@@ -372,6 +368,76 @@ function PasswordEditModal({
   );
 }
 
+function SizeSystemModal({
+  visible,
+  current,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  current: SizeSystem;
+  onClose: () => void;
+  onSelect: (system: SizeSystem) => Promise<void>;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  if (!visible) return null;
+
+  const handleSelect = async (system: SizeSystem) => {
+    if (system === current) {
+      onClose();
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onSelect(system);
+      onClose();
+    } catch {
+      // The parent surfaces the API error; keep the modal open for retrying.
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <DialogShell
+      title="Shoe size system"
+      onClose={onClose}
+      footer={
+        <button
+          onClick={onClose}
+          disabled={saving}
+          className="flex-1 py-2.5 rounded-full text-[14px] font-semibold text-on-surface-variant bg-surface-container hover:bg-surface-container-high disabled:opacity-40 transition-colors"
+        >
+          Close
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        {SIZE_SYSTEMS.map((system) => {
+          const selected = system === current;
+          return (
+            <button
+              key={system}
+              onClick={() => handleSelect(system)}
+              disabled={saving}
+              className={`flex items-center justify-between rounded-lg px-3.5 py-2.5 text-[14px] transition-colors disabled:opacity-40 ${
+                selected
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-on-surface hover:bg-surface-container'
+              }`}
+            >
+              <span>{SIZE_SYSTEM_LABELS[system]}</span>
+              {selected && <span className="material-symbols-outlined text-[18px]">check</span>}
+            </button>
+          );
+        })}
+      </div>
+    </DialogShell>
+  );
+}
+
 function ToggleRow({
   label,
   sub,
@@ -452,6 +518,7 @@ export default function SettingsSections() {
   const updateProfile = useUpdateMyProfile();
   const [editingField, setEditingField] = useState<(typeof ACCOUNT_FIELDS)[number] | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
     listing: false,
     offer: false,
@@ -491,7 +558,7 @@ export default function SettingsSections() {
     () =>
       ACCOUNT_FIELDS.map((field) => ({
         ...field,
-        value: profile ? String(profile[field.id]) ?? '—' : '—',
+        value: profile?.[field.id] ? String(profile[field.id]) : '—',
       })),
       [profile]
   );  
@@ -535,6 +602,17 @@ export default function SettingsSections() {
     await ProfileClient.updatePassword({ currentPassword, newPassword })
   }
 
+  async function handleSizeSystemChange(sizeSystem: SizeSystem) {
+    try {
+      await updateProfile.mutateAsync(userPreferencesFromSizeSystem(sizeSystem));
+    } catch (error) {
+      window.alert(
+        `Could not update shoe size system. ${error instanceof Error ? error.message : 'Please try again.'}`
+      );
+      throw error;
+    }
+  }
+
   const handleLogout = async () => {
     if (window.confirm('Log out? You will need to sign in again.')) {
       await signOut();
@@ -574,6 +652,18 @@ export default function SettingsSections() {
           {notifError && <p className="text-error text-[13px] px-4 pb-3">{notifError}</p>}
         </div>
 
+        <SectionTitle title="Preferences" />
+        <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
+          <AccountRow
+            label="Shoe size system"
+            value={SIZE_SYSTEM_LABELS[
+              sizeSystemFromUserPreferences(profile?.unit, profile?.classification)
+            ]}
+            icon="straighten"
+            onClick={() => setShowSizeSystemModal(true)}
+          />
+        </div>
+
         <SectionTitle title="More" />
         <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
           {MORE_ROWS.map((m) => (
@@ -601,6 +691,13 @@ export default function SettingsSections() {
         visible={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
         onSave={handleChangePassword}
+      />
+
+      <SizeSystemModal
+        visible={showSizeSystemModal}
+        current={sizeSystemFromUserPreferences(profile?.unit, profile?.classification)}
+        onClose={() => setShowSizeSystemModal(false)}
+        onSelect={handleSizeSystemChange}
       />
     </>
   );
