@@ -4,6 +4,8 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys, useMyListings } from '../queries/profile.queries';
+import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 type Tab = 'active' | 'removed';
 
@@ -38,13 +40,16 @@ function Thumbnail({ imageUrl }: { imageUrl?: string }) {
 }
 
 function ActiveCard({ item, onEdit, onDelete }: { item: any; onEdit: () => void; onDelete: () => void }) {
+  const sizeSystem = usePreferredSizeSystem();
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 flex items-center gap-3">
       <Thumbnail imageUrl={item.imageUrl} />
 
       <div className="flex-1 min-w-0">
         <p className="text-on-surface font-semibold text-[14px] truncate">{item.model}</p>
-        <p className="text-on-surface-variant text-[12px] mt-0.5">{item.brand} &middot; US {item.size}</p>
+        <p className="text-on-surface-variant text-[12px] mt-0.5">
+          {item.brand} &middot; {formatSize(Number(item.size), sizeSystem)}
+        </p>
         <p className="text-primary font-bold text-[14px] mt-1">₱{Number(item.price || 0).toLocaleString()}</p>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
@@ -81,6 +86,7 @@ function RemovedCard({
   onRelist: () => void;
   onDonate: () => void;
 }) {
+  const sizeSystem = usePreferredSizeSystem();
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3">
       <div className="flex items-center gap-3">
@@ -88,7 +94,9 @@ function RemovedCard({
 
         <div className="flex-1 min-w-0">
           <p className="text-on-surface font-semibold text-[14px] truncate">{item.model}</p>
-          <p className="text-on-surface-variant text-[12px] mt-0.5">{item.brand} &middot; US {item.size}</p>
+          <p className="text-on-surface-variant text-[12px] mt-0.5">
+            {item.brand} &middot; {formatSize(Number(item.size), sizeSystem)}
+          </p>
           <p className="text-primary font-bold text-[14px] mt-1">₱{Number(item.price || 0).toLocaleString()}</p>
           <div className="flex items-center gap-1.5 mt-1">
             <span className="w-1.5 h-1.5 rounded-full bg-outline-variant" />

@@ -7,6 +7,7 @@ import { getConditionLabel } from '../utils/condition';
 import { getConditionTone, getDeviationLabel } from '../utils/condition-tone';
 import ConditionSlider from './ConditionSlider';
 import { validateListingForm } from '../utils/validation';
+import { SIZE_SYSTEM_LABELS, type SizeSystem } from '@/features/shoe/utils/size-conversion';
 
 const CATEGORIES: ShoeCategory[] = ['running', 'basketball', 'football', 'casual', 'other'];
 
@@ -33,6 +34,7 @@ interface EditListingStepProps {
    * create flow, and the rating the listing was loaded with when editing.
    */
   aiConditionScore: number;
+  sizeSystem: SizeSystem;
   onChange: <K extends keyof ListingFormData>(key: K, value: ListingFormData[K]) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -71,11 +73,12 @@ function CardLabel({ children }: { children: string }) {
 export default function EditListingStep({
   form,
   aiConditionScore,
+  sizeSystem,
   onChange,
   onBack,
   onContinue,
 }: EditListingStepProps) {
-  const errors = validateListingForm(form);
+  const errors = validateListingForm(form, sizeSystem);
   const canContinue = Object.keys(errors).length === 0;
   const conditionLabel = getConditionLabel(form.conditionScore);
   const conditionTone = getConditionTone(
@@ -120,7 +123,7 @@ export default function EditListingStep({
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Size (US Men's) *" error={errors.size}>
+                <Field label={`Size (${SIZE_SYSTEM_LABELS[sizeSystem]}) *`} error={errors.size}>
                   <input
                     className={fieldInputClass(errors.size)}
                     value={form.size}

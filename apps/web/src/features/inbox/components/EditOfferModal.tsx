@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import type { EditOfferPayload, OfferExtras, ThreadOffer } from '../types/inbox.types';
 import type { SerializedShoeListing } from '@/features/shoe/utils/listing-dto';
+import { usePreferredSizeSystem } from '@/features/shoe/hooks/usePreferredSizeSystem';
+import { formatSize } from '@/features/shoe/utils/size-conversion';
 
 type EditOfferModalProps = {
   offer: ThreadOffer;
@@ -24,6 +26,7 @@ export default function EditOfferModal({
   onSave,
 }: EditOfferModalProps) {
   const isSwap = offer.type === 'swap';
+  const sizeSystem = usePreferredSizeSystem();
   const [price, setPrice] = useState(offer.details?.price ?? '');
   const [selectedListingId, setSelectedListingId] = useState<number | null>(
     extras?.swapItem ? Number(extras.swapItem.id) : null
@@ -81,7 +84,9 @@ export default function EditOfferModal({
           <div className="min-w-0">
             <p className="text-on-surface font-semibold text-[13px] truncate">{extras?.listing?.model ?? 'Listing'}</p>
             {extras?.listing?.size && (
-              <p className="text-on-surface-variant text-[12px]">Size US {extras.listing.size}</p>
+              <p className="text-on-surface-variant text-[12px]">
+                Size {formatSize(Number(extras.listing.size), sizeSystem)}
+              </p>
             )}
           </div>
         </div>
@@ -123,7 +128,9 @@ export default function EditOfferModal({
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-on-surface font-semibold text-[13px] truncate">{listing.model}</p>
-                        <p className="text-on-surface-variant text-[12px]">Size US {listing.size}</p>
+                        <p className="text-on-surface-variant text-[12px]">
+                          Size {formatSize(Number(listing.size), sizeSystem)}
+                        </p>
                       </div>
                       {selected && <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>}
                     </button>

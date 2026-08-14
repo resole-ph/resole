@@ -8,6 +8,12 @@ import type {
   ListingMode,
   SellPhoto,
 } from '../types/sell.types';
+import {
+  convertFromUSMens,
+  convertToUSMens,
+  formatSizeValue,
+  type SizeSystem,
+} from '@/features/shoe/utils/size-conversion';
 
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   const data = await response.json().catch(() => ({}));
@@ -53,7 +59,8 @@ export async function analyzeListingPhotos(
 
 export async function publishListing(
   form: ListingFormData,
-  photoUrls: UploadedPhotoUrls
+  photoUrls: UploadedPhotoUrls,
+  sizeSystem: SizeSystem
 ): Promise<PublishedListing> {
   const mappedMode = form.listingMode.charAt(0).toUpperCase() + form.listingMode.slice(1);
   const response = await fetch('/api/listings', {
@@ -66,7 +73,7 @@ export async function publishListing(
       value: form.price,
       description: form.description,
       colorway: form.colorway,
-      size: form.size,
+      size: formatSizeValue(convertToUSMens(Number(form.size), sizeSystem)),
       conditionScore: form.conditionScore,
       isRefurbished: form.isRefurbished,
       listingMode: mappedMode,
@@ -89,7 +96,8 @@ export async function fetchListingById(id: number): Promise<any> {
 export async function updateListing(
   id: number,
   form: ListingFormData,
-  photoUrls: UploadedPhotoUrls
+  photoUrls: UploadedPhotoUrls,
+  sizeSystem: SizeSystem
 ): Promise<PublishedListing> {
   const mappedMode = form.listingMode.charAt(0).toUpperCase() + form.listingMode.slice(1);
   const response = await fetch(`/api/listings/${id}`, {
@@ -102,7 +110,7 @@ export async function updateListing(
       value: form.price,
       description: form.description,
       colorway: form.colorway,
-      size: form.size,
+      size: formatSizeValue(convertToUSMens(Number(form.size), sizeSystem)),
       conditionScore: form.conditionScore,
       isRefurbished: form.isRefurbished,
       listingMode: mappedMode,
@@ -114,7 +122,7 @@ export async function updateListing(
   return data.shoeListing;
 }
 
-export function listingToEditState(listing: any): {
+export function listingToEditState(listing: any, sizeSystem: SizeSystem): {
   photos: Record<PhotoAngle, SellPhoto>;
   form: ListingFormData;
 } {
@@ -132,7 +140,9 @@ export function listingToEditState(listing: any): {
     model: listing.model,
     category: (listing.category as ShoeCategory) ?? 'other',
     colorway: listing.colorway ?? '',
-    size: String(listing.size ?? ''),
+    size: listing.size
+      ? formatSizeValue(convertFromUSMens(Number(listing.size), sizeSystem))
+      : '',
     conditionScore: Number(listing.conditionScore ?? 5),
     price: String(listing.price ?? '0'),
     description: listing.description ?? '',
