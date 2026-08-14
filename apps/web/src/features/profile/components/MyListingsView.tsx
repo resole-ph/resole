@@ -87,6 +87,8 @@ function RemovedCard({
   onDonate: () => void;
 }) {
   const sizeSystem = usePreferredSizeSystem();
+  const isArchived = Boolean(item.archivedAt);
+
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3">
       <div className="flex items-center gap-3">
@@ -100,11 +102,20 @@ function RemovedCard({
           <p className="text-primary font-bold text-[14px] mt-1">₱{Number(item.price || 0).toLocaleString()}</p>
           <div className="flex items-center gap-1.5 mt-1">
             <span className="w-1.5 h-1.5 rounded-full bg-outline-variant" />
-            <span className="text-on-surface-variant text-[12px]">Removed from market</span>
+            <span className="text-on-surface-variant text-[12px]">
+              {isArchived ? 'Archived' : 'Removed from market'}
+            </span>
           </div>
         </div>
       </div>
 
+      {isArchived ? (
+        <div className="rounded-xl bg-surface-container px-3 py-2.5">
+          <p className="text-on-surface-variant text-[12px] text-center">
+            Hidden from the marketplace until automatic deletion.
+          </p>
+        </div>
+      ) : (
       <div className="flex gap-2">
         <button
           onClick={onRelist}
@@ -121,6 +132,7 @@ function RemovedCard({
           Donate
         </button>
       </div>
+      )}
     </div>
   );
 }
