@@ -2,6 +2,7 @@
   "expo": {
     "name": "mobile",
     "slug": "mobile",
+    "owner": "rdgonzaga",
     "scheme": "resole",
     "version": "1.0.0",
     "orientation": "portrait",
