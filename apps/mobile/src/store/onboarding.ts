@@ -13,6 +13,7 @@ interface OnboardingState {
   setIntent: (intent: Intent) => void;
   setLocation: (location: string) => void;
   setPhoneNumber: (phoneNumber: string) => void;
+  reset: () => void;
 }
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -26,6 +27,12 @@ export const useOnboardingStore = create<OnboardingState>()(
       setIntent: (intent) => set({ intent }),
       setLocation: (location) => set({ location }),
       setPhoneNumber: (phoneNumber) => set({ phoneNumber }),
+      reset: () => set({
+        hasSeenOnboarding: false,
+        intent: 'buy',
+        location: '',
+        phoneNumber: '',
+      }),
     }),
     {
       name: 'onboarding',

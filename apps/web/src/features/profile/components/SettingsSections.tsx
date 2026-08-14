@@ -438,17 +438,23 @@ function ActionRow({
   icon,
   tone = 'default',
   onClick,
+  disabled = false,
 }: {
   label: string;
   icon: string;
   tone?: 'default' | 'warning' | 'danger';
   onClick?: () => void;
+  disabled?: boolean;
 }) {
   const toneClass =
     tone === 'danger' ? 'text-error' : tone === 'warning' ? 'text-tertiary' : 'text-on-surface';
 
   return (
-    <button onClick={onClick} className="w-full text-left">
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full text-left disabled:cursor-not-allowed disabled:opacity-40"
+    >
       <Row>
         <span className={`material-symbols-outlined text-[18px] ${toneClass}`}>{icon}</span>
         <span className={`flex-1 font-medium text-[14px] ${toneClass}`}>{label}</span>
@@ -467,6 +473,7 @@ export default function SettingsSections() {
   const [editingField, setEditingField] = useState<(typeof ACCOUNT_FIELDS)[number] | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSizeSystemModal, setShowSizeSystemModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
     messages: true,
     offers: false,
@@ -524,9 +531,25 @@ export default function SettingsSections() {
     }
   };
 
-  const handleDeleteAccount = () => {
-    if (window.confirm('Delete account? All your data will be permanently removed. This cannot be undone.')) {
-      // Account deletion wiring pending auth integration.
+  const handleDeleteAccount = async () => {
+    if (
+      isDeletingAccount ||
+      !window.confirm('Delete account? Your account will be deleted and you will be signed out. This cannot be undone.')
+    ) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      await ProfileClient.deleteAccount();
+      await signOut();
+      router.replace('/');
+    } catch (error) {
+      window.alert(
+        `Could not delete account. ${error instanceof Error ? error.message : 'Please try again.'}`,
+      );
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -582,7 +605,13 @@ export default function SettingsSections() {
         <SectionTitle title="Account actions" />
         <div className="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
           <ActionRow label="Log out" icon="logout" tone="warning" onClick={handleLogout} />
-          <ActionRow label="Delete account" icon="delete" tone="danger" onClick={handleDeleteAccount} />
+          <ActionRow
+            label={isDeletingAccount ? 'Deleting account...' : 'Delete account'}
+            icon="delete"
+            tone="danger"
+            onClick={handleDeleteAccount}
+            disabled={isDeletingAccount}
+          />
         </div>
       </div>
 
