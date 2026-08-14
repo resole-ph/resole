@@ -23,8 +23,10 @@ interface ConversationThreadProps {
   isSending: boolean;
   isRespondingToOffer: boolean;
   error: string | null;
+  sendError: string | null;
   onBack: () => void;
   onSend: (text: string) => void;
+  onSendPhoto: (photo: File) => void;
   onAccept: (transactionId: number) => void;
   onDecline: (transactionId: number) => void;
   onEdit: (transactionId: number) => void;
@@ -121,35 +123,91 @@ function TextBubble({ msg, isMe }: { msg: ThreadMessage; isMe: boolean }) {
 }
 
 function PhotoBubble({ msg, isMe }: { msg: ThreadMessage; isMe: boolean }) {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isPreviewOpen) return;
+
+    const previouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsPreviewOpen(false);
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [isPreviewOpen]);
+
   return (
-    <div className={`flex mb-1 px-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
-      <div>
-        {msg.attachment?.url ? (
-          <a
-            href={msg.attachment.url}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open photo attachment"
-            className="block w-64 max-w-[70vw] max-h-80 overflow-hidden rounded-2xl bg-surface-container border border-outline-variant"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs cannot use the static host allowlist */}
-            <img
-              src={msg.attachment.url}
-              alt="Photo attachment"
-              className="w-full max-h-80 object-contain"
-            />
-          </a>
-        ) : (
-          <div className="w-64 h-40 rounded-2xl bg-surface-container border border-outline-variant flex flex-col items-center justify-center text-outline">
-            <span className="material-symbols-outlined text-[28px]">image</span>
-            <span className="text-[12px] mt-1">Photo unavailable</span>
+    <>
+      <div className={`flex mb-1 px-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div>
+          {msg.attachment?.url ? (
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(true)}
+              aria-label="Open photo attachment"
+              className="block w-64 max-w-[70vw] max-h-80 overflow-hidden rounded-2xl bg-surface-container border border-outline-variant cursor-pointer"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs cannot use the static host allowlist */}
+              <img
+                src={msg.attachment.url}
+                alt="Photo attachment"
+                className="w-full max-h-80 object-contain"
+              />
+            </button>
+          ) : (
+            <div className="w-64 h-40 rounded-2xl bg-surface-container border border-outline-variant flex flex-col items-center justify-center text-outline">
+              <span className="material-symbols-outlined text-[28px]">image</span>
+              <span className="text-[12px] mt-1">Photo unavailable</span>
+            </div>
+          )}
+          <div className={`mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+            <span className="text-outline text-[11px]">{formatMessageTime(msg.createdAt)}</span>
           </div>
-        )}
-        <div className={`mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
-          <span className="text-outline text-[11px]">{formatMessageTime(msg.createdAt)}</span>
         </div>
       </div>
-    </div>
+
+      {isPreviewOpen && msg.attachment?.url && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo attachment preview"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsPreviewOpen(false);
+          }}
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 sm:p-8"
+        >
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={() => setIsPreviewOpen(false)}
+            aria-label="Close photo preview"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 w-11 h-11 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-[28px]">close</span>
+          </button>
+
+          {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs cannot use the static host allowlist */}
+          <img
+            src={msg.attachment.url}
+            alt="Photo attachment preview"
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -287,12 +345,30 @@ function OfferCard({
   );
 }
 
-function InputBar({ onSend, disabled }: { onSend: (text: string) => void; disabled: boolean }) {
+const MAX_PHOTO_SIZE_BYTES = 20 * 1024 * 1024;
+const ACCEPTED_PHOTO_TYPES = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
+
+function InputBar({
+  onSend,
+  onSendPhoto,
+  disabled,
+  isSending,
+  sendError,
+}: {
+  onSend: (text: string) => void;
+  onSendPhoto: (photo: File) => void;
+  disabled: boolean;
+  isSending: boolean;
+  sendError: string | null;
+}) {
   const [text, setText] = useState('');
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   function handleSend() {
     const trimmed = text.trim();
     if (!trimmed || disabled) return;
+    setPickerError(null);
     onSend(trimmed);
     setText('');
   }
@@ -300,6 +376,38 @@ function InputBar({ onSend, disabled }: { onSend: (text: string) => void; disabl
   return (
     <div className="border-t border-outline-variant px-4 py-3 shrink-0">
       <div className="flex items-end gap-2">
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept={ACCEPTED_PHOTO_TYPES}
+          className="hidden"
+          tabIndex={-1}
+          onChange={(event) => {
+            const photo = event.target.files?.[0];
+            event.target.value = '';
+            if (!photo) return;
+
+            setPickerError(null);
+            if (photo.size <= 0 || photo.size > MAX_PHOTO_SIZE_BYTES) {
+              setPickerError('Choose a photo smaller than 20MB.');
+              return;
+            }
+
+            onSendPhoto(photo);
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => photoInputRef.current?.click()}
+          disabled={disabled}
+          aria-label={isSending ? 'Sending' : 'Attach photo'}
+          title={isSending ? 'Sending' : 'Attach photo'}
+          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-surface-container text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className={`material-symbols-outlined text-[20px] ${isSending ? 'animate-spin' : ''}`}>
+            {isSending ? 'progress_activity' : 'add_photo_alternate'}
+          </span>
+        </button>
         <div className="flex-1 bg-surface-container rounded-2xl px-4 py-2.5 max-h-28">
           <textarea
             value={text}
@@ -326,6 +434,11 @@ function InputBar({ onSend, disabled }: { onSend: (text: string) => void; disabl
           <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
         </button>
       </div>
+      {(pickerError || sendError) && (
+        <p role="alert" className="text-error text-[12px] mt-2 ml-[52px]">
+          {pickerError ?? sendError}
+        </p>
+      )}
     </div>
   );
 }
@@ -340,8 +453,10 @@ export default function ConversationThread({
   isSending,
   isRespondingToOffer,
   error,
+  sendError,
   onBack,
   onSend,
+  onSendPhoto,
   onAccept,
   onDecline,
   onEdit,
@@ -417,7 +532,13 @@ export default function ConversationThread({
           <p className="text-outline text-[12px]">This is a system notification — replies are not supported</p>
         </div>
       ) : (
-        <InputBar onSend={onSend} disabled={isSending || isLoading} />
+        <InputBar
+          onSend={onSend}
+          onSendPhoto={onSendPhoto}
+          disabled={isSending || isLoading}
+          isSending={isSending}
+          sendError={sendError}
+        />
       )}
     </div>
   );
