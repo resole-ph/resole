@@ -42,7 +42,11 @@ export function serializeShoeListing(row: ShoeListing) {
       id: row.seller.id,
       name: row.seller.name,
       image: row.seller.image ?? undefined,
-      rating: row.seller.rating ? Number(row.seller.rating) : undefined, // 👈 For seller star ratings
+      rating: row.seller.rating ? Number(row.seller.rating) : undefined, 
+      // Buyers meet sellers in person to hand over a pair, so where the seller is
+      // matters before making an offer. Same city-then-address fallback the public
+      // profile endpoint already exposes — no new field is made public here.
+      location: row.seller.city || row.seller.address || null,
     },
   };
 }

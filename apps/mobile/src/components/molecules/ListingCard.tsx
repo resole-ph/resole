@@ -46,6 +46,8 @@ export interface Listing {
     totalSales?: number;
     verified?: boolean;
     avatarColor?: string;
+    /** Seller's city (falls back to address). Null when they haven't set one. */
+    location?: string | null;
   };
 }
 
@@ -201,6 +203,21 @@ export default function ListingCard({ listing, onSave, isSaved, currentUserId }:
         >
           {listing.condition} Condition
         </Text>
+
+        {/*
+          Where the seller is. Sits above the footer split so swap cards — which
+          have no seller row at all — carry it too, and so buyers can rule a pair
+          out on distance without opening it. Hidden when the seller has no city
+          rather than shown as a placeholder.
+        */}
+        {listing.seller.location && (
+          <View className="flex-row items-center mb-2">
+            <Ionicons name="location-outline" size={11} color="#9CA3AF" />
+            <Text className="text-gray-400 text-xs ml-1 flex-1" numberOfLines={1}>
+              {listing.seller.location}
+            </Text>
+          </View>
+        )}
 
         {listing.listingMode === 'Swap' ? (
           /* ── Swap footer ── */

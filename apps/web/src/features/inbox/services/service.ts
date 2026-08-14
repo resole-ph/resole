@@ -1,6 +1,6 @@
 import { db } from '@/config/db';
-import { and, or, ne, asc, desc, eq, getTableColumns, isNull } from 'drizzle-orm';
-import { conversation, message, shoeListing, transaction, user } from '@/db/schema';
+import { and, or, ne, asc, avg, count, desc, eq, getTableColumns, inArray, isNull } from 'drizzle-orm';
+import { conversation, message, rating, sale, shoeListing, swap, swapItem, transaction, user } from '@/db/schema';
 import { Conversation, CreateConversation, Message, CreateMessage } from '../types/types';
 import { alias } from 'drizzle-orm/pg-core';
 
@@ -129,6 +129,104 @@ export async function getOfferConversationForListing(userId: string, listingId: 
     return result[0] ?? null;
   } catch (error) {
     console.error('Error fetching offer conversation for listing.', error);
+    return null;
+  }
+}
+
+/**
+ * Every offer made on one listing, from the seller's side, each already paired
+ * with the conversation it lives in.
+ *
+ * The buyer-facing `getOfferConversationForListing` answers "do I already have
+ * an offer here"; this answers "who has offered on my shoe", so the seller can
+ * open the right thread without hunting through the inbox for a name they may
+ * not recognise. Callers MUST check listing ownership first — this query does
+ * not, and the rows expose who is interested in a listing.
+ *
+ * Conversations are matched on `transactionId` rather than the participant pair,
+ * so two offers from the same buyer stay on their own threads.
+ */
+export async function getListingOffers(listingId: number) {
+  try {
+    const buyerRating = db
+      .select({
+        rateeId: rating.rateeId,
+        average: avg(rating.rating).as('average'),
+      })
+      .from(rating)
+      .where(isNull(rating.deletedAt))
+      .groupBy(rating.rateeId)
+      .as('buyer_rating');
+
+    const rows = await db
+      .select({
+        transactionId: transaction.id,
+        conversationId: conversation.id,
+        type: transaction.type,
+        isAccepted: transaction.isAccepted,
+        isCompleted: transaction.isCompleted,
+        createdAt: transaction.createdAt,
+        // Only sale offers have a price row; a swap offer's value is its items.
+        price: sale.price,
+        // `user.image` is deliberately not selected: avatars are stored as base64
+        // data URIs, so a handful of offers would push this response into the
+        // megabytes over a phone connection. The rows render initial avatars.
+        buyer: {
+          id: user.id,
+          name: user.name,
+          city: user.city,
+          address: user.address,
+          rating: buyerRating.average,
+        },
+      })
+      .from(transaction)
+      .innerJoin(conversation, eq(conversation.transactionId, transaction.id))
+      .innerJoin(user, eq(transaction.recipientId, user.id))
+      .leftJoin(sale, eq(sale.transactionId, transaction.id))
+      .leftJoin(buyerRating, eq(buyerRating.rateeId, user.id))
+      .where(eq(transaction.listingId, listingId))
+      .orderBy(desc(transaction.createdAt));
+
+    // What a swapper put up in exchange. Fetched in one grouped pass rather than
+    // per offer, and left out entirely when no swap offers came back.
+    const swapTransactionIds = rows
+      .filter((row) => row.type === 'swap')
+      .map((row) => row.transactionId);
+
+    const swapItemCounts = swapTransactionIds.length
+      ? await db
+          .select({
+            transactionId: swap.transactionId,
+            itemCount: count(swapItem.id),
+          })
+          .from(swap)
+          .innerJoin(swapItem, eq(swapItem.swapId, swap.id))
+          .where(inArray(swap.transactionId, swapTransactionIds))
+          .groupBy(swap.transactionId)
+      : [];
+
+    const itemCountByTransaction = new Map(
+      swapItemCounts.map((row) => [row.transactionId, Number(row.itemCount)])
+    );
+
+    return rows.map((row) => ({
+      transactionId: row.transactionId,
+      conversationId: row.conversationId,
+      type: row.type,
+      isAccepted: row.isAccepted,
+      isCompleted: row.isCompleted,
+      createdAt: row.createdAt.toISOString(),
+      price: row.price != null ? Number(row.price) : null,
+      swapItemCount: itemCountByTransaction.get(row.transactionId) ?? 0,
+      buyer: {
+        id: row.buyer.id,
+        name: row.buyer.name,
+        location: row.buyer.city || row.buyer.address || null,
+        rating: row.buyer.rating != null ? Number(row.buyer.rating) : null,
+      },
+    }));
+  } catch (error) {
+    console.error('Error fetching offers for listing.', error);
     return null;
   }
 }
