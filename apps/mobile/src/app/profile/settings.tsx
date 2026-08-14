@@ -33,8 +33,6 @@ const ACCOUNT_FIELDS = [
   { id: 'email',    label: 'Email',         value: '', icon: 'mail-outline' as const },
   { id: 'phone',    label: 'Phone',         value: '', icon: 'call-outline' as const },
   { id: 'location', label: 'Location',      value: '', icon: 'location-outline' as const },
-  { id: 'unit',     label: 'Unit',          value: '', icon: 'cube' as const },
-  { id: 'classification', label: 'Classification',  value: '', icon: 'male-female-outline' as const },
 ];
 
 const UNIT_OPTIONS = ['us', 'uk', 'eu', 'cm'];
@@ -475,6 +473,7 @@ export default function SettingsScreen() {
 
     try {
       await updateSizeSystem(nextSystem);
+      await refetchAccount();
     } catch (error) {
       setSizeSystem(previousSystem);
       Alert.alert(

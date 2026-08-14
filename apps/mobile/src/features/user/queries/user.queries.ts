@@ -93,8 +93,6 @@ export function useUpdateSizeSystem() {
         email: user.email,
         phone: user.contactNo,
         location: user.location,
-        unit: user.unit,
-        classification: user.classification,
       });
     },
   });
