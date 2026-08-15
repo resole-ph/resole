@@ -240,4 +240,4 @@ imperative mood ("fix category filtering", not "fixed" or "fixes").
 
 ## API Documentation
 
-TBA
+The API Documentation is generated using Swagger and can be accessed on the web by going to `/api-doc`.
